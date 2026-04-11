@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     }
 
     const message = await client.messages.create({
-      model: 'claude-3-sonnet-20240229',
+      model: 'claude-opus-4-1-20250805',
       max_tokens: 2048,
       system: ROADY_SYSTEM_PROMPT,
       messages: [
