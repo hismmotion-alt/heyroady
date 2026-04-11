@@ -1,9 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ROADY_SYSTEM_PROMPT } from '@/lib/prompts';
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+function getClient() {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.error('ANTHROPIC_API_KEY not found. Available env vars:', Object.keys(process.env).filter(k => k.includes('ANTHROPIC') || k.includes('API')));
+  }
+  return new Anthropic({
+    apiKey: apiKey,
+  });
+}
 
 function buildPreferenceContext(body: Record<string, string>): string {
   const parts: string[] = [];
@@ -80,6 +86,7 @@ function buildPreferenceContext(body: Record<string, string>): string {
 
 export async function POST(req: Request) {
   try {
+    const client = getClient();
     const body = await req.json();
     const { start, end } = body;
 
@@ -96,7 +103,7 @@ export async function POST(req: Request) {
     }
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-sonnet-20240229',
       max_tokens: 2048,
       system: ROADY_SYSTEM_PROMPT,
       messages: [
@@ -141,8 +148,11 @@ Return this exact JSON structure:
       if (error.status === 429) {
         return Response.json({ error: 'Too many requests — try again in a moment' }, { status: 429 });
       }
+      console.error('Anthropic API error:', error.status, error.message);
+      return Response.json({ error: `API error: ${error.message}` }, { status: error.status || 500 });
     }
     console.error('Suggest API error:', error);
-    return Response.json({ error: 'Something went wrong generating your trip' }, { status: 500 });
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    return Response.json({ error: `Failed to generate trip: ${errorMsg}` }, { status: 500 });
   }
 }
