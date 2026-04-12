@@ -69,6 +69,7 @@ export default function HomePage() {
   const [suggestStart, setSuggestStart] = useState('');
   const [mapAnimation, setMapAnimation] = useState<any>(null);
   const [stepAnimations, setStepAnimations] = useState<any[]>([null, null, null]);
+  const [howAnimations, setHowAnimations] = useState<any[]>([null, null, null, null]);
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [taglinePhase, setTaglinePhase] = useState<'typing' | 'hold' | 'erasing'>('typing');
   const taglineText = 'Your California road trip, reimagined';
@@ -160,6 +161,10 @@ export default function HomePage() {
     const stepFiles = ['/new-message.json', '/settings.json', '/location-pin.json'];
     Promise.all(stepFiles.map((f) => fetch(f).then((r) => r.json()).catch(() => null)))
       .then((data) => setStepAnimations(data));
+
+    const howFiles = ['/first.json', '/second.json', '/third.json', '/forth.json'];
+    Promise.all(howFiles.map((f) => fetch(f).then((r) => r.json()).catch(() => null)))
+      .then((data) => setHowAnimations(data));
   }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -573,36 +578,32 @@ export default function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
               {
-                icon: '📍',
                 step: '01',
                 title: 'Tell Roady where you are',
                 desc: 'Drop your city or address and Roady figures out what\'s within reach.',
               },
               {
-                icon: '☕',
                 step: '02',
                 title: 'Roady gets to know you',
                 desc: 'A few quick questions — like asking a friend what kind of trip you\'re in the mood for.',
               },
               {
-                icon: '🤙',
                 step: '03',
                 title: 'Get a local\'s picks',
                 desc: 'Roady suggests destinations and stops the way a California local would — not the obvious tourist spots.',
               },
               {
-                icon: '🚗',
                 step: '04',
                 title: 'Just drive',
                 desc: 'Your full itinerary opens in Google Maps or Apple Maps. Nothing to print, nothing to plan.',
               },
-            ].map((item) => (
+            ].map((item, i) => (
               <div key={item.step} className="flex flex-col items-center text-center gap-4">
-                <div
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                  style={{ backgroundColor: 'rgba(88,204,2,0.1)' }}
-                >
-                  {item.icon}
+                <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
+                  {howAnimations[i]
+                    ? <Lottie animationData={howAnimations[i]} loop style={{ width: 80, height: 80 }} />
+                    : <div className="w-16 h-16 rounded-2xl" style={{ backgroundColor: 'rgba(88,204,2,0.1)' }} />
+                  }
                 </div>
                 <div>
                   <p className="text-xs font-bold mb-1" style={{ color: '#58CC02' }}>STEP {item.step}</p>
