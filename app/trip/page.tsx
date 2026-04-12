@@ -218,6 +218,20 @@ function TripContent() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
+  const buildMapsUrls = () => {
+    const stops = trip!.stops;
+    const allPoints = [start, ...stops.map((s) => s.city), end];
+    const googleUrl =
+      'https://www.google.com/maps/dir/' +
+      allPoints.map((p) => encodeURIComponent(p)).join('/');
+    const appleDaddr = [
+      ...stops.map((s) => encodeURIComponent(s.city)),
+      encodeURIComponent(end),
+    ].join('+to:');
+    const appleUrl = `https://maps.apple.com/?saddr=${encodeURIComponent(start)}&daddr=${appleDaddr}`;
+    return { googleUrl, appleUrl };
+  };
+
   return (
     <div className="h-screen flex flex-col" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
       {/* Top bar */}
@@ -297,6 +311,41 @@ function TripContent() {
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1B2D45' }} />
             <p className="text-sm font-semibold text-gray-500">{end}</p>
           </div>
+
+          {/* Open in Maps */}
+          {(() => {
+            const { googleUrl, appleUrl } = buildMapsUrls();
+            return (
+              <div className="mt-6 mx-1 space-y-3">
+                <a
+                  href={googleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all duration-200 hover:opacity-90"
+                  style={{ backgroundColor: '#D85A30' }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                    <circle cx="12" cy="9" r="2.5"/>
+                  </svg>
+                  Open in Google Maps
+                </a>
+                <a
+                  href={appleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 hover:opacity-90"
+                  style={{ backgroundColor: 'transparent', color: '#1B2D45', border: '2px solid #1B2D45' }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                    <circle cx="12" cy="9" r="2.5"/>
+                  </svg>
+                  Open in Apple Maps
+                </a>
+              </div>
+            );
+          })()}
 
           {/* Roady footer tip */}
           <div className="mt-6 mx-1 px-4 py-3 rounded-xl" style={{ backgroundColor: '#FDF6EE' }}>
