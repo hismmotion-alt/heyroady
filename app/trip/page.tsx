@@ -6,6 +6,8 @@ import dynamic from 'next/dynamic';
 import StopCard from '@/components/StopCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import type { TripData } from '@/lib/types';
+import { createClient } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 // Mapbox must be lazy-loaded (no SSR)
 const RouteMap = dynamic(() => import('@/components/RouteMap'), {
@@ -31,6 +33,9 @@ function TripContent() {
   const [activeStop, setActiveStop] = useState(0);
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [savedTripId, setSavedTripId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Hardcoded fallback coordinates for problematic California locations
   const LOCATION_OVERRIDES: Record<string, [number, number]> = {
@@ -179,6 +184,15 @@ function TripContent() {
     fetchTrip();
   }, [start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges, router]);
 
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
@@ -232,6 +246,32 @@ function TripContent() {
     return { googleUrl, appleUrl };
   };
 
+  const handleSaveTrip = async () => {
+    if (!trip || saving || savedTripId) return;
+    if (!user) {
+      const currentUrl = `/trip?${new URLSearchParams({
+        start, end, travelGroup, stopTypes, numberOfStops, stopDuration,
+        ...(kidsAges && { kidsAges }),
+      }).toString()}`;
+      router.push(`/login?next=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await fetch('/api/save-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start, end, trip_data: trip }),
+      });
+      const data = await res.json();
+      if (data.id) setSavedTripId(data.id);
+    } catch {
+      // silent fail — user can try again
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
       {/* Top bar */}
@@ -243,7 +283,21 @@ function TripContent() {
           <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{trip.routeName}</p>
           <p className="text-xs text-gray-400">{trip.tagline}</p>
         </div>
-        <div />
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <a href="/my-trips" className="text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors hidden sm:block">My Trips</a>
+              {user.user_metadata?.avatar_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.user_metadata.avatar_url} alt="Profile" className="w-8 h-8 rounded-full border-2 border-gray-200" />
+              )}
+            </>
+          ) : (
+            <a href="/login" className="text-sm font-bold px-4 py-2 rounded-lg border-2 border-gray-200 hover:border-[#58CC02] hover:text-[#46a302] transition-all" style={{ color: '#1B2D45' }}>
+              Sign in
+            </a>
+          )}
+        </div>
       </header>
 
       {/* Main content: map + sidebar */}
@@ -357,6 +411,37 @@ function TripContent() {
             </div>
           </div>
         </div>
+      </div>
+      {/* Sticky save bar */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-t"
+        style={{ backgroundColor: 'rgba(255,255,255,0.97)', borderColor: 'rgba(0,0,0,0.06)', backdropFilter: 'blur(8px)' }}
+      >
+        <div>
+          <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>Like this trip?</p>
+          <p className="text-xs text-gray-400">Save it to your Roady account</p>
+        </div>
+        <button
+          onClick={handleSaveTrip}
+          disabled={!!savedTripId || saving}
+          className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center gap-2"
+          style={{
+            backgroundColor: savedTripId ? '#f0fce4' : '#58CC02',
+            color: savedTripId ? '#46a302' : '#ffffff',
+            cursor: savedTripId ? 'default' : 'pointer',
+          }}
+        >
+          {saving ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Saving…
+            </>
+          ) : savedTripId ? (
+            '✓ Trip saved'
+          ) : (
+            '💾 Save this trip'
+          )}
+        </button>
       </div>
     </div>
   );
