@@ -23,8 +23,8 @@ export default function StopCard({ stop, number, isActive, onClick }: StopCardPr
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl p-5 mb-3 cursor-pointer transition-all duration-200 border-2
-        ${isActive ? 'border-[#D85A30] bg-white shadow-lg scale-[1.01]' : 'border-transparent bg-white hover:border-[#D85A30]/30 hover:shadow-md'}`}
+      className={`rounded-2xl p-5 mb-3 cursor-pointer transition-all duration-200 border-l-4
+        ${isActive ? 'border-[#D85A30] bg-white shadow-lg scale-[1.01]' : 'border-transparent bg-white hover:border-[#D85A30]/50 hover:shadow-md'}`}
     >
       <div className="flex items-start gap-3 mb-3">
         <div className="w-8 h-8 rounded-full bg-[#D85A30] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
