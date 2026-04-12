@@ -543,7 +543,7 @@ export default function HomePage() {
 
                 <div>
                   <h3 className="font-extrabold text-base mb-0.5" style={{ color: '#1B2D45' }}>{route.name}</h3>
-                  <p className="text-xs text-gray-400 font-medium">{route.from} → {route.to}</p>
+                  <p className="text-xs text-gray-400 font-medium">📍 {route.to}</p>
                 </div>
 
                 <p className="text-sm text-gray-500 leading-relaxed flex-1">{route.desc}</p>
