@@ -153,7 +153,7 @@ export default function HomePage() {
     setSuggestOpen(results.length > 0);
   }, 300), [debounce]);
 
-  const fetchRoutes = useCallback(debounce(async (location: string) => {
+  const doFetchRoutes = useCallback(async (location: string) => {
     if (location.length < 5) { setRoutes(DEFAULT_ROUTES); setRoutesLocation(''); return; }
     setRoutesLoading(true);
     try {
@@ -162,7 +162,9 @@ export default function HomePage() {
       if (data.routes) { setRoutes(data.routes); setRoutesLocation(location); }
     } catch { /* keep defaults */ }
     finally { setRoutesLoading(false); }
-  }, 1000), [debounce]);
+  }, []);
+
+  const fetchRoutes = useCallback(debounce((location: string) => doFetchRoutes(location), 1000), [debounce, doFetchRoutes]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -338,7 +340,7 @@ export default function HomePage() {
                             <li
                               key={s}
                               className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
-                              onMouseDown={() => { setStart(s); setStartOpen(false); }}
+                              onMouseDown={() => { setStart(s); setStartOpen(false); doFetchRoutes(s); }}
                             >
                               {s}
                             </li>
@@ -445,7 +447,7 @@ export default function HomePage() {
                             <li
                               key={s}
                               className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
-                              onMouseDown={() => { setSuggestStart(s); setSuggestOpen(false); }}
+                              onMouseDown={() => { setSuggestStart(s); setSuggestOpen(false); doFetchRoutes(s); }}
                             >
                               {s}
                             </li>
