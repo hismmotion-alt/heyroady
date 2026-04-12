@@ -263,6 +263,7 @@ function TripContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ start, end, trip_data: trip }),
       });
+      if (!res.ok) throw new Error('Save failed');
       const data = await res.json();
       if (data.id) setSavedTripId(data.id);
     } catch {
@@ -314,7 +315,7 @@ function TripContent() {
         </div>
 
         {/* Sidebar: stops */}
-        <div className="w-[400px] flex-shrink-0 overflow-y-auto bg-[#FAFAF8] border-l border-gray-100 p-4">
+        <div className="w-[400px] flex-shrink-0 overflow-y-auto bg-[#FAFAF8] border-l border-gray-100 p-4 pb-24">
           {/* Trip summary card */}
           <div
             className="rounded-2xl p-5 mb-5 border-l-4"
