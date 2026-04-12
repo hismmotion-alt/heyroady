@@ -512,7 +512,7 @@ export default function HomePage() {
               </h2>
               <p className="text-gray-500 text-lg">
                 {routesLocation
-                  ? <>Personalized routes from <span className="font-semibold" style={{ color: '#1B2D45' }}>{routesLocation.split(',')[0]}</span></>
+                  ? <>Personalized routes from <span className="font-semibold" style={{ color: '#1B2D45' }}>{routesLocation}</span></>
                   : "California's most loved road trips — ready to plan in seconds."}
               </p>
             </div>
