@@ -483,11 +483,13 @@ export default function HomePage() {
                       <label className="block text-sm font-semibold mb-2" style={{ color: '#1B2D45' }}>How many days is your trip?</label>
                       <input
                         type="number"
-                        placeholder="Number of days..."
+                        placeholder="0"
                         value={tripDuration}
                         onChange={(e) => setTripDuration(e.target.value)}
                         min="1"
-                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
+                        max="99"
+                        className="px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
+                        style={{ width: '80px' }}
                         required
                       />
                     </div>
