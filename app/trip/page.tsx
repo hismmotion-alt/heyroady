@@ -181,7 +181,7 @@ function TripContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FDF6EE' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
         <div className="text-center">
           <LoadingSpinner message="Roady is finding the best stops for you..." />
           <p className="text-gray-400 text-sm mt-4">
@@ -194,13 +194,13 @@ function TripContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FDF6EE' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
         <div className="text-center max-w-md">
           <p className="text-red-500 font-semibold mb-4">{error}</p>
           <button
             onClick={() => router.push('/')}
             className="px-6 py-3 rounded-xl text-white font-bold"
-            style={{ backgroundColor: '#D85A30' }}
+            style={{ backgroundColor: '#58CC02' }}
           >
             Try Again
           </button>
@@ -235,8 +235,8 @@ function TripContent() {
   return (
     <div className="h-screen flex flex-col" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
       {/* Top bar */}
-      <header className="h-16 flex items-center justify-between px-6 border-b bg-white flex-shrink-0" style={{ borderColor: 'rgba(216,90,48,0.08)' }}>
-        <button onClick={() => router.push('/')} className="font-extrabold text-xl tracking-tight" style={{ color: '#D85A30' }}>
+      <header className="h-16 flex items-center justify-between px-6 border-b bg-white flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
+        <button onClick={() => router.push('/')} className="font-extrabold text-xl tracking-tight" style={{ color: '#58CC02' }}>
           Roady
         </button>
         <div className="text-center">
@@ -264,7 +264,7 @@ function TripContent() {
           {/* Trip summary card */}
           <div
             className="rounded-2xl p-5 mb-5 border-l-4"
-            style={{ backgroundColor: '#FDF6EE', borderColor: '#D85A30' }}
+            style={{ backgroundColor: '#ffffff', borderColor: '#58CC02' }}
           >
             <h2 className="font-extrabold text-lg leading-tight mb-1" style={{ color: '#1B2D45' }}>
               {trip.routeName}
@@ -273,13 +273,13 @@ function TripContent() {
             <div className="flex items-center gap-3 flex-wrap">
               <span
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' }}
+                style={{ backgroundColor: 'rgba(88,204,2,0.1)', color: '#58CC02' }}
               >
                 📍 {trip.stops.length} stops
               </span>
               <span
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                style={{ backgroundColor: 'rgba(29,158,117,0.1)', color: '#1D9E75' }}
+                style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
               >
                 🛣 {trip.totalMiles} mi
               </span>
@@ -293,7 +293,7 @@ function TripContent() {
           </div>
 
           <div className="flex items-center gap-3 mb-4 px-1">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1D9E75' }} />
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#46a302' }} />
             <p className="text-sm font-semibold text-gray-500">{start}</p>
           </div>
 
@@ -322,7 +322,7 @@ function TripContent() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-center gap-2 w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all duration-200 hover:opacity-90"
-                  style={{ backgroundColor: '#D85A30' }}
+                  style={{ backgroundColor: '#58CC02' }}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
@@ -348,10 +348,10 @@ function TripContent() {
           })()}
 
           {/* Roady footer tip */}
-          <div className="mt-6 mx-1 px-4 py-3 rounded-xl" style={{ backgroundColor: '#FDF6EE' }}>
+          <div className="mt-6 mx-1 px-4 py-3 rounded-xl" style={{ backgroundColor: '#f0fce4' }}>
             <div className="flex gap-2">
               <span className="text-sm flex-shrink-0">💡</span>
-              <p className="text-xs font-medium leading-relaxed" style={{ color: '#993C1D' }}>
+              <p className="text-xs font-medium leading-relaxed" style={{ color: '#1a6e00' }}>
                 Click any stop on the map or in this list to zoom in and learn more. Enjoy the drive!
               </p>
             </div>
@@ -364,7 +364,7 @@ function TripContent() {
 
 export default function TripPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FDF6EE' }}><LoadingSpinner /></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}><LoadingSpinner /></div>}>
       <TripContent />
     </Suspense>
   );

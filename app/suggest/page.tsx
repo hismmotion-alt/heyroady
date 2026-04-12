@@ -110,17 +110,17 @@ function SuggestContent() {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ backgroundColor: '#FDF6EE', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+      style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
       {/* Nav */}
       <nav
         className="h-16 flex items-center px-6 border-b"
-        style={{ backgroundColor: 'rgba(253,246,238,0.92)', borderColor: 'rgba(216,90,48,0.08)' }}
+        style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)' }}
       >
         <button
           onClick={() => router.push('/')}
           className="font-extrabold text-xl tracking-tight"
-          style={{ color: '#D85A30' }}
+          style={{ color: '#58CC02' }}
         >
           Roady
         </button>
@@ -137,7 +137,7 @@ function SuggestContent() {
               <div
                 key={i}
                 className="h-1.5 flex-1 rounded-full transition-colors duration-300"
-                style={{ backgroundColor: i <= step ? '#D85A30' : '#E5E7EB' }}
+                style={{ backgroundColor: i <= step ? '#58CC02' : '#E5E7EB' }}
               />
             ))}
           </div>
@@ -166,7 +166,7 @@ function SuggestContent() {
                     onClick={() => handleSingle(opt)}
                     className="px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200"
                     style={{
-                      backgroundColor: selected ? '#D85A30' : 'white',
+                      backgroundColor: selected ? '#58CC02' : 'white',
                       color: selected ? '#ffffff' : '#1B2D45',
                       border: selected ? 'none' : '2px solid #E5E7EB',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
@@ -191,7 +191,7 @@ function SuggestContent() {
                     onClick={() => handleMulti(opt)}
                     className="px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200"
                     style={{
-                      backgroundColor: selected ? '#D85A30' : 'white',
+                      backgroundColor: selected ? '#58CC02' : 'white',
                       color: selected ? '#ffffff' : '#1B2D45',
                       border: selected ? 'none' : '2px solid #E5E7EB',
                       boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
@@ -212,7 +212,7 @@ function SuggestContent() {
               value={answers.days}
               onChange={(e) => setAnswers((prev) => ({ ...prev, days: e.target.value }))}
               min="1"
-              className="px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
+              className="px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
               style={{ width: '120px', fontSize: '18px' }}
             />
           )}
@@ -234,7 +234,7 @@ function SuggestContent() {
               onClick={handleNext}
               disabled={!isAnswered}
               className="flex-1 px-8 py-4 rounded-xl font-bold text-base text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: '#D85A30' }}
+              style={{ backgroundColor: '#58CC02' }}
             >
               {isLast ? 'Find My Destination →' : 'Next →'}
             </button>
@@ -247,7 +247,7 @@ function SuggestContent() {
 
 export default function SuggestPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#FDF6EE' }} />}>
+    <Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#ffffff' }} />}>
       <SuggestContent />
     </Suspense>
   );

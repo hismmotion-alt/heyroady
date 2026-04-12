@@ -153,12 +153,12 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#FDF6EE', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen" style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b" style={{ backgroundColor: 'rgba(253,246,238,0.92)', borderColor: 'rgba(216,90,48,0.08)' }}>
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b" style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)' }}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <img src="/roady-logo.png" alt="Roady" style={{ height: logoHeight, width: 'auto', transform: `translateY(${logoOffsetY}px)` }} />
-          <a href="#how" className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#D85A30] transition-colors">
+          <a href="#how" className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors">
             How It Works
           </a>
         </div>
@@ -172,7 +172,7 @@ export default function HomePage() {
             className="absolute rounded-full opacity-[0.07]"
             style={{
               width: 400, height: 400, top: -80, left: -120,
-              background: 'radial-gradient(circle, #D85A30, transparent 70%)',
+              background: 'radial-gradient(circle, #58CC02, transparent 70%)',
               transform: `translateY(${scrollY * 0.12}px)`,
               transition: 'transform 0.1s linear',
             }}
@@ -181,7 +181,7 @@ export default function HomePage() {
             className="absolute rounded-full opacity-[0.05]"
             style={{
               width: 300, height: 300, top: 200, right: -60,
-              background: 'radial-gradient(circle, #1D9E75, transparent 70%)',
+              background: 'radial-gradient(circle, #46a302, transparent 70%)',
               transform: `translateY(${scrollY * 0.2}px)`,
               transition: 'transform 0.1s linear',
             }}
@@ -204,7 +204,7 @@ export default function HomePage() {
               className="flex-1 text-left max-w-xl"
               style={{ transform: `translateY(${scrollY * 0.04}px)`, transition: 'transform 0.1s linear' }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-8" style={{ backgroundColor: 'rgba(29,158,117,0.1)', color: '#1D9E75' }}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-8" style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
                 <span style={{ position: 'relative', minHeight: 20, whiteSpace: 'nowrap' }}>
                   <span style={{ opacity: taglineIndex > 0 ? 0 : 1, transition: 'opacity 0.2s' }}>Your California road trip, reimagined</span>
@@ -216,7 +216,7 @@ export default function HomePage() {
                           display: 'inline-block',
                           width: 2,
                           height: 16,
-                          backgroundColor: '#1D9E75',
+                          backgroundColor: '#46a302',
                           animation: 'cursorBlink 0.8s step-end infinite',
                         }}
                       />
@@ -228,7 +228,7 @@ export default function HomePage() {
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] mb-6 tracking-tight" style={{ color: '#1B2D45' }}>
                 Every great road trip
                 <br />
-                needs <span style={{ color: '#D85A30' }}>a local friend.</span>
+                needs <span style={{ color: '#58CC02' }}>a local friend.</span>
               </h1>
 
               <p className="text-lg sm:text-xl leading-relaxed mb-10" style={{ color: '#6B7280' }}>
@@ -242,9 +242,9 @@ export default function HomePage() {
                   onClick={() => setFlowType('suggest')}
                   className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
                   style={{
-                    backgroundColor: flowType === 'suggest' ? '#D85A30' : 'transparent',
+                    backgroundColor: flowType === 'suggest' ? '#58CC02' : 'transparent',
                     color: flowType === 'suggest' ? '#ffffff' : '#1B2D45',
-                    border: flowType === 'suggest' ? 'none' : '2px solid #D85A30',
+                    border: flowType === 'suggest' ? 'none' : '2px solid #58CC02',
                   }}
                 >
                   Get Suggestions
@@ -254,9 +254,9 @@ export default function HomePage() {
                   onClick={() => setFlowType('plan')}
                   className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
                   style={{
-                    backgroundColor: flowType === 'plan' ? '#D85A30' : 'transparent',
+                    backgroundColor: flowType === 'plan' ? '#58CC02' : 'transparent',
                     color: flowType === 'plan' ? '#ffffff' : '#1B2D45',
-                    border: flowType === 'plan' ? 'none' : '2px solid #D85A30',
+                    border: flowType === 'plan' ? 'none' : '2px solid #58CC02',
                   }}
                 >
                   Plan a Trip
@@ -274,7 +274,7 @@ export default function HomePage() {
                         value={start}
                         onChange={(e) => { setStart(e.target.value); setStartFocused(true); }}
                         onFocus={() => setStartFocused(true)}
-                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
+                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
                         autoComplete="off"
                       />
@@ -283,7 +283,7 @@ export default function HomePage() {
                           {getFilteredCities(start).map((city) => (
                             <li
                               key={city}
-                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-[#FDF6EE] hover:text-[#D85A30] cursor-pointer transition-colors"
+                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
                               onMouseDown={() => { setStart(city); setStartFocused(false); }}
                             >
                               {city}
@@ -299,7 +299,7 @@ export default function HomePage() {
                         value={end}
                         onChange={(e) => { setEnd(e.target.value); setEndFocused(true); }}
                         onFocus={() => setEndFocused(true)}
-                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
+                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
                         autoComplete="off"
                       />
@@ -308,7 +308,7 @@ export default function HomePage() {
                           {getFilteredCities(end).map((city) => (
                             <li
                               key={city}
-                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-[#FDF6EE] hover:text-[#D85A30] cursor-pointer transition-colors"
+                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
                               onMouseDown={() => { setEnd(city); setEndFocused(false); }}
                             >
                               {city}
@@ -321,7 +321,7 @@ export default function HomePage() {
                       type="submit"
                       className="group/btn relative px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden"
                       style={{
-                        backgroundColor: '#D85A30',
+                        backgroundColor: '#58CC02',
                         color: '#ffffff',
                         animation: 'glowPulse 2.8s ease-in-out infinite',
                         transformStyle: 'preserve-3d',
@@ -330,28 +330,28 @@ export default function HomePage() {
                       onMouseEnter={(e) => {
                         const btn = e.currentTarget;
                         btn.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
-                        btn.style.boxShadow = '0 14px 28px rgba(27,45,69,0.4), 0 6px 10px rgba(27,45,69,0.2), 0 0 20px rgba(239,159,39,0.25)';
-                        btn.style.backgroundColor = '#1B2D45';
-                        btn.style.color = '#EF9F27';
+                        btn.style.boxShadow = '0 14px 28px rgba(58,173,0,0.35), 0 6px 10px rgba(58,173,0,0.2), 0 0 20px rgba(239,159,39,0.25)';
+                        btn.style.backgroundColor = '#3aad00';
+                        btn.style.color = '#ffffff';
                       }}
                       onMouseLeave={(e) => {
                         const btn = e.currentTarget;
                         btn.style.transform = 'perspective(600px) rotateX(0deg) translateY(0px)';
                         btn.style.boxShadow = '';
-                        btn.style.backgroundColor = '#D85A30';
+                        btn.style.backgroundColor = '#58CC02';
                         btn.style.color = '#ffffff';
                       }}
                       onMouseDown={(e) => {
                         e.currentTarget.style.transform = 'perspective(600px) rotateX(2deg) translateY(1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(27,45,69,0.3), 0 2px 4px rgba(27,45,69,0.2)';
+                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(58,173,0,0.35), 0 2px 4px rgba(58,173,0,0.2)';
                       }}
                       onMouseUp={(e) => {
                         e.currentTarget.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
-                        e.currentTarget.style.boxShadow = '0 14px 28px rgba(27,45,69,0.35), 0 6px 10px rgba(27,45,69,0.2), 0 0 20px rgba(27,45,69,0.3)';
+                        e.currentTarget.style.boxShadow = '0 14px 28px rgba(58,173,0,0.35), 0 6px 10px rgba(58,173,0,0.2), 0 0 20px rgba(58,173,0,0.2)';
                       }}
                     >
-                      <span className="absolute left-0 right-0 bottom-0 h-[5px] rounded-b-xl pointer-events-none transition-colors duration-300 bg-[#B04420] group-hover/btn:bg-[#0f1d30]" />
-                      <span className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out" style={{ background: 'linear-gradient(90deg, transparent, rgba(216,90,48,0.15), transparent)' }} />
+                      <span className="absolute left-0 right-0 bottom-0 h-[5px] rounded-b-xl pointer-events-none transition-colors duration-300 bg-[#46a302] group-hover/btn:bg-[#3aad00]" />
+                      <span className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out" style={{ background: 'linear-gradient(90deg, transparent, rgba(88,204,2,0.15), transparent)' }} />
                       <span className="relative z-10 flex items-center gap-2">
                         Plan My Trip
                         <svg className="w-5 h-5 transition-all duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
@@ -380,7 +380,7 @@ export default function HomePage() {
                         placeholder="Your starting address or city..."
                         value={suggestStart}
                         onChange={(e) => setSuggestStart(e.target.value)}
-                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
+                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
                         autoComplete="off"
                       />
@@ -389,22 +389,22 @@ export default function HomePage() {
                       type="submit"
                       className="group/btn relative px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden"
                       style={{
-                        backgroundColor: '#D85A30',
+                        backgroundColor: '#58CC02',
                         color: '#ffffff',
                         transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease',
                       }}
                       onMouseEnter={(e) => {
                         const btn = e.currentTarget;
                         btn.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
-                        btn.style.boxShadow = '0 14px 28px rgba(27,45,69,0.4)';
-                        btn.style.backgroundColor = '#1B2D45';
-                        btn.style.color = '#EF9F27';
+                        btn.style.boxShadow = '0 14px 28px rgba(58,173,0,0.35)';
+                        btn.style.backgroundColor = '#3aad00';
+                        btn.style.color = '#ffffff';
                       }}
                       onMouseLeave={(e) => {
                         const btn = e.currentTarget;
                         btn.style.transform = '';
                         btn.style.boxShadow = '';
-                        btn.style.backgroundColor = '#D85A30';
+                        btn.style.backgroundColor = '#58CC02';
                         btn.style.color = '#ffffff';
                       }}
                     >

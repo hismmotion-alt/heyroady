@@ -141,8 +141,8 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         onClick={onClick}
         className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 transition-all duration-200 text-left group"
         style={{
-          borderColor: selected ? '#D85A30' : '#E5E7EB',
-          backgroundColor: selected ? 'rgba(216,90,48,0.04)' : 'white',
+          borderColor: selected ? '#58CC02' : '#E5E7EB',
+          backgroundColor: selected ? 'rgba(88,204,2,0.04)' : 'white',
         }}
       >
         <span className="text-2xl flex-shrink-0">{item.icon}</span>
@@ -154,8 +154,8 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
           className="w-6 h-6 flex-shrink-0 border-2 flex items-center justify-center transition-all"
           style={{
             borderRadius: multi ? '6px' : '50%',
-            borderColor: selected ? '#D85A30' : '#D1D5DB',
-            backgroundColor: selected ? '#D85A30' : 'transparent',
+            borderColor: selected ? '#58CC02' : '#D1D5DB',
+            backgroundColor: selected ? '#58CC02' : 'transparent',
           }}
         >
           {selected && (
@@ -171,11 +171,11 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ backgroundColor: '#FDF6EE', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+      style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
       {/* Header */}
       <header className="px-6 pt-6 pb-2 flex items-center justify-between">
-        <span className="font-extrabold text-xl tracking-tight" style={{ color: '#D85A30' }}>
+        <span className="font-extrabold text-xl tracking-tight" style={{ color: '#58CC02' }}>
           Roady
         </span>
         <span className="text-sm font-semibold text-gray-400">
@@ -188,7 +188,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${progress}%`, backgroundColor: '#D85A30' }}
+            style={{ width: `${progress}%`, backgroundColor: '#58CC02' }}
           />
         </div>
       </div>
@@ -325,7 +325,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
           onClick={handleNext}
           disabled={!canContinue()}
           className="px-8 py-3 rounded-xl text-white font-bold text-sm transition-all duration-200 flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ backgroundColor: '#D85A30' }}
+          style={{ backgroundColor: '#58CC02' }}
         >
           {step === totalSteps - 1 ? 'Plan My Trip' : 'Continue'}
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">

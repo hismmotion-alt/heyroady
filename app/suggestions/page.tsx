@@ -17,9 +17,9 @@ function buildBadges(travelStyle: string, interests: string, distance: string): 
   const badges: Badge[] = [];
   if (distance) badges.push({ label: distance, bg: 'rgba(55,138,221,0.1)', color: '#378ADD' });
   if (travelStyle && STYLE_LABELS[travelStyle])
-    badges.push({ label: STYLE_LABELS[travelStyle], bg: 'rgba(29,158,117,0.1)', color: '#1D9E75' });
+    badges.push({ label: STYLE_LABELS[travelStyle], bg: 'rgba(88,204,2,0.12)', color: '#46a302' });
   const interestColors = [
-    { bg: 'rgba(216,90,48,0.1)', color: '#D85A30' },
+    { bg: 'rgba(88,204,2,0.1)', color: '#58CC02' },
     { bg: 'rgba(147,51,234,0.1)', color: '#9333ea' },
   ];
   interests.split(',').filter(Boolean).slice(0, 2).forEach((i, idx) =>
@@ -52,7 +52,7 @@ function DestinationCard({
         />
         <span
           className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold"
-          style={{ backgroundColor: 'rgba(29,158,117,0.9)', color: '#ffffff' }}
+          style={{ backgroundColor: 'rgba(88,204,2,0.9)', color: '#ffffff' }}
         >
           {dest.matchScore}% match
         </span>
@@ -70,16 +70,16 @@ function DestinationCard({
         </p>
 
         {/* Why match + why drive */}
-        <div className="px-3 py-2.5 rounded-xl mb-3 space-y-1.5" style={{ backgroundColor: '#FDF6EE' }}>
+        <div className="px-3 py-2.5 rounded-xl mb-3 space-y-1.5" style={{ backgroundColor: '#f0fce4' }}>
           <div className="flex gap-1.5">
             <span className="text-sm flex-shrink-0">✨</span>
-            <p className="text-xs font-medium leading-snug" style={{ color: '#993C1D' }}>
+            <p className="text-xs font-medium leading-snug" style={{ color: '#1a6e00' }}>
               {dest.whyMatch}
             </p>
           </div>
           <div className="flex gap-1.5">
             <span className="text-sm flex-shrink-0">🚗</span>
-            <p className="text-xs font-medium leading-snug" style={{ color: '#993C1D' }}>
+            <p className="text-xs font-medium leading-snug" style={{ color: '#1a6e00' }}>
               {dest.whyDrive}
             </p>
           </div>
@@ -103,7 +103,7 @@ function DestinationCard({
           onClick={onPlan}
           className="mt-auto group/btn relative w-full px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 overflow-hidden"
           style={{
-            backgroundColor: '#D85A30',
+            backgroundColor: '#58CC02',
             color: '#ffffff',
             transformStyle: 'preserve-3d',
             transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease',
@@ -111,15 +111,15 @@ function DestinationCard({
           onMouseEnter={(e) => {
             const btn = e.currentTarget;
             btn.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
-            btn.style.boxShadow = '0 14px 28px rgba(27,45,69,0.4), 0 6px 10px rgba(27,45,69,0.2)';
-            btn.style.backgroundColor = '#1B2D45';
-            btn.style.color = '#EF9F27';
+            btn.style.boxShadow = '0 14px 28px rgba(58,173,0,0.35), 0 6px 10px rgba(58,173,0,0.2)';
+            btn.style.backgroundColor = '#3aad00';
+            btn.style.color = '#ffffff';
           }}
           onMouseLeave={(e) => {
             const btn = e.currentTarget;
             btn.style.transform = '';
             btn.style.boxShadow = '';
-            btn.style.backgroundColor = '#D85A30';
+            btn.style.backgroundColor = '#58CC02';
             btn.style.color = '#ffffff';
           }}
           onMouseDown={(e) => {
@@ -129,7 +129,7 @@ function DestinationCard({
             e.currentTarget.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
           }}
         >
-          <span className="absolute left-0 right-0 bottom-0 h-[4px] rounded-b-xl pointer-events-none bg-[#B04420] group-hover/btn:bg-[#0f1d30] transition-colors duration-300" />
+          <span className="absolute left-0 right-0 bottom-0 h-[4px] rounded-b-xl pointer-events-none bg-[#46a302] group-hover/btn:bg-[#3aad00] transition-colors duration-300" />
           <span className="relative z-10 flex items-center gap-2">
             Plan this trip
             <svg className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -200,10 +200,10 @@ function SuggestionsContent() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: '#FDF6EE', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+        style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
       >
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-[#D85A30] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <div className="w-12 h-12 border-4 border-[#58CC02] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
           <p className="font-bold text-lg" style={{ color: '#1B2D45' }}>
             Roady is finding your perfect destination...
           </p>
@@ -217,14 +217,14 @@ function SuggestionsContent() {
     return (
       <div
         className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: '#FDF6EE', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+        style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
       >
         <div className="text-center max-w-md px-6">
           <p className="text-red-500 font-semibold mb-4">{error}</p>
           <button
             onClick={fetchDestinations}
             className="px-6 py-3 rounded-xl text-white font-bold"
-            style={{ backgroundColor: '#D85A30' }}
+            style={{ backgroundColor: '#58CC02' }}
           >
             Try Again
           </button>
@@ -236,17 +236,17 @@ function SuggestionsContent() {
   return (
     <div
       className="min-h-screen"
-      style={{ backgroundColor: '#FDF6EE', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+      style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
       {/* Nav */}
       <nav
         className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center px-6 border-b backdrop-blur-md"
-        style={{ backgroundColor: 'rgba(253,246,238,0.92)', borderColor: 'rgba(216,90,48,0.08)' }}
+        style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)' }}
       >
         <button
           onClick={() => router.push('/')}
           className="font-extrabold text-xl tracking-tight"
-          style={{ color: '#D85A30' }}
+          style={{ color: '#58CC02' }}
         >
           Roady
         </button>
@@ -291,7 +291,7 @@ function SuggestionsContent() {
 
 export default function SuggestionsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#FDF6EE' }} />}>
+    <Suspense fallback={<div className="min-h-screen" style={{ backgroundColor: '#ffffff' }} />}>
       <SuggestionsContent />
     </Suspense>
   );
