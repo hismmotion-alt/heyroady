@@ -23,3 +23,12 @@ export interface TripPreferences {
   numberOfStops: string;
   stopDuration: string;
 }
+
+export interface Destination {
+  name: string;
+  region: string;
+  matchScore: number;
+  description: string;
+  whyMatch: string;
+  whyDrive: string;
+}
