@@ -267,11 +267,12 @@ function SuggestionsContent() {
               key={i}
               dest={dest}
               badges={badges}
-              onPlan={() =>
-                router.push(
-                  `/preferences?start=${encodeURIComponent(start)}&end=${encodeURIComponent(dest.name)}`
-                )
-              }
+              onPlan={() => {
+                const params = new URLSearchParams({ start, end: dest.name });
+                if (travelStyle) params.set('travelStyle', travelStyle);
+                if (interests) params.set('interests', interests);
+                router.push(`/preferences?${params.toString()}`);
+              }}
             />
           ))}
         </div>

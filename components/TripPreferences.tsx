@@ -12,6 +12,8 @@ export interface TripPreferences {
 
 interface Props {
   onComplete: (prefs: TripPreferences) => void;
+  prefilledGroup?: string;
+  prefilledStopTypes?: string[];
 }
 
 const TRAVEL_GROUPS = [
@@ -56,19 +58,29 @@ const DURATIONS = [
   { id: 'mix', label: 'Mix it up', desc: 'A blend of quick and long stops', icon: '🎯' },
 ];
 
-export default function TripPreferencesForm({ onComplete }: Props) {
+export default function TripPreferencesForm({ onComplete, prefilledGroup, prefilledStopTypes }: Props) {
   const [step, setStep] = useState(0);
-  const [travelGroup, setTravelGroup] = useState('');
+  const [travelGroup, setTravelGroup] = useState(prefilledGroup || '');
   const [kidsAges, setKidsAges] = useState<string[]>([]);
-  const [stopTypes, setStopTypes] = useState<string[]>([]);
+  const [stopTypes, setStopTypes] = useState<string[]>(prefilledStopTypes || []);
   const [numberOfStops, setNumberOfStops] = useState('');
   const [stopDuration, setStopDuration] = useState('');
 
+  // When coming from suggestions, skip already-answered steps
+  const skipGroup = !!prefilledGroup;
+  const skipStopTypes = !!prefilledStopTypes;
+  // family-kids from suggestions flow → show kids step but make it optional (skippable)
+  const kidsOptional = skipGroup && prefilledGroup === 'family-kids';
   const showKidsStep = travelGroup === 'family-kids';
-  // Steps: group → (kids ages?) → stop types → number of stops → duration
-  const steps = showKidsStep
-    ? ['group', 'kids', 'stopTypes', 'numberOfStops', 'duration']
-    : ['group', 'stopTypes', 'numberOfStops', 'duration'];
+
+  // Build steps based on what's already known
+  const steps: string[] = [];
+  if (!skipGroup) steps.push('group');
+  if (showKidsStep || (skipGroup && prefilledGroup === 'family-kids')) steps.push('kids');
+  if (!skipStopTypes) steps.push('stopTypes');
+  steps.push('numberOfStops');
+  steps.push('duration');
+
   const totalSteps = steps.length;
   const currentStepId = steps[step];
   const progress = ((step + 1) / totalSteps) * 100;
@@ -76,7 +88,7 @@ export default function TripPreferencesForm({ onComplete }: Props) {
   function canContinue(): boolean {
     switch (currentStepId) {
       case 'group': return !!travelGroup;
-      case 'kids': return kidsAges.length > 0;
+      case 'kids': return kidsOptional || kidsAges.length > 0;
       case 'stopTypes': return stopTypes.length > 0;
       case 'numberOfStops': return !!numberOfStops;
       case 'duration': return !!stopDuration;
@@ -88,10 +100,12 @@ export default function TripPreferencesForm({ onComplete }: Props) {
     if (step < totalSteps - 1) {
       setStep(step + 1);
     } else {
+      const effectiveGroup = travelGroup || prefilledGroup || '';
+      const effectiveStopTypes = stopTypes.length > 0 ? stopTypes : (prefilledStopTypes || []);
       onComplete({
-        travelGroup,
-        ...(showKidsStep && { kidsAges }),
-        stopTypes,
+        travelGroup: effectiveGroup,
+        ...(effectiveGroup === 'family-kids' && kidsAges.length > 0 && { kidsAges }),
+        stopTypes: effectiveStopTypes,
         numberOfStops,
         stopDuration,
       });
@@ -211,7 +225,9 @@ export default function TripPreferencesForm({ onComplete }: Props) {
                 How old are the kids?
               </h2>
               <p className="text-gray-400 mb-8">
-                Select all that apply so we find age-appropriate stops.
+                {kidsOptional
+                  ? 'Optional — select ages to find family-friendly stops, or skip.'
+                  : 'Select all that apply so we find age-appropriate stops.'}
               </p>
               <div className="flex flex-col gap-3">
                 {KIDS_AGES.map((a) => (

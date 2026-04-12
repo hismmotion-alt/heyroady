@@ -5,16 +5,40 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import TripPreferencesForm from '@/components/TripPreferences';
 import type { TripPreferences } from '@/lib/types';
 
+// Map suggest wizard travelStyle → TripPreferences travelGroup
+const STYLE_TO_GROUP: Record<string, string> = {
+  solo: 'solo',
+  couple: 'partner',
+  family: 'family-kids',
+  friends: 'friends',
+};
+
+// Map suggest wizard interests → STOP_TYPES ids
+const INTEREST_TO_STOP: Record<string, string> = {
+  nature: 'nature',
+  food: 'food',
+  culture: 'museums',
+  adventure: 'adventure',
+  beaches: 'beaches',
+};
+
 function PreferencesContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const start = searchParams.get('start') || '';
   const end = searchParams.get('end') || '';
+  const travelStyle = searchParams.get('travelStyle') || '';
+  const interests = searchParams.get('interests') || '';
 
   if (!start || !end) {
     router.push('/');
     return null;
   }
+
+  const prefilledGroup = travelStyle ? STYLE_TO_GROUP[travelStyle] : undefined;
+  const prefilledStopTypes = interests
+    ? interests.split(',').filter(Boolean).map((i) => INTEREST_TO_STOP[i]).filter(Boolean)
+    : undefined;
 
   function handleComplete(prefs: TripPreferences) {
     const params = new URLSearchParams({
@@ -31,7 +55,13 @@ function PreferencesContent() {
     router.push(`/trip?${params.toString()}`);
   }
 
-  return <TripPreferencesForm onComplete={handleComplete} />;
+  return (
+    <TripPreferencesForm
+      onComplete={handleComplete}
+      prefilledGroup={prefilledGroup}
+      prefilledStopTypes={prefilledStopTypes && prefilledStopTypes.length > 0 ? prefilledStopTypes : undefined}
+    />
+  );
 }
 
 export default function PreferencesPage() {
