@@ -238,7 +238,7 @@ export default function HomePage() {
       <Navbar
         logoHeight={80}
         logoOffsetY={10}
-        logoHref="#hero"
+        logoHref="/"
         extraLinks={
           <a href="#how-it-works" className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors">
             How It Works
