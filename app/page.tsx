@@ -480,24 +480,16 @@ export default function HomePage() {
 
                     {/* Trip duration */}
                     <div>
-                      <label className="block text-sm font-semibold mb-3" style={{ color: '#1B2D45' }}>How many days is your trip?</label>
-                      <div className="flex flex-wrap gap-2">
-                        {['1–2 days', '3–4 days', '5–7 days', '1–2 weeks'].map((d) => (
-                          <button
-                            key={d}
-                            type="button"
-                            onClick={() => setTripDuration(d)}
-                            className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200"
-                            style={{
-                              backgroundColor: tripDuration === d ? '#D85A30' : '#F5F5F5',
-                              color: tripDuration === d ? '#ffffff' : '#1B2D45',
-                              border: tripDuration === d ? 'none' : '1px solid #E5E5E5',
-                            }}
-                          >
-                            {d}
-                          </button>
-                        ))}
-                      </div>
+                      <label className="block text-sm font-semibold mb-2" style={{ color: '#1B2D45' }}>How many days is your trip?</label>
+                      <input
+                        type="number"
+                        placeholder="Number of days..."
+                        value={tripDuration}
+                        onChange={(e) => setTripDuration(e.target.value)}
+                        min="1"
+                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
+                        required
+                      />
                     </div>
 
                     {/* Submit button */}
