@@ -11,12 +11,20 @@ const STYLE_LABELS: Record<string, string> = {
   friends: 'With Friends',
 };
 
-function buildBadges(travelStyle: string, interests: string, distance: string): string[] {
-  const badges: string[] = [];
-  if (distance) badges.push(distance);
-  if (travelStyle && STYLE_LABELS[travelStyle]) badges.push(STYLE_LABELS[travelStyle]);
-  const interestList = interests.split(',').filter(Boolean).slice(0, 2);
-  interestList.forEach((i) => badges.push(i.charAt(0).toUpperCase() + i.slice(1)));
+type Badge = { label: string; bg: string; color: string };
+
+function buildBadges(travelStyle: string, interests: string, distance: string): Badge[] {
+  const badges: Badge[] = [];
+  if (distance) badges.push({ label: distance, bg: 'rgba(55,138,221,0.1)', color: '#378ADD' });
+  if (travelStyle && STYLE_LABELS[travelStyle])
+    badges.push({ label: STYLE_LABELS[travelStyle], bg: 'rgba(29,158,117,0.1)', color: '#1D9E75' });
+  const interestColors = [
+    { bg: 'rgba(216,90,48,0.1)', color: '#D85A30' },
+    { bg: 'rgba(147,51,234,0.1)', color: '#9333ea' },
+  ];
+  interests.split(',').filter(Boolean).slice(0, 2).forEach((i, idx) =>
+    badges.push({ label: i.charAt(0).toUpperCase() + i.slice(1), ...interestColors[idx] })
+  );
   return badges;
 }
 
@@ -26,13 +34,13 @@ function DestinationCard({
   onPlan,
 }: {
   dest: Destination;
-  badges: string[];
+  badges: Badge[];
   onPlan: () => void;
 }) {
-  const imageUrl = `https://source.unsplash.com/800x480/?${encodeURIComponent(dest.name + ',california')}`;
+  const imageUrl = `https://picsum.photos/seed/${encodeURIComponent(dest.name)}/800/480`;
 
   return (
-    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col">
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 cursor-default">
       {/* Image */}
       <div className="relative h-48 overflow-hidden bg-gray-100">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -81,11 +89,11 @@ function DestinationCard({
         <div className="flex flex-wrap gap-1.5 mb-4">
           {badges.map((badge) => (
             <span
-              key={badge}
+              key={badge.label}
               className="px-2.5 py-1 rounded-full text-xs font-semibold"
-              style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}
+              style={{ backgroundColor: badge.bg, color: badge.color }}
             >
-              {badge}
+              {badge.label}
             </span>
           ))}
         </div>
@@ -149,7 +157,7 @@ function SuggestionsContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const badges = buildBadges(travelStyle, interests, distance);
+  const badges: Badge[] = buildBadges(travelStyle, interests, distance);
 
   const fetchDestinations = useCallback(async () => {
     setLoading(true);

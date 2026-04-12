@@ -32,7 +32,7 @@ const QUESTIONS = [
     id: 'distance',
     question: 'How far are you willing to drive?',
     type: 'single' as const,
-    options: ['~50 miles', '~100 miles', '200+ miles'],
+    options: ['~50 miles', '50–100 miles', '200+ miles'],
   },
 ];
 
