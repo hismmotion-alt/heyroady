@@ -482,7 +482,7 @@ export default function HomePage() {
                 name: 'Pacific Coast Highway',
                 from: 'Los Angeles',
                 to: 'San Francisco',
-                distance: '380 miles',
+                badges: [{ label: 'Scenic Drive', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Coastal', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }],
                 desc: 'Cliffside ocean views, sea lions, and old-growth redwoods along the most scenic drive in America.',
               },
               {
@@ -490,7 +490,7 @@ export default function HomePage() {
                 name: 'Yosemite Escape',
                 from: 'San Francisco',
                 to: 'Yosemite',
-                distance: '170 miles',
+                badges: [{ label: 'Nature', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }, { label: 'Hiking', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }],
                 desc: 'Granite peaks, valley meadows, and waterfalls that make every curve worth it.',
               },
               {
@@ -498,7 +498,7 @@ export default function HomePage() {
                 name: 'Wine Country Loop',
                 from: 'Napa',
                 to: 'Sonoma',
-                distance: '30 miles',
+                badges: [{ label: 'Food & Wine', bg: 'rgba(216,90,48,0.1)', color: '#c2540a' }, { label: 'Relaxed', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }],
                 desc: 'Rolling vineyards, farm-to-table lunches, and world-class wine at every stop.',
               },
               {
@@ -506,7 +506,7 @@ export default function HomePage() {
                 name: 'Desert & Stars',
                 from: 'Los Angeles',
                 to: 'Joshua Tree',
-                distance: '140 miles',
+                badges: [{ label: 'Desert', bg: 'rgba(234,179,8,0.12)', color: '#a16207' }, { label: 'Adventure', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }],
                 desc: 'Otherworldly rock formations, wildflower blooms, and the clearest night skies in Southern California.',
               },
               {
@@ -514,7 +514,7 @@ export default function HomePage() {
                 name: 'Big Sur Coastal',
                 from: 'Monterey',
                 to: 'San Luis Obispo',
-                distance: '115 miles',
+                badges: [{ label: 'Coastal', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Scenic Drive', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }],
                 desc: 'Rugged cliffs meet crashing surf — McWay Falls, Bixby Bridge, and elephant seals along the way.',
               },
               {
@@ -522,7 +522,7 @@ export default function HomePage() {
                 name: 'Sierra High Road',
                 from: 'Lake Tahoe',
                 to: 'Mammoth Lakes',
-                distance: '130 miles',
+                badges: [{ label: 'Mountain', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Adventure', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }],
                 desc: 'Alpine lakes, volcanic hot springs, and mountain towns tucked between dramatic peaks.',
               },
             ].map((route) => (
@@ -532,9 +532,13 @@ export default function HomePage() {
               >
                 <div className="flex items-start justify-between">
                   <span className="text-3xl">{route.emoji}</span>
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(88,204,2,0.1)', color: '#46a302' }}>
-                    {route.distance}
-                  </span>
+                  <div className="flex gap-1.5 flex-wrap justify-end">
+                    {route.badges.map((b) => (
+                      <span key={b.label} className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: b.bg, color: b.color }}>
+                        {b.label}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
