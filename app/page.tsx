@@ -76,6 +76,7 @@ export default function HomePage() {
   const [travelStyle, setTravelStyle] = useState('');
   const [interests, setInterests] = useState<string[]>([]);
   const [vibe, setVibe] = useState('');
+  const [tripDuration, setTripDuration] = useState('');
   const [mapAnimation, setMapAnimation] = useState<any>(null);
   const [stepAnimations, setStepAnimations] = useState<any[]>([null, null, null]);
   const [taglineIndex, setTaglineIndex] = useState(0);
@@ -157,9 +158,9 @@ export default function HomePage() {
 
   const handleSuggestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!suggestStart.trim() || !travelStyle || interests.length === 0 || !vibe) return;
+    if (!suggestStart.trim() || !travelStyle || interests.length === 0 || !vibe || !tripDuration) return;
     // TODO: Call API to get suggestions
-    alert(`Getting suggestions for: ${suggestStart}, Style: ${travelStyle}, Interests: ${interests.join(', ')}, Vibe: ${vibe}`);
+    alert(`Getting suggestions for: ${suggestStart}, Style: ${travelStyle}, Interests: ${interests.join(', ')}, Vibe: ${vibe}, Duration: ${tripDuration}`);
   };
 
   return (
@@ -429,7 +430,7 @@ export default function HomePage() {
 
                     {/* Interests */}
                     <div>
-                      <label className="block text-sm font-semibold mb-3" style={{ color: '#1B2D45' }}>What are you interested in? (pick 2+)</label>
+                      <label className="block text-sm font-semibold mb-3" style={{ color: '#1B2D45' }}>What are you interested in?</label>
                       <div className="flex flex-wrap gap-2">
                         {['Nature', 'Food', 'Culture', 'Adventure', 'Beaches'].map((interest) => (
                           <button
@@ -477,10 +478,32 @@ export default function HomePage() {
                       </div>
                     </div>
 
+                    {/* Trip duration */}
+                    <div>
+                      <label className="block text-sm font-semibold mb-3" style={{ color: '#1B2D45' }}>How many days is your trip?</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['1–2 days', '3–4 days', '5–7 days', '1–2 weeks'].map((d) => (
+                          <button
+                            key={d}
+                            type="button"
+                            onClick={() => setTripDuration(d)}
+                            className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200"
+                            style={{
+                              backgroundColor: tripDuration === d ? '#D85A30' : '#F5F5F5',
+                              color: tripDuration === d ? '#ffffff' : '#1B2D45',
+                              border: tripDuration === d ? 'none' : '1px solid #E5E5E5',
+                            }}
+                          >
+                            {d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Submit button */}
                     <button
                       type="submit"
-                      disabled={!suggestStart.trim() || !travelStyle || interests.length === 0 || !vibe}
+                      disabled={!suggestStart.trim() || !travelStyle || interests.length === 0 || !vibe || !tripDuration}
                       className="w-full group/btn relative px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
                         backgroundColor: '#D85A30',
