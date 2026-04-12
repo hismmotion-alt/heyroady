@@ -247,6 +247,37 @@ function TripContent() {
 
         {/* Sidebar: stops */}
         <div className="w-[400px] flex-shrink-0 overflow-y-auto bg-[#FAFAF8] border-l border-gray-100 p-4">
+          {/* Trip summary card */}
+          <div
+            className="rounded-2xl p-5 mb-5 border-l-4"
+            style={{ backgroundColor: '#FDF6EE', borderColor: '#D85A30' }}
+          >
+            <h2 className="font-extrabold text-lg leading-tight mb-1" style={{ color: '#1B2D45' }}>
+              {trip.routeName}
+            </h2>
+            <p className="text-sm mb-4" style={{ color: '#6B7280' }}>{trip.tagline}</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <span
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={{ backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' }}
+              >
+                📍 {trip.stops.length} stops
+              </span>
+              <span
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={{ backgroundColor: 'rgba(29,158,117,0.1)', color: '#1D9E75' }}
+              >
+                🛣 {trip.totalMiles} mi
+              </span>
+              <span
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}
+              >
+                ⏱ ~{formatDuration(trip.totalMiles)}
+              </span>
+            </div>
+          </div>
+
           <div className="flex items-center gap-3 mb-4 px-1">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1D9E75' }} />
             <p className="text-sm font-semibold text-gray-500">{start}</p>
