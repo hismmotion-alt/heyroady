@@ -49,6 +49,24 @@ function useFadeIn(threshold = 0.15) {
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
+type Route = {
+  emoji: string;
+  name: string;
+  to: string;
+  distance?: string;
+  desc: string;
+  badges: { label: string; bg: string; color: string }[];
+};
+
+const DEFAULT_ROUTES: Route[] = [
+  { emoji: '🌊', name: 'Pacific Coast Highway', to: 'San Francisco', desc: 'Cliffside ocean views, sea lions, and old-growth redwoods along the most scenic drive in America.', badges: [{ label: 'Scenic Drive', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Coastal', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }] },
+  { emoji: '🏔️', name: 'Yosemite Escape', to: 'Yosemite', desc: 'Granite peaks, valley meadows, and waterfalls that make every curve worth it.', badges: [{ label: 'Nature', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }, { label: 'Hiking', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }] },
+  { emoji: '🍷', name: 'Wine Country Loop', to: 'Sonoma', desc: 'Rolling vineyards, farm-to-table lunches, and world-class wine at every stop.', badges: [{ label: 'Food & Wine', bg: 'rgba(216,90,48,0.1)', color: '#c2540a' }, { label: 'Relaxed', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }] },
+  { emoji: '🌵', name: 'Desert & Stars', to: 'Joshua Tree', desc: 'Otherworldly rock formations, wildflower blooms, and the clearest night skies in Southern California.', badges: [{ label: 'Desert', bg: 'rgba(234,179,8,0.12)', color: '#a16207' }, { label: 'Adventure', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }] },
+  { emoji: '🌲', name: 'Big Sur Coastal', to: 'San Luis Obispo', desc: 'Rugged cliffs meet crashing surf — McWay Falls, Bixby Bridge, and elephant seals along the way.', badges: [{ label: 'Coastal', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Scenic Drive', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }] },
+  { emoji: '❄️', name: 'Sierra High Road', to: 'Mammoth Lakes', desc: 'Alpine lakes, volcanic hot springs, and mountain towns tucked between dramatic peaks.', badges: [{ label: 'Mountain', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Adventure', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }] },
+];
+
 async function fetchAddressSuggestions(query: string): Promise<string[]> {
   if (!query.trim() || query.length < 2) return [];
   try {
@@ -70,6 +88,9 @@ export default function HomePage() {
   const [mapAnimation, setMapAnimation] = useState<any>(null);
   const [stepAnimations, setStepAnimations] = useState<any[]>([null, null, null]);
   const [howAnimations, setHowAnimations] = useState<any[]>([null, null, null, null]);
+  const [routes, setRoutes] = useState<Route[]>(DEFAULT_ROUTES);
+  const [routesLoading, setRoutesLoading] = useState(false);
+  const [routesLocation, setRoutesLocation] = useState('');
   const [taglineIndex, setTaglineIndex] = useState(0);
   const [taglinePhase, setTaglinePhase] = useState<'typing' | 'hold' | 'erasing'>('typing');
   const taglineText = 'Your California road trip, reimagined';
@@ -131,6 +152,17 @@ export default function HomePage() {
     setSuggestSuggestions(results);
     setSuggestOpen(results.length > 0);
   }, 300), [debounce]);
+
+  const fetchRoutes = useCallback(debounce(async (location: string) => {
+    if (location.length < 5) { setRoutes(DEFAULT_ROUTES); setRoutesLocation(''); return; }
+    setRoutesLoading(true);
+    try {
+      const res = await fetch('/api/routes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: location }) });
+      const data = await res.json();
+      if (data.routes) { setRoutes(data.routes); setRoutesLocation(location); }
+    } catch { /* keep defaults */ }
+    finally { setRoutesLoading(false); }
+  }, 1000), [debounce]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -294,7 +326,7 @@ export default function HomePage() {
                         type="text"
                         placeholder="Starting from..."
                         value={start}
-                        onChange={(e) => { setStart(e.target.value); fetchStart(e.target.value); }}
+                        onChange={(e) => { setStart(e.target.value); fetchStart(e.target.value); fetchRoutes(e.target.value); }}
                         onFocus={() => { if (startSuggestions.length > 0) setStartOpen(true); }}
                         className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
@@ -401,7 +433,7 @@ export default function HomePage() {
                         type="text"
                         placeholder="Your starting address or city..."
                         value={suggestStart}
-                        onChange={(e) => { setSuggestStart(e.target.value); fetchSuggest(e.target.value); }}
+                        onChange={(e) => { setSuggestStart(e.target.value); fetchSuggest(e.target.value); fetchRoutes(e.target.value); }}
                         onFocus={() => { if (suggestSuggestions.length > 0) setSuggestOpen(true); }}
                         className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
@@ -471,73 +503,39 @@ export default function HomePage() {
       {/* Routes Worth Driving */}
       <section className="py-20 px-6" style={{ backgroundColor: '#f9fafb' }}>
         <div className="max-w-6xl mx-auto">
-          <div className="mb-12">
-            <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
-              Routes Worth Driving
-            </h2>
-            <p className="text-gray-500 text-lg">
-              California&apos;s most loved road trips — ready to plan in seconds.
-            </p>
+          <div className="mb-12 flex items-end justify-between flex-wrap gap-4">
+            <div>
+              <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
+                Routes Worth Driving
+              </h2>
+              <p className="text-gray-500 text-lg">
+                {routesLocation
+                  ? <>Personalized routes from <span className="font-semibold" style={{ color: '#1B2D45' }}>{routesLocation.split(',')[0]}</span></>
+                  : "California's most loved road trips — ready to plan in seconds."}
+              </p>
+            </div>
+            {routesLoading && (
+              <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#46a302' }}>
+                <div className="w-4 h-4 border-2 border-[#58CC02] border-t-transparent rounded-full animate-spin" />
+                Finding routes…
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              {
-                emoji: '🌊',
-                name: 'Pacific Coast Highway',
-                from: 'Los Angeles',
-                to: 'San Francisco',
-                badges: [{ label: 'Scenic Drive', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Coastal', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }],
-                desc: 'Cliffside ocean views, sea lions, and old-growth redwoods along the most scenic drive in America.',
-              },
-              {
-                emoji: '🏔️',
-                name: 'Yosemite Escape',
-                from: 'San Francisco',
-                to: 'Yosemite',
-                badges: [{ label: 'Nature', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }, { label: 'Hiking', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }],
-                desc: 'Granite peaks, valley meadows, and waterfalls that make every curve worth it.',
-              },
-              {
-                emoji: '🍷',
-                name: 'Wine Country Loop',
-                from: 'Napa',
-                to: 'Sonoma',
-                badges: [{ label: 'Food & Wine', bg: 'rgba(216,90,48,0.1)', color: '#c2540a' }, { label: 'Relaxed', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }],
-                desc: 'Rolling vineyards, farm-to-table lunches, and world-class wine at every stop.',
-              },
-              {
-                emoji: '🌵',
-                name: 'Desert & Stars',
-                from: 'Los Angeles',
-                to: 'Joshua Tree',
-                badges: [{ label: 'Desert', bg: 'rgba(234,179,8,0.12)', color: '#a16207' }, { label: 'Adventure', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }],
-                desc: 'Otherworldly rock formations, wildflower blooms, and the clearest night skies in Southern California.',
-              },
-              {
-                emoji: '🌲',
-                name: 'Big Sur Coastal',
-                from: 'Monterey',
-                to: 'San Luis Obispo',
-                badges: [{ label: 'Coastal', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Scenic Drive', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }],
-                desc: 'Rugged cliffs meet crashing surf — McWay Falls, Bixby Bridge, and elephant seals along the way.',
-              },
-              {
-                emoji: '❄️',
-                name: 'Sierra High Road',
-                from: 'Lake Tahoe',
-                to: 'Mammoth Lakes',
-                badges: [{ label: 'Mountain', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Adventure', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }],
-                desc: 'Alpine lakes, volcanic hot springs, and mountain towns tucked between dramatic peaks.',
-              },
-            ].map((route) => (
+            {routes.map((route) => (
               <div
                 key={route.name}
                 className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col gap-4 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-default"
               >
-                <div className="flex items-start justify-between">
-                  <span className="text-3xl">{route.emoji}</span>
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-3xl flex-shrink-0">{route.emoji}</span>
                   <div className="flex gap-1.5 flex-wrap justify-end">
+                    {route.distance && (
+                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(27,45,69,0.07)', color: '#1B2D45' }}>
+                        {route.distance}
+                      </span>
+                    )}
                     {route.badges.map((b) => (
                       <span key={b.label} className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: b.bg, color: b.color }}>
                         {b.label}
@@ -554,7 +552,7 @@ export default function HomePage() {
                 <p className="text-sm text-gray-500 leading-relaxed flex-1">{route.desc}</p>
 
                 <button
-                  onClick={() => router.push(`/preferences?start=${encodeURIComponent(route.from)}&end=${encodeURIComponent(route.to)}`)}
+                  onClick={() => router.push(`/preferences?end=${encodeURIComponent(route.to)}`)}
                   className="w-full py-2.5 rounded-xl text-sm font-bold transition-all duration-200 hover:opacity-90"
                   style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
                 >
