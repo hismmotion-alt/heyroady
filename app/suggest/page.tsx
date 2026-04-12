@@ -117,12 +117,8 @@ function SuggestContent() {
         className="h-16 flex items-center px-6 border-b"
         style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)' }}
       >
-        <button
-          onClick={() => router.push('/')}
-          className="font-extrabold text-xl tracking-tight"
-          style={{ color: '#58CC02' }}
-        >
-          Roady
+        <button onClick={() => router.push('/')}>
+          <img src="/roady-logo.png" alt="Roady" style={{ height: 56, width: 'auto' }} />
         </button>
       </nav>
 

@@ -1,0 +1,91 @@
+<h2>How should the questions wizard feel?</h2>
+<p class="subtitle">When user clicks "Get Suggestions", they see questions one by one. Pick the style that fits best.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#FDF6EE;padding:20px;font-family:system-ui">
+      <div style="background:white;border-radius:16px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <span style="font-size:12px;color:#6B7280;font-weight:600">Question 1 of 5</span>
+          <div style="display:flex;gap:4px">
+            <div style="width:28px;height:4px;border-radius:2px;background:#D85A30"></div>
+            <div style="width:28px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+            <div style="width:28px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+            <div style="width:28px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+            <div style="width:28px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+          </div>
+        </div>
+        <p style="font-size:18px;font-weight:700;color:#1B2D45;margin-bottom:12px">How do you like to travel?</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span style="padding:8px 16px;background:#D85A30;color:white;border-radius:8px;font-size:13px;font-weight:600">Solo</span>
+          <span style="padding:8px 16px;background:#F5F5F5;color:#1B2D45;border-radius:8px;font-size:13px;font-weight:600">Couple</span>
+          <span style="padding:8px 16px;background:#F5F5F5;color:#1B2D45;border-radius:8px;font-size:13px;font-weight:600">Family</span>
+          <span style="padding:8px 16px;background:#F5F5F5;color:#1B2D45;border-radius:8px;font-size:13px;font-weight:600">Friends</span>
+        </div>
+        <button style="margin-top:16px;width:100%;padding:12px;background:#D85A30;color:white;border:none;border-radius:10px;font-weight:700;font-size:14px">Next →</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Full-page wizard</h3>
+      <p>New page replaces homepage. One question per screen with progress bar. Clean, focused, like Typeform.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#FDF6EE;padding:20px;font-family:system-ui;position:relative">
+      <div style="opacity:0.4;background:white;border-radius:16px;padding:16px">
+        <p style="color:#1B2D45;font-size:14px;font-weight:600">Homepage content...</p>
+      </div>
+      <div style="position:absolute;top:0;right:0;bottom:0;width:60%;background:white;box-shadow:-8px 0 24px rgba(0,0,0,0.12);padding:16px;border-radius:0 16px 16px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span style="font-size:12px;color:#6B7280;font-weight:600">1 / 5</span>
+          <span style="font-size:18px;cursor:pointer;color:#6B7280">✕</span>
+        </div>
+        <p style="font-size:15px;font-weight:700;color:#1B2D45;margin-bottom:10px">How do you like to travel?</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          <span style="padding:6px 12px;background:#D85A30;color:white;border-radius:6px;font-size:12px;font-weight:600">Solo</span>
+          <span style="padding:6px 12px;background:#F5F5F5;color:#1B2D45;border-radius:6px;font-size:12px;font-weight:600">Couple</span>
+        </div>
+        <button style="width:100%;padding:10px;background:#D85A30;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px">Next →</button>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Side drawer</h3>
+      <p>Panel slides in from the right, over the homepage. User can see the page behind it.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#FDF6EE;padding:20px;font-family:system-ui">
+      <div style="position:relative">
+        <div style="opacity:0.3;background:white;border-radius:16px;padding:16px">
+          <p style="color:#1B2D45;font-size:14px;font-weight:600">Homepage content...</p>
+        </div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center">
+          <div style="background:white;border-radius:16px;padding:20px;box-shadow:0 8px 40px rgba(0,0,0,0.18);width:90%">
+            <div style="display:flex;gap:4px;margin-bottom:12px;justify-content:center">
+              <div style="width:24px;height:4px;border-radius:2px;background:#D85A30"></div>
+              <div style="width:24px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+              <div style="width:24px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+              <div style="width:24px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+              <div style="width:24px;height:4px;border-radius:2px;background:#E5E7EB"></div>
+            </div>
+            <p style="font-size:15px;font-weight:700;color:#1B2D45;margin-bottom:10px;text-align:center">How do you like to travel?</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px">
+              <span style="padding:6px 12px;background:#D85A30;color:white;border-radius:6px;font-size:12px;font-weight:600">Solo</span>
+              <span style="padding:6px 12px;background:#F5F5F5;color:#1B2D45;border-radius:6px;font-size:12px;font-weight:600">Couple</span>
+              <span style="padding:6px 12px;background:#F5F5F5;color:#1B2D45;border-radius:6px;font-size:12px;font-weight:600">Family</span>
+            </div>
+            <button style="width:100%;padding:10px;background:#D85A30;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px">Next →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Center modal</h3>
+      <p>Overlay modal pops up over the homepage, centered on screen with a dimmed backdrop.</p>
+    </div>
+  </div>
+
+</div>

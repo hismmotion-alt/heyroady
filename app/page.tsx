@@ -80,6 +80,32 @@ async function fetchAddressSuggestions(query: string): Promise<string[]> {
   }
 }
 
+function FaqItem({ question, answer }: { question: string; answer: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden cursor-pointer"
+      onClick={() => setOpen((o) => !o)}
+    >
+      <div className="flex items-center justify-between px-6 py-5 gap-4">
+        <span className="font-bold text-base" style={{ color: '#1B2D45' }}>{question}</span>
+        <svg
+          className="w-5 h-5 flex-shrink-0 transition-transform duration-300"
+          style={{ color: '#58CC02', transform: open ? 'rotate(45deg)' : 'rotate(0deg)' }}
+          fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
+        >
+          <path d="M12 5v14M5 12h14" />
+        </svg>
+      </div>
+      {open && (
+        <div className="px-6 pb-5 text-sm text-gray-500 leading-relaxed border-t border-gray-100 pt-4">
+          {answer}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [flowType, setFlowType] = useState<'plan' | 'suggest'>('suggest');
   const [start, setStart] = useState('');
@@ -212,15 +238,17 @@ export default function HomePage() {
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b" style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)' }}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <img src="/roady-logo.png" alt="Roady" style={{ height: logoHeight, width: 'auto', transform: `translateY(${logoOffsetY}px)` }} />
-          <a href="#how" className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors">
+          <a href="#hero">
+            <img src="/roady-logo.png" alt="Roady" style={{ height: logoHeight, width: 'auto', transform: `translateY(${logoOffsetY}px)` }} />
+          </a>
+          <a href="#how-it-works" className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors">
             How It Works
           </a>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="relative pt-28 pb-16 sm:pt-36 sm:pb-24" style={{ overflow: 'visible' }}>
+      <section id="hero" className="relative pt-28 pb-16 sm:pt-36 sm:pb-24" style={{ overflow: 'visible' }}>
         {/* Floating parallax shapes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
           <div
@@ -566,7 +594,7 @@ export default function HomePage() {
         </div>
       </section>
       {/* How does it work? */}
-      <section className="py-20 px-6" style={{ backgroundColor: '#ffffff' }}>
+      <section id="how-it-works" className="py-20 px-6" style={{ backgroundColor: '#ffffff' }}>
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
@@ -611,6 +639,38 @@ export default function HomePage() {
                   <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      {/* FAQ */}
+      <section className="py-20 px-6" style={{ backgroundColor: '#f9fafb' }}>
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>Frequently asked questions</h2>
+            <p className="text-gray-500 text-lg">Everything you need to know before hitting the road.</p>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {[
+              {
+                q: 'Is Roady free to use?',
+                a: 'Yes, completely free. No account, no credit card, no catch. Just enter your starting point and go.',
+              },
+              {
+                q: 'How does Roady pick the stops?',
+                a: 'Roady looks at your travel style, interests, and how far you\'re willing to drive — then suggests stops a California local would actually recommend, not just the obvious tourist spots.',
+              },
+              {
+                q: 'Can I open the trip on my phone\'s maps app?',
+                a: 'Yes. Once your trip is planned, you get a direct link to open the full route in Google Maps or Apple Maps with one tap — no copying, no pasting.',
+              },
+              {
+                q: 'Does it work for trips outside California?',
+                a: 'Right now Roady is built specifically for California road trips. We know the state well and wanted to do one thing really well before expanding.',
+              },
+            ].map((item, i) => (
+              <FaqItem key={i} question={item.q} answer={item.a} />
             ))}
           </div>
         </div>

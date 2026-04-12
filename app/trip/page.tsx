@@ -236,8 +236,8 @@ function TripContent() {
     <div className="h-screen flex flex-col" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
       {/* Top bar */}
       <header className="h-16 flex items-center justify-between px-6 border-b bg-white flex-shrink-0" style={{ borderColor: 'rgba(0,0,0,0.06)' }}>
-        <button onClick={() => router.push('/')} className="font-extrabold text-xl tracking-tight" style={{ color: '#58CC02' }}>
-          Roady
+        <button onClick={() => router.push('/')}>
+          <img src="/roady-logo.png" alt="Roady" style={{ height: 56, width: 'auto' }} />
         </button>
         <div className="text-center">
           <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{trip.routeName}</p>

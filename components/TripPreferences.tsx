@@ -175,9 +175,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
     >
       {/* Header */}
       <header className="px-6 pt-6 pb-2 flex items-center justify-between">
-        <span className="font-extrabold text-xl tracking-tight" style={{ color: '#58CC02' }}>
-          Roady
-        </span>
+        <img src="/roady-logo.png" alt="Roady" style={{ height: 56, width: 'auto' }} />
         <span className="text-sm font-semibold text-gray-400">
           {step + 1} of {totalSteps}
         </span>
