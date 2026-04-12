@@ -4,6 +4,136 @@ import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Destination } from '@/lib/types';
 
+const STYLE_LABELS: Record<string, string> = {
+  solo: 'Solo',
+  couple: 'Couple',
+  family: 'Family-friendly',
+  friends: 'With Friends',
+};
+
+function buildBadges(travelStyle: string, interests: string, distance: string): string[] {
+  const badges: string[] = [];
+  if (distance) badges.push(distance);
+  if (travelStyle && STYLE_LABELS[travelStyle]) badges.push(STYLE_LABELS[travelStyle]);
+  const interestList = interests.split(',').filter(Boolean).slice(0, 2);
+  interestList.forEach((i) => badges.push(i.charAt(0).toUpperCase() + i.slice(1)));
+  return badges;
+}
+
+function DestinationCard({
+  dest,
+  badges,
+  onPlan,
+}: {
+  dest: Destination;
+  badges: string[];
+  onPlan: () => void;
+}) {
+  const imageUrl = `https://source.unsplash.com/800x480/?${encodeURIComponent(dest.name + ',california')}`;
+
+  return (
+    <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col">
+      {/* Image */}
+      <div className="relative h-48 overflow-hidden bg-gray-100">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={imageUrl}
+          alt={dest.name}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+        <span
+          className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold"
+          style={{ backgroundColor: 'rgba(29,158,117,0.9)', color: '#ffffff' }}
+        >
+          {dest.matchScore}% match
+        </span>
+      </div>
+
+      {/* Content */}
+      <div className="p-5 flex flex-col flex-1">
+        <h2 className="text-lg font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+          {dest.name}
+        </h2>
+        <p className="text-xs text-gray-400 mt-0.5 mb-2">{dest.region}</p>
+
+        <p className="text-sm text-gray-600 leading-relaxed line-clamp-2 mb-3">
+          {dest.description}
+        </p>
+
+        {/* Why match + why drive */}
+        <div className="px-3 py-2.5 rounded-xl mb-3 space-y-1.5" style={{ backgroundColor: '#FDF6EE' }}>
+          <div className="flex gap-1.5">
+            <span className="text-sm flex-shrink-0">✨</span>
+            <p className="text-xs font-medium leading-snug" style={{ color: '#993C1D' }}>
+              {dest.whyMatch}
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            <span className="text-sm flex-shrink-0">🚗</span>
+            <p className="text-xs font-medium leading-snug" style={{ color: '#993C1D' }}>
+              {dest.whyDrive}
+            </p>
+          </div>
+        </div>
+
+        {/* Badges */}
+        <div className="flex flex-wrap gap-1.5 mb-4">
+          {badges.map((badge) => (
+            <span
+              key={badge}
+              className="px-2.5 py-1 rounded-full text-xs font-semibold"
+              style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}
+            >
+              {badge}
+            </span>
+          ))}
+        </div>
+
+        {/* Animated Plan this trip button */}
+        <button
+          onClick={onPlan}
+          className="mt-auto group/btn relative w-full px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 overflow-hidden"
+          style={{
+            backgroundColor: '#D85A30',
+            color: '#ffffff',
+            transformStyle: 'preserve-3d',
+            transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            const btn = e.currentTarget;
+            btn.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
+            btn.style.boxShadow = '0 14px 28px rgba(27,45,69,0.4), 0 6px 10px rgba(27,45,69,0.2)';
+            btn.style.backgroundColor = '#1B2D45';
+            btn.style.color = '#EF9F27';
+          }}
+          onMouseLeave={(e) => {
+            const btn = e.currentTarget;
+            btn.style.transform = '';
+            btn.style.boxShadow = '';
+            btn.style.backgroundColor = '#D85A30';
+            btn.style.color = '#ffffff';
+          }}
+          onMouseDown={(e) => {
+            e.currentTarget.style.transform = 'perspective(600px) rotateX(2deg) translateY(1px)';
+          }}
+          onMouseUp={(e) => {
+            e.currentTarget.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
+          }}
+        >
+          <span className="absolute left-0 right-0 bottom-0 h-[4px] rounded-b-xl pointer-events-none bg-[#B04420] group-hover/btn:bg-[#0f1d30] transition-colors duration-300" />
+          <span className="relative z-10 flex items-center gap-2">
+            Plan this trip
+            <svg className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SuggestionsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -18,6 +148,8 @@ function SuggestionsContent() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const badges = buildBadges(travelStyle, interests, distance);
 
   const fetchDestinations = useCallback(async () => {
     setLoading(true);
@@ -112,7 +244,7 @@ function SuggestionsContent() {
         </button>
       </nav>
 
-      <div className="max-w-3xl mx-auto px-6 pt-28 pb-16">
+      <div className="max-w-6xl mx-auto px-6 pt-28 pb-16">
         <h1 className="text-3xl font-extrabold mb-2" style={{ color: '#1B2D45' }}>
           Your perfect destinations
         </h1>
@@ -120,59 +252,25 @@ function SuggestionsContent() {
           Based on your preferences, here are 3 great matches from {start}.
         </p>
 
-        <div className="space-y-6">
+        {/* Horizontal 3-column grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {destinations.map((dest, i) => (
-            <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h2 className="text-xl font-extrabold" style={{ color: '#1B2D45' }}>
-                    {dest.name}
-                  </h2>
-                  <p className="text-sm text-gray-400">{dest.region}</p>
-                </div>
-                <span
-                  className="px-3 py-1.5 rounded-full text-xs font-bold flex-shrink-0 ml-4"
-                  style={{ backgroundColor: 'rgba(29,158,117,0.1)', color: '#1D9E75' }}
-                >
-                  {dest.matchScore}% match
-                </span>
-              </div>
-
-              <p className="text-sm text-gray-600 leading-relaxed mb-4">{dest.description}</p>
-
-              <div className="space-y-2 mb-5 px-4 py-3 rounded-xl" style={{ backgroundColor: '#FDF6EE' }}>
-                <div className="flex gap-2">
-                  <span className="text-base flex-shrink-0">✨</span>
-                  <p className="text-sm font-medium leading-snug" style={{ color: '#993C1D' }}>
-                    {dest.whyMatch}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <span className="text-base flex-shrink-0">🚗</span>
-                  <p className="text-sm font-medium leading-snug" style={{ color: '#993C1D' }}>
-                    {dest.whyDrive}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() =>
-                  router.push(
-                    `/preferences?start=${encodeURIComponent(start)}&end=${encodeURIComponent(dest.name)}`
-                  )
-                }
-                className="w-full py-3.5 rounded-xl font-bold text-sm text-white transition-all duration-200 hover:opacity-90"
-                style={{ backgroundColor: '#D85A30' }}
-              >
-                Plan this trip →
-              </button>
-            </div>
+            <DestinationCard
+              key={i}
+              dest={dest}
+              badges={badges}
+              onPlan={() =>
+                router.push(
+                  `/preferences?start=${encodeURIComponent(start)}&end=${encodeURIComponent(dest.name)}`
+                )
+              }
+            />
           ))}
         </div>
 
         <button
           onClick={fetchDestinations}
-          className="mt-8 w-full py-4 rounded-xl font-bold text-sm transition-all duration-200 hover:opacity-80"
+          className="mt-10 w-full py-4 rounded-xl font-bold text-sm transition-all duration-200 hover:opacity-80"
           style={{ backgroundColor: 'transparent', color: '#1B2D45', border: '2px solid #1B2D45' }}
         >
           Try different destinations
