@@ -567,7 +567,7 @@ export default function HomePage() {
             <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
               How does it work?
             </h2>
-            <p className="text-gray-500 text-lg">Plan your perfect California road trip in under a minute.</p>
+            <p className="text-gray-500 text-lg">Like texting a friend who knows California inside out.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -575,26 +575,26 @@ export default function HomePage() {
               {
                 icon: '📍',
                 step: '01',
-                title: 'Tell us where you\'re starting',
-                desc: 'Enter your city or address — Roady works from anywhere in California.',
+                title: 'Tell Roady where you are',
+                desc: 'Drop your city or address and Roady figures out what\'s within reach.',
               },
               {
-                icon: '🎯',
+                icon: '☕',
                 step: '02',
-                title: 'Share your travel style',
-                desc: 'Solo, couple, or family? Nature lover or foodie? Answer 5 quick questions.',
+                title: 'Roady gets to know you',
+                desc: 'A few quick questions — like asking a friend what kind of trip you\'re in the mood for.',
               },
               {
-                icon: '✨',
+                icon: '🤙',
                 step: '03',
-                title: 'Get AI-powered suggestions',
-                desc: 'Roady\'s AI picks the best destinations and stops matched to your vibe.',
+                title: 'Get a local\'s picks',
+                desc: 'Roady suggests destinations and stops the way a California local would — not the obvious tourist spots.',
               },
               {
-                icon: '🗺️',
+                icon: '🚗',
                 step: '04',
-                title: 'Hit the road',
-                desc: 'Open your full trip in Google Maps or Apple Maps with one tap and go.',
+                title: 'Just drive',
+                desc: 'Your full itinerary opens in Google Maps or Apple Maps. Nothing to print, nothing to plan.',
               },
             ].map((item) => (
               <div key={item.step} className="flex flex-col items-center text-center gap-4">
