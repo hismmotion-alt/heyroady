@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Navbar from '@/components/Navbar';
 
 const QUESTIONS = [
   {
@@ -112,15 +113,7 @@ function SuggestContent() {
       className="min-h-screen flex flex-col"
       style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
-      {/* Nav */}
-      <nav
-        className="h-16 flex items-center px-6 border-b"
-        style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)' }}
-      >
-        <button onClick={() => router.push('/')}>
-          <img src="/roady-logo.png" alt="Roady" style={{ height: 56, width: 'auto' }} />
-        </button>
-      </nav>
+      <Navbar fixed={false} />
 
       {/* Progress bar */}
       <div className="w-full px-6 pt-8">

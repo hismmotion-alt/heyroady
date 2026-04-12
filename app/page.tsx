@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import Navbar from '@/components/Navbar';
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 
@@ -202,8 +203,6 @@ export default function HomePage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const logoHeight = 80;
-  const logoOffsetY = 10;
   const tripImageHeight = 230;
   const tripGap = 19;
   const tripSectionPadTop = 117;
@@ -236,16 +235,16 @@ export default function HomePage() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b" style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)' }}>
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <a href="#hero">
-            <img src="/roady-logo.png" alt="Roady" style={{ height: logoHeight, width: 'auto', transform: `translateY(${logoOffsetY}px)` }} />
-          </a>
+      <Navbar
+        logoHeight={80}
+        logoOffsetY={10}
+        logoHref="#hero"
+        extraLinks={
           <a href="#how-it-works" className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors">
             How It Works
           </a>
-        </div>
-      </nav>
+        }
+      />
 
       {/* Hero */}
       <section id="hero" className="relative pt-28 pb-16 sm:pt-36 sm:pb-24" style={{ overflow: 'visible' }}>

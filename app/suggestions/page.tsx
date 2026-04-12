@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { Destination } from '@/lib/types';
+import Navbar from '@/components/Navbar';
 
 const STYLE_LABELS: Record<string, string> = {
   solo: 'Solo',
@@ -238,15 +239,7 @@ function SuggestionsContent() {
       className="min-h-screen"
       style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
-      {/* Nav */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center px-6 border-b backdrop-blur-md"
-        style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)' }}
-      >
-        <button onClick={() => router.push('/')}>
-          <img src="/roady-logo.png" alt="Roady" style={{ height: 56, width: 'auto' }} />
-        </button>
-      </nav>
+      <Navbar />
 
       <div className="max-w-6xl mx-auto px-6 pt-28 pb-16">
         <h1 className="text-3xl font-extrabold mb-2" style={{ color: '#1B2D45' }}>
