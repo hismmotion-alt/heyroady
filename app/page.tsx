@@ -220,6 +220,7 @@ export default function HomePage() {
               className="flex-1 text-left max-w-xl"
               style={{ transform: `translateY(${scrollY * 0.04}px)`, transition: 'transform 0.1s linear' }}
             >
+
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-8" style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
                 <span style={{ position: 'relative', minHeight: 20, whiteSpace: 'nowrap' }}>
@@ -448,6 +449,110 @@ export default function HomePage() {
                 </>
               )}
             </div>
+
+            {/* Right — Lottie animation */}
+            {mapAnimation && (
+              <div
+                className="hidden lg:flex flex-shrink-0 items-center justify-center"
+                style={{ width: 420, height: 420, transform: `translateY(${scrollY * -0.03}px)`, transition: 'transform 0.1s linear' }}
+              >
+                <Lottie animationData={mapAnimation} loop style={{ width: '100%', height: '100%' }} />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Routes Worth Driving */}
+      <section className="py-20 px-6" style={{ backgroundColor: '#f9fafb' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-12">
+            <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
+              Routes Worth Driving
+            </h2>
+            <p className="text-gray-500 text-lg">
+              California&apos;s most loved road trips — ready to plan in seconds.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              {
+                emoji: '🌊',
+                name: 'Pacific Coast Highway',
+                from: 'Los Angeles',
+                to: 'San Francisco',
+                distance: '380 miles',
+                desc: 'Cliffside ocean views, sea lions, and old-growth redwoods along the most scenic drive in America.',
+              },
+              {
+                emoji: '🏔️',
+                name: 'Yosemite Escape',
+                from: 'San Francisco',
+                to: 'Yosemite',
+                distance: '170 miles',
+                desc: 'Granite peaks, valley meadows, and waterfalls that make every curve worth it.',
+              },
+              {
+                emoji: '🍷',
+                name: 'Wine Country Loop',
+                from: 'Napa',
+                to: 'Sonoma',
+                distance: '30 miles',
+                desc: 'Rolling vineyards, farm-to-table lunches, and world-class wine at every stop.',
+              },
+              {
+                emoji: '🌵',
+                name: 'Desert & Stars',
+                from: 'Los Angeles',
+                to: 'Joshua Tree',
+                distance: '140 miles',
+                desc: 'Otherworldly rock formations, wildflower blooms, and the clearest night skies in Southern California.',
+              },
+              {
+                emoji: '🌲',
+                name: 'Big Sur Coastal',
+                from: 'Monterey',
+                to: 'San Luis Obispo',
+                distance: '115 miles',
+                desc: 'Rugged cliffs meet crashing surf — McWay Falls, Bixby Bridge, and elephant seals along the way.',
+              },
+              {
+                emoji: '❄️',
+                name: 'Sierra High Road',
+                from: 'Lake Tahoe',
+                to: 'Mammoth Lakes',
+                distance: '130 miles',
+                desc: 'Alpine lakes, volcanic hot springs, and mountain towns tucked between dramatic peaks.',
+              },
+            ].map((route) => (
+              <div
+                key={route.name}
+                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col gap-4 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-default"
+              >
+                <div className="flex items-start justify-between">
+                  <span className="text-3xl">{route.emoji}</span>
+                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(88,204,2,0.1)', color: '#46a302' }}>
+                    {route.distance}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="font-extrabold text-base mb-0.5" style={{ color: '#1B2D45' }}>{route.name}</h3>
+                  <p className="text-xs text-gray-400 font-medium">{route.from} → {route.to}</p>
+                </div>
+
+                <p className="text-sm text-gray-500 leading-relaxed flex-1">{route.desc}</p>
+
+                <button
+                  onClick={() => router.push(`/preferences?start=${encodeURIComponent(route.from)}&end=${encodeURIComponent(route.to)}`)}
+                  className="w-full py-2.5 rounded-xl text-sm font-bold transition-all duration-200 hover:opacity-90"
+                  style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
+                >
+                  Plan this route →
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </section>
