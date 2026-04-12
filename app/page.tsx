@@ -73,10 +73,6 @@ export default function HomePage() {
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [suggestStart, setSuggestStart] = useState('');
-  const [travelStyle, setTravelStyle] = useState('');
-  const [interests, setInterests] = useState<string[]>([]);
-  const [vibe, setVibe] = useState('');
-  const [tripDuration, setTripDuration] = useState('');
   const [mapAnimation, setMapAnimation] = useState<any>(null);
   const [stepAnimations, setStepAnimations] = useState<any[]>([null, null, null]);
   const [taglineIndex, setTaglineIndex] = useState(0);
@@ -154,13 +150,6 @@ export default function HomePage() {
     e.preventDefault();
     if (!start.trim() || !end.trim()) return;
     router.push(`/preferences?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
-  };
-
-  const handleSuggestSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!suggestStart.trim() || !travelStyle || interests.length === 0 || !vibe || !tripDuration) return;
-    // TODO: Call API to get suggestions
-    alert(`Getting suggestions for: ${suggestStart}, Style: ${travelStyle}, Interests: ${interests.join(', ')}, Vibe: ${vibe}, Duration: ${tripDuration}`);
   };
 
   return (
@@ -377,144 +366,43 @@ export default function HomePage() {
               {/* Get Suggestions flow */}
               {flowType === 'suggest' && (
                 <>
-                  <form onSubmit={handleSuggestSubmit} className="space-y-6">
-                    {/* Starting city */}
-                    <div className="relative" ref={startRef}>
-                      <label className="block text-sm font-semibold mb-2" style={{ color: '#1B2D45' }}>Where are you starting from?</label>
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!suggestStart.trim()) return;
+                      router.push(`/suggest?start=${encodeURIComponent(suggestStart)}`);
+                    }}
+                    className="flex flex-col sm:flex-row gap-3 mb-4"
+                  >
+                    <div className="flex-1">
                       <input
                         type="text"
-                        placeholder="Your city..."
+                        placeholder="Your starting address or city..."
                         value={suggestStart}
-                        onChange={(e) => { setSuggestStart(e.target.value); setStartFocused(true); }}
-                        onFocus={() => setStartFocused(true)}
+                        onChange={(e) => setSuggestStart(e.target.value)}
                         className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
                         required
                         autoComplete="off"
                       />
-                      {startFocused && getFilteredCities(suggestStart).length > 0 && (
-                        <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                          {getFilteredCities(suggestStart).map((city) => (
-                            <li
-                              key={city}
-                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-[#FDF6EE] hover:text-[#D85A30] cursor-pointer transition-colors"
-                              onMouseDown={() => { setSuggestStart(city); setStartFocused(false); }}
-                            >
-                              {city}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
                     </div>
-
-                    {/* Travel style */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-3" style={{ color: '#1B2D45' }}>How do you like to travel?</label>
-                      <div className="flex flex-wrap gap-2">
-                        {['Solo', 'Couple', 'Family', 'Friends'].map((style) => (
-                          <button
-                            key={style}
-                            type="button"
-                            onClick={() => setTravelStyle(style.toLowerCase())}
-                            className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200"
-                            style={{
-                              backgroundColor: travelStyle === style.toLowerCase() ? '#D85A30' : '#F5F5F5',
-                              color: travelStyle === style.toLowerCase() ? '#ffffff' : '#1B2D45',
-                              border: travelStyle === style.toLowerCase() ? 'none' : '1px solid #E5E5E5',
-                            }}
-                          >
-                            {style}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Interests */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-3" style={{ color: '#1B2D45' }}>What are you interested in?</label>
-                      <div className="flex flex-wrap gap-2">
-                        {['Nature', 'Food', 'Culture', 'Adventure', 'Beaches'].map((interest) => (
-                          <button
-                            key={interest}
-                            type="button"
-                            onClick={() => {
-                              const lower = interest.toLowerCase();
-                              setInterests(interests.includes(lower)
-                                ? interests.filter(i => i !== lower)
-                                : [...interests, lower]
-                              );
-                            }}
-                            className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200"
-                            style={{
-                              backgroundColor: interests.includes(interest.toLowerCase()) ? '#D85A30' : '#F5F5F5',
-                              color: interests.includes(interest.toLowerCase()) ? '#ffffff' : '#1B2D45',
-                              border: interests.includes(interest.toLowerCase()) ? 'none' : '1px solid #E5E5E5',
-                            }}
-                          >
-                            {interest}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Vibe */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-3" style={{ color: '#1B2D45' }}>What&apos;s your trip vibe?</label>
-                      <div className="flex flex-wrap gap-2">
-                        {['Relaxed', 'Mixed', 'Adventurous'].map((v) => (
-                          <button
-                            key={v}
-                            type="button"
-                            onClick={() => setVibe(v.toLowerCase())}
-                            className="px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200"
-                            style={{
-                              backgroundColor: vibe === v.toLowerCase() ? '#D85A30' : '#F5F5F5',
-                              color: vibe === v.toLowerCase() ? '#ffffff' : '#1B2D45',
-                              border: vibe === v.toLowerCase() ? 'none' : '1px solid #E5E5E5',
-                            }}
-                          >
-                            {v}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Trip duration */}
-                    <div>
-                      <label className="block text-sm font-semibold mb-2" style={{ color: '#1B2D45' }}>How many days is your trip?</label>
-                      <input
-                        type="number"
-                        placeholder="0"
-                        value={tripDuration}
-                        onChange={(e) => setTripDuration(e.target.value)}
-                        min="1"
-                        max="99"
-                        className="px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#D85A30]"
-                        style={{ width: '80px' }}
-                        required
-                      />
-                    </div>
-
-                    {/* Submit button */}
                     <button
                       type="submit"
-                      disabled={!suggestStart.trim() || !travelStyle || interests.length === 0 || !vibe || !tripDuration}
-                      className="w-full group/btn relative px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="group/btn relative px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden"
                       style={{
                         backgroundColor: '#D85A30',
                         color: '#ffffff',
-                        transformStyle: 'preserve-3d',
                         transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease',
                       }}
                       onMouseEnter={(e) => {
                         const btn = e.currentTarget;
                         btn.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
-                        btn.style.boxShadow = '0 14px 28px rgba(27,45,69,0.4), 0 6px 10px rgba(27,45,69,0.2), 0 0 20px rgba(239,159,39,0.25)';
+                        btn.style.boxShadow = '0 14px 28px rgba(27,45,69,0.4)';
                         btn.style.backgroundColor = '#1B2D45';
                         btn.style.color = '#EF9F27';
                       }}
                       onMouseLeave={(e) => {
                         const btn = e.currentTarget;
-                        btn.style.transform = 'perspective(600px) rotateX(0deg) translateY(0px)';
+                        btn.style.transform = '';
                         btn.style.boxShadow = '';
                         btn.style.backgroundColor = '#D85A30';
                         btn.style.color = '#ffffff';
@@ -522,12 +410,11 @@ export default function HomePage() {
                     >
                       <span className="relative z-10 flex items-center gap-2">
                         Get Suggestions
-                        <svg className="w-5 h-5 transition-all duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                       </span>
                     </button>
                   </form>
-
-                  <p className="text-sm text-gray-400 mt-4">Free to use. No sign-up required.</p>
+                  <p className="text-sm text-gray-400">Free to use. No sign-up required.</p>
                 </>
               )}
             </div>
