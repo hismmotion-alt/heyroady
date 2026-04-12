@@ -454,7 +454,7 @@ export default function HomePage() {
             {mapAnimation && (
               <div
                 className="hidden lg:flex flex-shrink-0 items-center justify-center"
-                style={{ width: 420, height: 420, transform: `translateY(${scrollY * -0.03}px)`, transition: 'transform 0.1s linear' }}
+                style={{ width: 580, height: 580, marginRight: '-60px', transform: `translateY(${scrollY * -0.03}px)`, transition: 'transform 0.1s linear' }}
               >
                 <Lottie animationData={mapAnimation} loop style={{ width: '100%', height: '100%' }} />
               </div>
