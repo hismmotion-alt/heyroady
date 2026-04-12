@@ -560,6 +560,60 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      {/* How does it work? */}
+      <section className="py-20 px-6" style={{ backgroundColor: '#ffffff' }}>
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
+              How does it work?
+            </h2>
+            <p className="text-gray-500 text-lg">Plan your perfect California road trip in under a minute.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                icon: '📍',
+                step: '01',
+                title: 'Tell us where you\'re starting',
+                desc: 'Enter your city or address — Roady works from anywhere in California.',
+              },
+              {
+                icon: '🎯',
+                step: '02',
+                title: 'Share your travel style',
+                desc: 'Solo, couple, or family? Nature lover or foodie? Answer 5 quick questions.',
+              },
+              {
+                icon: '✨',
+                step: '03',
+                title: 'Get AI-powered suggestions',
+                desc: 'Roady\'s AI picks the best destinations and stops matched to your vibe.',
+              },
+              {
+                icon: '🗺️',
+                step: '04',
+                title: 'Hit the road',
+                desc: 'Open your full trip in Google Maps or Apple Maps with one tap and go.',
+              },
+            ].map((item) => (
+              <div key={item.step} className="flex flex-col items-center text-center gap-4">
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                  style={{ backgroundColor: 'rgba(88,204,2,0.1)' }}
+                >
+                  {item.icon}
+                </div>
+                <div>
+                  <p className="text-xs font-bold mb-1" style={{ color: '#58CC02' }}>STEP {item.step}</p>
+                  <h3 className="font-extrabold text-base mb-2" style={{ color: '#1B2D45' }}>{item.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
