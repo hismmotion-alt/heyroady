@@ -69,7 +69,7 @@ const CA_CITIES = [
 ];
 
 export default function HomePage() {
-  const [flowType, setFlowType] = useState<'plan' | 'suggest'>('plan');
+  const [flowType, setFlowType] = useState<'plan' | 'suggest'>('suggest');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
   const [suggestStart, setSuggestStart] = useState('');
@@ -249,18 +249,6 @@ export default function HomePage() {
               <div className="flex gap-3 mb-8">
                 <button
                   type="button"
-                  onClick={() => setFlowType('plan')}
-                  className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
-                  style={{
-                    backgroundColor: flowType === 'plan' ? '#D85A30' : 'transparent',
-                    color: flowType === 'plan' ? '#ffffff' : '#1B2D45',
-                    border: flowType === 'plan' ? 'none' : '2px solid #D85A30',
-                  }}
-                >
-                  Plan a Trip
-                </button>
-                <button
-                  type="button"
                   onClick={() => setFlowType('suggest')}
                   className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
                   style={{
@@ -270,6 +258,18 @@ export default function HomePage() {
                   }}
                 >
                   Get Suggestions
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFlowType('plan')}
+                  className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
+                  style={{
+                    backgroundColor: flowType === 'plan' ? '#D85A30' : 'transparent',
+                    color: flowType === 'plan' ? '#ffffff' : '#1B2D45',
+                    border: flowType === 'plan' ? 'none' : '2px solid #D85A30',
+                  }}
+                >
+                  Plan a Trip
                 </button>
               </div>
 
