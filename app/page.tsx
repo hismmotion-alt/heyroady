@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -47,26 +47,20 @@ function useFadeIn(threshold = 0.15) {
   return { ref, visible };
 }
 
-const CA_CITIES = [
-  'Anaheim', 'Bakersfield', 'Berkeley', 'Beverly Hills', 'Big Sur',
-  'Carmel-by-the-Sea', 'Catalina Island', 'Coronado', 'Costa Mesa',
-  'Dana Point', 'Death Valley', 'El Centro',
-  'Eureka', 'Fresno', 'Half Moon Bay', 'Huntington Beach',
-  'Irvine', 'Joshua Tree', 'La Jolla', 'Laguna Beach',
-  'Lake Tahoe', 'Long Beach', 'Los Angeles', 'Malibu',
-  'Mammoth Lakes', 'Mendocino', 'Modesto', 'Monterey',
-  'Napa', 'Newport Beach', 'Oakland', 'Oceanside',
-  'Ojai', 'Ontario', 'Orange County', 'Oxnard',
-  'Pacific Grove', 'Palm Springs', 'Palo Alto', 'Pasadena',
-  'Paso Robles', 'Pismo Beach', 'Redding', 'Redondo Beach',
-  'Redwood City', 'Riverside', 'Sacramento', 'San Bernardino',
-  'San Clemente', 'San Diego', 'San Francisco', 'San Jose',
-  'San Luis Obispo', 'San Simeon', 'Santa Barbara', 'Santa Cruz',
-  'Santa Monica', 'Santa Rosa', 'Sausalito', 'Sequoia National Park',
-  'Solvang', 'Sonoma', 'South Lake Tahoe', 'Stockton',
-  'Temecula', 'Thousand Oaks', 'Ventura', 'Visalia',
-  'Yosemite', 'Yountville',
-];
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+
+async function fetchAddressSuggestions(query: string): Promise<string[]> {
+  if (!query.trim() || query.length < 2) return [];
+  try {
+    const res = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&country=us&types=address,place,neighborhood,locality,poi&limit=5`
+    );
+    const data = await res.json();
+    return (data.features ?? []).map((f: { place_name: string }) => f.place_name);
+  } catch {
+    return [];
+  }
+}
 
 export default function HomePage() {
   const [flowType, setFlowType] = useState<'plan' | 'suggest'>('suggest');
@@ -100,26 +94,48 @@ export default function HomePage() {
     }
   }, [taglineIndex, taglinePhase, taglineText.length]);
 
-  const [startFocused, setStartFocused] = useState(false);
-  const [endFocused, setEndFocused] = useState(false);
+  const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
+  const [endSuggestions, setEndSuggestions] = useState<string[]>([]);
+  const [suggestSuggestions, setSuggestSuggestions] = useState<string[]>([]);
+  const [startOpen, setStartOpen] = useState(false);
+  const [endOpen, setEndOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
   const startRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const suggestRef = useRef<HTMLDivElement>(null);
   const scrollY = useParallax();
   const tripsFade = useFadeIn(0.1);
   const howFade = useFadeIn(0.15);
   const footerFade = useFadeIn(0.3);
 
-  const getFilteredCities = (query: string) => {
-    if (!query.trim()) return [];
-    return CA_CITIES.filter((city) =>
-      city.toLowerCase().startsWith(query.toLowerCase())
-    ).slice(0, 5);
-  };
+  const debounce = useCallback((fn: (q: string) => void, delay: number) => {
+    let timer: ReturnType<typeof setTimeout>;
+    return (q: string) => { clearTimeout(timer); timer = setTimeout(() => fn(q), delay); };
+  }, []);
+
+  const fetchStart = useCallback(debounce(async (q: string) => {
+    const results = await fetchAddressSuggestions(q);
+    setStartSuggestions(results);
+    setStartOpen(results.length > 0);
+  }, 300), [debounce]);
+
+  const fetchEnd = useCallback(debounce(async (q: string) => {
+    const results = await fetchAddressSuggestions(q);
+    setEndSuggestions(results);
+    setEndOpen(results.length > 0);
+  }, 300), [debounce]);
+
+  const fetchSuggest = useCallback(debounce(async (q: string) => {
+    const results = await fetchAddressSuggestions(q);
+    setSuggestSuggestions(results);
+    setSuggestOpen(results.length > 0);
+  }, 300), [debounce]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (startRef.current && !startRef.current.contains(e.target as Node)) setStartFocused(false);
-      if (endRef.current && !endRef.current.contains(e.target as Node)) setEndFocused(false);
+      if (startRef.current && !startRef.current.contains(e.target as Node)) setStartOpen(false);
+      if (endRef.current && !endRef.current.contains(e.target as Node)) setEndOpen(false);
+      if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) setSuggestOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -272,21 +288,21 @@ export default function HomePage() {
                         type="text"
                         placeholder="Starting from..."
                         value={start}
-                        onChange={(e) => { setStart(e.target.value); setStartFocused(true); }}
-                        onFocus={() => setStartFocused(true)}
+                        onChange={(e) => { setStart(e.target.value); fetchStart(e.target.value); }}
+                        onFocus={() => { if (startSuggestions.length > 0) setStartOpen(true); }}
                         className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
                         autoComplete="off"
                       />
-                      {startFocused && getFilteredCities(start).length > 0 && (
+                      {startOpen && startSuggestions.length > 0 && (
                         <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                          {getFilteredCities(start).map((city) => (
+                          {startSuggestions.map((s) => (
                             <li
-                              key={city}
+                              key={s}
                               className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
-                              onMouseDown={() => { setStart(city); setStartFocused(false); }}
+                              onMouseDown={() => { setStart(s); setStartOpen(false); }}
                             >
-                              {city}
+                              {s}
                             </li>
                           ))}
                         </ul>
@@ -297,21 +313,21 @@ export default function HomePage() {
                         type="text"
                         placeholder="Heading to..."
                         value={end}
-                        onChange={(e) => { setEnd(e.target.value); setEndFocused(true); }}
-                        onFocus={() => setEndFocused(true)}
+                        onChange={(e) => { setEnd(e.target.value); fetchEnd(e.target.value); }}
+                        onFocus={() => { if (endSuggestions.length > 0) setEndOpen(true); }}
                         className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
                         autoComplete="off"
                       />
-                      {endFocused && getFilteredCities(end).length > 0 && (
+                      {endOpen && endSuggestions.length > 0 && (
                         <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                          {getFilteredCities(end).map((city) => (
+                          {endSuggestions.map((s) => (
                             <li
-                              key={city}
+                              key={s}
                               className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
-                              onMouseDown={() => { setEnd(city); setEndFocused(false); }}
+                              onMouseDown={() => { setEnd(s); setEndOpen(false); }}
                             >
-                              {city}
+                              {s}
                             </li>
                           ))}
                         </ul>
@@ -374,16 +390,30 @@ export default function HomePage() {
                     }}
                     className="flex flex-col sm:flex-row gap-3 mb-4"
                   >
-                    <div className="flex-1">
+                    <div className="flex-1 relative" ref={suggestRef}>
                       <input
                         type="text"
                         placeholder="Your starting address or city..."
                         value={suggestStart}
-                        onChange={(e) => setSuggestStart(e.target.value)}
+                        onChange={(e) => { setSuggestStart(e.target.value); fetchSuggest(e.target.value); }}
+                        onFocus={() => { if (suggestSuggestions.length > 0) setSuggestOpen(true); }}
                         className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
                         autoComplete="off"
                       />
+                      {suggestOpen && suggestSuggestions.length > 0 && (
+                        <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
+                          {suggestSuggestions.map((s) => (
+                            <li
+                              key={s}
+                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
+                              onMouseDown={() => { setSuggestStart(s); setSuggestOpen(false); }}
+                            >
+                              {s}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     <button
                       type="submit"
