@@ -8,7 +8,8 @@ interface RouteSummaryProps {
 }
 
 export default function RouteSummary({ start, end, stops }: RouteSummaryProps) {
-  const allPoints = [start, ...stops.map((s) => s.name), end];
+  const safeStops = stops ?? [];
+  const allPoints = [start, ...safeStops.map((s) => s.name), end];
   const googleUrl =
     'https://www.google.com/maps/dir/' + allPoints.map(encodeURIComponent).join('/');
 
@@ -25,7 +26,7 @@ export default function RouteSummary({ start, end, stops }: RouteSummaryProps) {
       </div>
 
       <div className="flex flex-col gap-0 mb-8">
-        {stops.map((stop, i) => (
+        {safeStops.map((stop, i) => (
           <div key={stop.name} className="flex items-start gap-4 py-4 border-b border-gray-100 last:border-0">
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"

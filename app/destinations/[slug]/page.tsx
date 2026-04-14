@@ -102,7 +102,7 @@ export default async function RouteDetailPage({ params }: PageProps) {
 
         {/* Tags */}
         <div className="flex gap-2 flex-wrap mb-8">
-          {frontmatter.tags.map((tag) => (
+          {(frontmatter.tags ?? []).map((tag) => (
             <span
               key={tag}
               className="text-xs font-semibold px-3 py-1 rounded-full"

@@ -6,6 +6,7 @@ interface HiddenGemsProps {
 }
 
 export default function HiddenGems({ gems }: HiddenGemsProps) {
+  if (!gems || gems.length === 0) return null;
   return (
     <div className="mb-10">
       <h2 className="text-xl font-extrabold mb-4" style={{ color: '#1B2D45' }}>Hidden Gems Along the Way</h2>
