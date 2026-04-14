@@ -1,4 +1,5 @@
 // components/route/RouteCard.tsx
+import Link from 'next/link';
 import type { RouteFrontmatter } from '@/lib/route-types';
 
 interface RouteCardProps {
@@ -7,10 +8,9 @@ interface RouteCardProps {
 
 export default function RouteCard({ route }: RouteCardProps) {
   return (
-    <a
+    <Link
       href={`/destinations/${route.slug}`}
-      className="block rounded-2xl overflow-hidden relative group"
-      style={{ height: '220px' }}
+      className="block rounded-2xl overflow-hidden relative group h-[220px]"
     >
       <img
         src={route.heroImage}
@@ -24,17 +24,17 @@ export default function RouteCard({ route }: RouteCardProps) {
         }}
       />
       <div className="absolute bottom-0 left-0 right-0 p-5">
-        <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: 'rgba(255,255,255,0.65)' }}>
+        <p className="text-xs font-semibold uppercase tracking-widest mb-1 text-white/65">
           {route.region}
         </p>
         <h3 className="text-lg font-extrabold text-white mb-1 leading-tight">{route.title}</h3>
         <div className="flex items-center justify-between">
-          <p className="text-xs" style={{ color: 'rgba(255,255,255,0.6)' }}>
+          <p className="text-xs text-white/60">
             {route.miles} miles · {route.stopsCount} stops
           </p>
           <span className="text-xs font-bold" style={{ color: '#58CC02' }}>Read →</span>
         </div>
       </div>
-    </a>
+    </Link>
   );
 }

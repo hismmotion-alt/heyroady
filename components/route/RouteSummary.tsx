@@ -43,6 +43,7 @@ export default function RouteSummary({ start, end, stops }: RouteSummaryProps) {
       </div>
 
       <div className="flex gap-3">
+        {/* TODO: update href to pre-filled trip planner when that feature lands */}
         <a
           href="/"
           className="flex-1 py-3 rounded-xl font-bold text-sm text-center transition-all hover:opacity-90"
