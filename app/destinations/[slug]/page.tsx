@@ -1,6 +1,7 @@
 // app/destinations/[slug]/page.tsx
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { compileMDX } from 'next-mdx-remote/rsc';
 import matter from 'gray-matter';
 import Navbar from '@/components/Navbar';
@@ -41,7 +42,7 @@ export default async function RouteDetailPage({ params }: PageProps) {
   try {
     raw = getRouteRaw(params.slug);
   } catch {
-    notFound();
+    return notFound();
   }
 
   const { data } = matter(raw);
@@ -92,12 +93,12 @@ export default async function RouteDetailPage({ params }: PageProps) {
       {/* Content */}
       <div className="max-w-3xl mx-auto px-6 pt-8 pb-16">
         {/* Back link */}
-        <a
+        <Link
           href="/destinations"
           className="text-sm text-gray-400 hover:text-gray-600 mb-8 flex items-center gap-1 transition-colors"
         >
           ← All road trips
-        </a>
+        </Link>
 
         {/* Tags */}
         <div className="flex gap-2 flex-wrap mb-8">

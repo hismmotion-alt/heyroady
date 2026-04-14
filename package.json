@@ -11,6 +11,7 @@
     "@anthropic-ai/sdk": "^0.39.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.0",
+    "@tailwindcss/typography": "^0.5.19",
     "gray-matter": "^4.0.3",
     "lottie-react": "^2.4.1",
     "mapbox-gl": "^3.9.0",
