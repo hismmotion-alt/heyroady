@@ -1,3 +1,5 @@
+// lib/route-types.ts
+
 export interface RouteFrontmatter {
   slug: string;
   title: string;
