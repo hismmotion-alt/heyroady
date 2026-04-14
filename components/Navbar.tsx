@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 
@@ -60,12 +61,12 @@ export default function Navbar({
 
         <div className="flex items-center gap-4">
           {extraLinks}
-          <a
+          <Link
             href="/destinations"
             className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors"
           >
             Destinations
-          </a>
+          </Link>
           {user ? (
             <>
               <a
