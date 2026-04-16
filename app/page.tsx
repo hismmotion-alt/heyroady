@@ -678,6 +678,17 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="py-8 px-6 border-t border-gray-100" style={{ backgroundColor: '#ffffff' }}>
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-gray-400">© {new Date().getFullYear()} Roady. All rights reserved.</p>
+          <div className="flex items-center gap-6">
+            <a href="/privacy" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">Privacy Policy</a>
+            <a href="/terms" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">Terms of Service</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
