@@ -12,7 +12,7 @@ export default function RouteSummary({ start, end, stops }: RouteSummaryProps) {
   const allPoints = [start, ...safeStops.map((s) => s.name), end];
   const googleUrl =
     'https://www.google.com/maps/dir/' + allPoints.map(encodeURIComponent).join('/');
-  const customizeUrl = `/customize?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&stops=${safeStops.map((s) => encodeURIComponent(s.name)).join('|')}`;
+  const customizeUrl = `/?end=${encodeURIComponent(end)}`;
 
   return (
     <div className="mt-12">

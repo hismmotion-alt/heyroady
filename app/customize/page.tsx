@@ -19,22 +19,22 @@ async function fetchAddressSuggestions(query: string): Promise<string[]> {
   }
 }
 
-function AddressInput({
-  label,
+function AutocompleteInput({
   placeholder,
   value,
   onChange,
+  className,
 }: {
-  label: string;
   placeholder: string;
   value: string;
   onChange: (val: string) => void;
+  className?: string;
 }) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const fetchSuggestions = useCallback((q: string) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(async () => {
@@ -53,17 +53,14 @@ function AddressInput({
   }, []);
 
   return (
-    <div ref={ref} className="relative">
-      <label className="block text-xs font-extrabold uppercase tracking-widest mb-2" style={{ color: '#9ca3af' }}>
-        {label}
-      </label>
+    <div ref={ref} className="relative flex-1">
       <input
         type="text"
         placeholder={placeholder}
         value={value}
         onChange={(e) => { onChange(e.target.value); fetchSuggestions(e.target.value); }}
         onFocus={() => { if (suggestions.length > 0) setOpen(true); }}
-        className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02] text-sm"
+        className={className ?? 'w-full px-4 py-3 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02] text-sm'}
         autoComplete="off"
       />
       {open && suggestions.length > 0 && (
@@ -105,10 +102,18 @@ function CustomizeContent() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!start.trim() || !end.trim()) return;
-    const waypoints = stops.filter((s) => s.trim()).join(',');
-    const params = new URLSearchParams({ start, end });
+    const filledStops = stops.filter((s) => s.trim());
+    const waypoints = filledStops.join(',');
+    const params = new URLSearchParams({
+      start,
+      end,
+      travelGroup: 'solo',
+      stopTypes: 'nature,food,scenic,adventure',
+      numberOfStops: String(filledStops.length || 4),
+      stopDuration: 'mix',
+    });
     if (waypoints) params.set('waypoints', waypoints);
-    router.push(`/preferences?${params.toString()}`);
+    router.push(`/trip?${params.toString()}`);
   };
 
   return (
@@ -124,40 +129,48 @@ function CustomizeContent() {
         </button>
 
         <h1 className="text-3xl font-extrabold mb-1" style={{ color: '#1B2D45' }}>Customize Your Trip</h1>
-        <p className="text-gray-500 mb-10">Edit your starting point, stops, and destination — then we'll build the perfect itinerary.</p>
+        <p className="text-gray-500 mb-10">Edit your starting point, stops, and destination — then we'll build your itinerary.</p>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          {/* Start */}
-          <div className="rounded-2xl p-5 border border-gray-100 bg-white shadow-sm">
-            <AddressInput
-              label="Starting from"
-              placeholder="e.g. Los Angeles, CA"
-              value={start}
-              onChange={setStart}
-            />
-          </div>
+        <form onSubmit={handleSubmit}>
+          {/* Timeline */}
+          <div className="relative">
+            {/* Start */}
+            <div className="flex items-start gap-4 mb-0">
+              <div className="flex flex-col items-center flex-shrink-0" style={{ width: 20 }}>
+                <div className="w-4 h-4 rounded-full ring-2 ring-offset-2 ring-[#46a302] mt-3.5" style={{ backgroundColor: '#46a302' }} />
+                <div className="w-px flex-1 mt-1" style={{ backgroundColor: '#e5e7eb', minHeight: 28 }} />
+              </div>
+              <div className="flex-1 pb-3">
+                <label className="block text-xs font-extrabold uppercase tracking-widest mb-2" style={{ color: '#9ca3af' }}>
+                  Starting from
+                </label>
+                <AutocompleteInput
+                  placeholder="e.g. Los Angeles, CA"
+                  value={start}
+                  onChange={setStart}
+                />
+              </div>
+            </div>
 
-          {/* Stops */}
-          <div className="rounded-2xl p-5 border border-gray-100 bg-white shadow-sm">
-            <p className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: '#9ca3af' }}>
-              Stops along the way
-            </p>
-            <div className="flex flex-col gap-3">
-              {stops.map((stop, i) => (
-                <div key={i} className="flex items-center gap-2">
+            {/* Stops */}
+            {stops.map((stop, i) => (
+              <div key={i} className="flex items-start gap-4">
+                <div className="flex flex-col items-center flex-shrink-0" style={{ width: 20 }}>
+                  <div className="w-px" style={{ backgroundColor: '#e5e7eb', height: 12 }} />
                   <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs flex-shrink-0"
-                    style={{ backgroundColor: '#D85A30' }}
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                    style={{ backgroundColor: '#D85A30', fontSize: '10px' }}
                   >
                     {i + 1}
                   </div>
-                  <input
-                    type="text"
+                  <div className="w-px flex-1 mt-1" style={{ backgroundColor: '#e5e7eb', minHeight: 28 }} />
+                </div>
+                <div className="flex-1 pb-3 flex items-center gap-2">
+                  <AutocompleteInput
                     placeholder={`Stop ${i + 1} — e.g. Santa Barbara`}
                     value={stop}
-                    onChange={(e) => updateStop(i, e.target.value)}
-                    className="flex-1 px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02] text-sm"
-                    autoComplete="off"
+                    onChange={(val) => updateStop(i, val)}
+                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02] text-sm"
                   />
                   {stops.length > 1 && (
                     <button
@@ -169,39 +182,59 @@ function CustomizeContent() {
                     </button>
                   )}
                 </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={addStop}
-              className="mt-4 flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80"
-              style={{ color: '#58CC02' }}
-            >
-              <span className="w-6 h-6 rounded-full border-2 flex items-center justify-center text-base font-bold leading-none" style={{ borderColor: '#58CC02', color: '#58CC02' }}>+</span>
-              Add a stop
-            </button>
-          </div>
+              </div>
+            ))}
 
-          {/* End */}
-          <div className="rounded-2xl p-5 border border-gray-100 bg-white shadow-sm">
-            <AddressInput
-              label="Heading to"
-              placeholder="e.g. Big Sur, CA"
-              value={end}
-              onChange={setEnd}
-            />
+            {/* Add stop */}
+            <div className="flex items-start gap-4 mb-0">
+              <div className="flex flex-col items-center flex-shrink-0" style={{ width: 20 }}>
+                <div className="w-px" style={{ backgroundColor: '#e5e7eb', height: 12 }} />
+                <div className="w-px flex-1 mt-1" style={{ backgroundColor: '#e5e7eb', minHeight: 28 }} />
+              </div>
+              <div className="pb-3">
+                <button
+                  type="button"
+                  onClick={addStop}
+                  className="flex items-center gap-2 text-sm font-semibold transition-colors hover:opacity-80"
+                  style={{ color: '#58CC02' }}
+                >
+                  <span className="w-5 h-5 rounded-full border-2 flex items-center justify-center text-xs font-bold leading-none" style={{ borderColor: '#58CC02', color: '#58CC02' }}>+</span>
+                  Add a stop
+                </button>
+              </div>
+            </div>
+
+            {/* End */}
+            <div className="flex items-start gap-4">
+              <div className="flex flex-col items-center flex-shrink-0" style={{ width: 20 }}>
+                <div className="w-px" style={{ backgroundColor: '#e5e7eb', height: 12 }} />
+                <div className="w-4 h-4 rounded-full ring-2 ring-offset-2 ring-[#1B2D45] mt-0" style={{ backgroundColor: '#1B2D45' }} />
+              </div>
+              <div className="flex-1 pb-3">
+                <label className="block text-xs font-extrabold uppercase tracking-widest mb-2" style={{ color: '#9ca3af' }}>
+                  Heading to
+                </label>
+                <AutocompleteInput
+                  placeholder="e.g. Big Sur, CA"
+                  value={end}
+                  onChange={setEnd}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={!start.trim() || !end.trim()}
-            className="w-full py-4 rounded-xl font-bold text-base transition-all duration-200 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
-          >
-            Build my trip →
-          </button>
-          <p className="text-xs text-gray-400 text-center">You'll customize travel style and preferences on the next screen.</p>
+          <div className="mt-8 flex flex-col gap-3">
+            <button
+              type="submit"
+              disabled={!start.trim() || !end.trim()}
+              className="w-full py-4 rounded-xl font-bold text-base transition-all duration-200 hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
+            >
+              Build my trip →
+            </button>
+            <p className="text-xs text-gray-400 text-center">We'll build your itinerary around these stops.</p>
+          </div>
         </form>
       </div>
     </div>

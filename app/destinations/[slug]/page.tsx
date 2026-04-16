@@ -185,7 +185,7 @@ export default async function RouteDetailPage({ params }: PageProps) {
         const titleStart = frontmatter.title.split('→')[0]?.trim() ?? '';
         const titleEnd = frontmatter.title.split('→')[1]?.trim() ?? frontmatter.title;
         const stopNames = frontmatter.stopNames ?? [];
-        const customizeUrl = `/customize?start=${encodeURIComponent(titleStart)}&end=${encodeURIComponent(titleEnd)}&stops=${stopNames.map(encodeURIComponent).join('|')}`;
+        const customizeUrl = `/?end=${encodeURIComponent(titleEnd)}`;
         const allPoints = [titleStart, ...stopNames, titleEnd];
         return (
           <div

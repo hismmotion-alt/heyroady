@@ -8,12 +8,39 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import type { TripData } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  closestCenter,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Mapbox must be lazy-loaded (no SSR)
 const RouteMap = dynamic(() => import('@/components/RouteMap'), {
   ssr: false,
   loading: () => <div className="w-full h-full bg-gray-100 animate-pulse rounded-xl" />,
 });
+
+function SortableStopCard(props: React.ComponentProps<typeof StopCard> & { id: string }) {
+  const { id, ...rest } = props;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <StopCard {...rest} dragHandleProps={{ ...attributes, ...listeners }} isDragging={isDragging} />
+    </div>
+  );
+}
 
 function TripContent() {
   const searchParams = useSearchParams();
@@ -38,6 +65,22 @@ function TripContent() {
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [replacingStop, setReplacingStop] = useState<number | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !trip) return;
+    const oldIndex = trip.stops.findIndex((_, i) => `stop-${i}` === active.id);
+    const newIndex = trip.stops.findIndex((_, i) => `stop-${i}` === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    setTrip((prev) => prev ? { ...prev, stops: arrayMove(prev.stops, oldIndex, newIndex) } : prev);
+    setActiveStop(newIndex);
+  };
 
   // Hardcoded fallback coordinates for problematic California locations
   const LOCATION_OVERRIDES: Record<string, [number, number]> = {
@@ -257,16 +300,50 @@ function TripContent() {
 
   const buildMapsUrls = () => {
     const stops = trip!.stops;
-    const allPoints = [start, ...stops.map((s) => s.city), end];
-    const googleUrl =
-      'https://www.google.com/maps/dir/' +
-      allPoints.map((p) => encodeURIComponent(p)).join('/');
+    // Use "name, city" + coords as a label for Google, and lat,lng for Apple
+    const googlePoints = [
+      encodeURIComponent(start),
+      ...stops.map((s) => `${s.lat},${s.lng}`),
+      encodeURIComponent(end),
+    ];
+    const googleUrl = 'https://www.google.com/maps/dir/' + googlePoints.join('/');
+
     const appleDaddr = [
-      ...stops.map((s) => encodeURIComponent(s.city)),
+      ...stops.map((s) => `${s.lat},${s.lng}`),
       encodeURIComponent(end),
     ].join('+to:');
     const appleUrl = `https://maps.apple.com/?saddr=${encodeURIComponent(start)}&daddr=${appleDaddr}`;
     return { googleUrl, appleUrl };
+  };
+
+  const deleteStop = (i: number) => {
+    setTrip((prev) => prev ? { ...prev, stops: prev.stops.filter((_, idx) => idx !== i) } : prev);
+    if (activeStop >= i && activeStop > 0) setActiveStop(activeStop - 1);
+  };
+
+const suggestNewStop = async (i: number, preferredCategory?: string) => {
+    if (!trip || replacingStop !== null) return;
+    setReplacingStop(i);
+    try {
+      const res = await fetch('/api/suggest-stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start, end, currentStops: trip.stops, position: i, preferredCategory }),
+      });
+      if (!res.ok) throw new Error('Failed to get suggestion');
+      const newStop = await res.json();
+      setTrip((prev) => {
+        if (!prev) return prev;
+        const stops = [...prev.stops];
+        stops[i] = newStop;
+        return { ...prev, stops };
+      });
+      setActiveStop(i);
+    } catch {
+      // silent fail
+    } finally {
+      setReplacingStop(null);
+    }
   };
 
   const handleSaveTrip = async () => {
@@ -429,27 +506,36 @@ function TripContent() {
             </span>
           </div>
 
-          {trip.stops.map((stop, i) => {
-            const prevLat = i === 0 ? startCoords[1] : trip.stops[i - 1].lat;
-            const prevLng = i === 0 ? startCoords[0] : trip.stops[i - 1].lng;
-            return (
-              <div key={i}>
-                <div className="flex items-center gap-2 px-2 mb-2">
-                  <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
-                  <span className="text-xs font-medium text-gray-400 flex-shrink-0">
-                    🚗 {driveLabel(prevLat, prevLng, stop.lat, stop.lng)}
-                  </span>
-                  <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
-                </div>
-                <StopCard
-                  stop={stop}
-                  number={i + 1}
-                  isActive={activeStop === i}
-                  onClick={() => setActiveStop(i)}
-                />
-              </div>
-            );
-          })}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={trip.stops.map((_, i) => `stop-${i}`)} strategy={verticalListSortingStrategy}>
+              {trip.stops.map((stop, i) => {
+                const prevLat = i === 0 ? startCoords[1] : trip.stops[i - 1].lat;
+                const prevLng = i === 0 ? startCoords[0] : trip.stops[i - 1].lng;
+                return (
+                  <div key={`stop-${i}`}>
+                    <div className="flex items-center gap-2 px-2 mb-2">
+                      <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
+                      <span className="text-xs font-medium text-gray-400 flex-shrink-0">
+                        🚗 {driveLabel(prevLat, prevLng, stop.lat, stop.lng)}
+                      </span>
+                      <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
+                    </div>
+                    <SortableStopCard
+                      id={`stop-${i}`}
+                      stop={stop}
+                      number={i + 1}
+                      isActive={activeStop === i}
+                      onClick={() => setActiveStop(i)}
+                      onDelete={() => deleteStop(i)}
+                      onSuggestNew={() => suggestNewStop(i)}
+                      onSuggestByCategory={(cat) => suggestNewStop(i, cat)}
+                      isSuggesting={replacingStop === i}
+                    />
+                  </div>
+                );
+              })}
+            </SortableContext>
+          </DndContext>
 
           <div className="flex items-center gap-2 px-2 mt-1 mb-3">
             <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />

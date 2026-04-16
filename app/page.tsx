@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/Navbar';
 
@@ -107,10 +107,13 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
-export default function HomePage() {
-  const [flowType, setFlowType] = useState<'plan' | 'suggest'>('suggest');
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const [flowType, setFlowType] = useState<'plan' | 'suggest'>(() =>
+    searchParams.get('end') ? 'plan' : 'suggest'
+  );
   const [start, setStart] = useState('');
-  const [end, setEnd] = useState('');
+  const [end, setEnd] = useState(() => searchParams.get('end') || '');
   const [suggestStart, setSuggestStart] = useState('');
   const [mapAnimation, setMapAnimation] = useState<any>(null);
   const [stepAnimations, setStepAnimations] = useState<any[]>([null, null, null]);
@@ -360,6 +363,7 @@ export default function HomePage() {
                         className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
                         required
                         autoComplete="off"
+                        autoFocus={!!searchParams.get('end')}
                       />
                       {startOpen && startSuggestions.length > 0 && (
                         <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
@@ -690,5 +694,19 @@ export default function HomePage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+import { Suspense } from 'react';
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
+        <div className="animate-spin w-8 h-8 border-4 border-gray-200 rounded-full" style={{ borderTopColor: '#58CC02' }} />
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
   );
 }

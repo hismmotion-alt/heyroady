@@ -105,7 +105,7 @@ export default function SavedTripPage() {
         {/* Stops */}
         <div className="flex flex-col gap-4">
           {stops.map((stop, i) => (
-            <StopCard key={i} stop={stop} number={i + 1} isActive={false} onClick={() => {}} />
+            <StopCard key={i} stop={stop} number={i + 1} isActive={false} isFirst={i === 0} isLast={i === stops.length - 1} onClick={() => {}} />
           ))}
         </div>
       </div>
