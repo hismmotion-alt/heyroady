@@ -26,6 +26,7 @@ function TripContent() {
   const numberOfStops = searchParams.get('numberOfStops') || '';
   const stopDuration = searchParams.get('stopDuration') || '';
   const kidsAges = searchParams.get('kidsAges') || '';
+  const waypoints = searchParams.get('waypoints') || '';
 
   const [trip, setTrip] = useState<TripData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -161,7 +162,7 @@ function TripContent() {
           fetch('/api/suggest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges }),
+            body: JSON.stringify({ start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges, waypoints }),
           }),
         ]);
 

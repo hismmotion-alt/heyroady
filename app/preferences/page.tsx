@@ -29,6 +29,7 @@ function PreferencesContent() {
   const end = searchParams.get('end') || '';
   const travelStyle = searchParams.get('travelStyle') || '';
   const interests = searchParams.get('interests') || '';
+  const waypoints = searchParams.get('waypoints') || '';
 
   if (!start || !end) {
     router.push('/');
@@ -52,6 +53,7 @@ function PreferencesContent() {
     if (prefs.kidsAges && prefs.kidsAges.length > 0) {
       params.set('kidsAges', prefs.kidsAges.join(','));
     }
+    if (waypoints) params.set('waypoints', waypoints);
     router.push(`/trip?${params.toString()}`);
   }
 

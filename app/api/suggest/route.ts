@@ -102,6 +102,10 @@ export async function POST(req: Request) {
       stopsInstruction = body.numberOfStops;
     }
 
+    const waypointsContext = body.waypoints
+      ? `\n\nThe traveler specifically wants to include these stops: ${body.waypoints}. Build the itinerary around them — use them as stops or find nearby alternatives if exact matches don't work well on this route.`
+      : '';
+
     const message = await client.messages.create({
       model: 'claude-opus-4-1-20250805',
       max_tokens: 2048,
@@ -109,7 +113,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: 'user',
-          content: `Plan a California road trip from "${start}" to "${end}".${preferenceContext}
+          content: `Plan a California road trip from "${start}" to "${end}".${preferenceContext}${waypointsContext}
 
 Suggest exactly ${stopsInstruction} interesting stops along the way (not including start/end — those are just for routing).
 

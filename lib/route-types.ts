@@ -7,6 +7,7 @@ export interface RouteFrontmatter {
   miles: number;
   duration: string;
   stopsCount: number;
+  stopNames: string[];
   tags: string[];
   heroImage: string;
   metaDescription: string;

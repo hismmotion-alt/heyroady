@@ -1,0 +1,129 @@
+<h2>Route detail page — layout options</h2>
+<p class="subtitle">What the reader sees after clicking a route card</p>
+
+<style>
+.mock-page {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  font-size: 10px;
+  color: #1B2D45;
+}
+.mock-hero {
+  position: relative;
+  height: 90px;
+  overflow: hidden;
+}
+.mock-hero img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+}
+.mock-hero .hero-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 60%);
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 10px;
+}
+.mock-section { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; }
+.mock-section:last-child { border-bottom: none; }
+.stop-row {
+  display: flex; align-items: flex-start; gap: 6px; padding: 5px 0;
+  border-bottom: 1px solid #f9fafb;
+}
+.stop-row:last-child { border-bottom: none; }
+.stop-num {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #D85A30; color: #fff;
+  font-size: 8px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+</style>
+
+<div class="cards">
+
+  <!-- Option A: Hero image + structured sections -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#f8f9fa;">
+      <div class="mock-page">
+        <!-- Hero -->
+        <div class="mock-hero">
+          <img src="https://picsum.photos/seed/beach11/400/90" alt="hero" />
+          <div class="hero-overlay">
+            <div style="font-size:8px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.05em;">Southern California</div>
+            <div style="font-weight:800;font-size:13px;color:#fff;">LA → San Diego</div>
+            <div style="font-size:8px;color:rgba(255,255,255,0.7);margin-top:1px;">120 miles · 5 stops · ~2.5 hrs</div>
+          </div>
+        </div>
+        <!-- Tagline -->
+        <div class="mock-section" style="background:#fafafa;">
+          <div style="font-style:italic;color:#6b7280;font-size:9px;">"Sun, surf, and the best fish tacos in California — all along one legendary coastal highway."</div>
+        </div>
+        <!-- Overview pills -->
+        <div class="mock-section" style="display:flex;gap:5px;flex-wrap:wrap;">
+          <span style="background:#f0fdf4;color:#15803d;font-size:8px;padding:2px 7px;border-radius:20px;">🏖 Beach</span>
+          <span style="background:#fef3c7;color:#d97706;font-size:8px;padding:2px 7px;border-radius:20px;">🌮 Food</span>
+          <span style="background:#eff6ff;color:#2563eb;font-size:8px;padding:2px 7px;border-radius:20px;">🌊 Scenic</span>
+        </div>
+        <!-- Stops -->
+        <div class="mock-section">
+          <div style="font-weight:800;font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;margin-bottom:5px;">Stops</div>
+          <div class="stop-row">
+            <div class="stop-num">1</div>
+            <div><div style="font-weight:700;font-size:9px;">Manhattan Beach</div><div style="color:#6b7280;font-size:8px;">Iconic beach town to kick off the drive.</div></div>
+          </div>
+          <div class="stop-row">
+            <div class="stop-num">2</div>
+            <div><div style="font-weight:700;font-size:9px;">Huntington Beach</div><div style="color:#6b7280;font-size:8px;">Surf City USA — boardwalk, waves, tacos.</div></div>
+          </div>
+          <div class="stop-row">
+            <div class="stop-num">3</div>
+            <div><div style="font-weight:700;font-size:9px;">Laguna Beach</div><div style="color:#6b7280;font-size:8px;">Galleries, tide pools, secret coves.</div></div>
+          </div>
+        </div>
+        <!-- CTA -->
+        <div class="mock-section" style="display:flex;gap:5px;">
+          <div style="flex:1;background:#58CC02;color:#fff;font-weight:700;font-size:8px;border-radius:8px;padding:5px;text-align:center;">Plan this trip →</div>
+          <div style="flex:1;border:1px solid #e5e7eb;font-size:8px;border-radius:8px;padding:5px;text-align:center;color:#6b7280;">Open in Maps</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Hero + structured sections</h3>
+      <p>Big hero image, tagline quote, tag pills, numbered stops with descriptions, then a CTA. Scannable and editorial.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Long-form blog article style -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:14px;background:#f8f9fa;">
+      <div class="mock-page">
+        <!-- Hero -->
+        <div class="mock-hero" style="height:80px;">
+          <img src="https://picsum.photos/seed/beach11/400/80" alt="hero" />
+          <div class="hero-overlay">
+            <div style="font-weight:800;font-size:13px;color:#fff;">LA → San Diego</div>
+          </div>
+        </div>
+        <!-- Article body -->
+        <div class="mock-section">
+          <div style="font-weight:800;font-size:11px;color:#1B2D45;margin-bottom:4px;">The Classic California Coast Drive</div>
+          <div style="color:#6b7280;font-size:8px;line-height:1.5;margin-bottom:6px;">One of the most iconic road trips in America, this route hugs the Pacific Coast Highway from Los Angeles down to San Diego — passing through surf towns, beach boardwalks, and seaside cliffs.</div>
+          <div style="font-weight:700;font-size:9px;color:#1B2D45;margin-bottom:3px;">Stop 1 — Manhattan Beach</div>
+          <div style="color:#6b7280;font-size:8px;line-height:1.5;margin-bottom:6px;">Start here for the classic LA beach vibe. Grab breakfast at one of the cafes lining the Strand before heading south.</div>
+          <div style="font-weight:700;font-size:9px;color:#1B2D45;margin-bottom:3px;">Stop 2 — Huntington Beach</div>
+          <div style="color:#6b7280;font-size:8px;line-height:1.5;">Surf City USA is worth a 1-2 hour stop. Walk the pier, grab fish tacos, watch the surfers.</div>
+        </div>
+        <!-- CTA -->
+        <div class="mock-section" style="display:flex;gap:5px;">
+          <div style="flex:1;background:#58CC02;color:#fff;font-weight:700;font-size:8px;border-radius:8px;padding:5px;text-align:center;">Plan this trip →</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Long-form blog article</h3>
+      <p>Reads like a travel blog post. Prose descriptions per stop, scrollable article. Great for SEO content depth but less scannable.</p>
+    </div>
+  </div>
+
+</div>

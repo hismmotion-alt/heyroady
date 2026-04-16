@@ -1,0 +1,96 @@
+<h2>Destinations page — how should the route cards look?</h2>
+<p class="subtitle">Pick the card layout you prefer for the /destinations listing page</p>
+
+<div class="cards">
+
+  <!-- Option A: Compact grid cards -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#f8f9fa;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">SOUTHERN CA</div>
+          <div style="font-weight:800;font-size:12px;color:#1B2D45;">LA → San Diego</div>
+          <div style="font-size:10px;color:#6b7280;margin:4px 0;">120 miles · 5 stops</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;">
+            <span style="background:#f0fdf4;color:#15803d;font-size:9px;padding:2px 6px;border-radius:20px;">Beach</span>
+            <span style="background:#fef3c7;color:#d97706;font-size:9px;padding:2px 6px;border-radius:20px;">Food</span>
+          </div>
+          <div style="margin-top:8px;background:#58CC02;color:#fff;border-radius:8px;text-align:center;font-size:10px;padding:4px;font-weight:700;">Explore →</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;">
+          <div style="font-size:10px;color:#9ca3af;margin-bottom:4px;">BAY AREA</div>
+          <div style="font-weight:800;font-size:12px;color:#1B2D45;">SF → Napa</div>
+          <div style="font-size:10px;color:#6b7280;margin:4px 0;">55 miles · 4 stops</div>
+          <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;">
+            <span style="background:#f5f3ff;color:#7c3aed;font-size:9px;padding:2px 6px;border-radius:20px;">Wine</span>
+            <span style="background:#ecfdf5;color:#059669;font-size:9px;padding:2px 6px;border-radius:20px;">Scenic</span>
+          </div>
+          <div style="margin-top:8px;background:#58CC02;color:#fff;border-radius:8px;text-align:center;font-size:10px;padding:4px;font-weight:700;">Explore →</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Compact grid</h3>
+      <p>2-column card grid, small and scannable. Good for browsing many routes at once.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Wide horizontal cards -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#f8f9fa;">
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;">Southern California</div>
+            <div style="font-weight:800;font-size:14px;color:#1B2D45;">Los Angeles → San Diego</div>
+            <div style="font-size:10px;color:#6b7280;margin-top:3px;">120 miles · 5 stops · Beach &amp; Food</div>
+          </div>
+          <div style="background:#58CC02;color:#fff;border-radius:10px;padding:6px 12px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0;">Explore →</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;">Bay Area</div>
+            <div style="font-weight:800;font-size:14px;color:#1B2D45;">San Francisco → Napa Valley</div>
+            <div style="font-size:10px;color:#6b7280;margin-top:3px;">55 miles · 4 stops · Wine &amp; Scenic</div>
+          </div>
+          <div style="background:#58CC02;color:#fff;border-radius:10px;padding:6px 12px;font-size:10px;font-weight:700;white-space:nowrap;flex-shrink:0;">Explore →</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Wide list cards</h3>
+      <p>Full-width horizontal rows. Route name is prominent, easy to read at a glance.</p>
+    </div>
+  </div>
+
+  <!-- Option C: Editorial cards with description -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#f8f9fa;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;">
+          <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Southern California</div>
+          <div style="font-weight:800;font-size:12px;color:#1B2D45;margin-bottom:3px;">LA → San Diego</div>
+          <div style="font-size:9px;color:#6b7280;margin-bottom:6px;">Sun, surf, and taco shops all the way down the coast.</div>
+          <div style="border-top:1px solid #f3f4f6;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:9px;color:#9ca3af;">120 mi · 5 stops</span>
+            <span style="color:#58CC02;font-size:10px;font-weight:700;">Read →</span>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:12px;">
+          <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;">Bay Area</div>
+          <div style="font-weight:800;font-size:12px;color:#1B2D45;margin-bottom:3px;">SF → Napa Valley</div>
+          <div style="font-size:9px;color:#6b7280;margin-bottom:6px;">Golden Gate at sunrise, then wine by noon.</div>
+          <div style="border-top:1px solid #f3f4f6;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:9px;color:#9ca3af;">55 mi · 4 stops</span>
+            <span style="color:#58CC02;font-size:10px;font-weight:700;">Read →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Editorial cards (blog-style)</h3>
+      <p>Grid with a short teaser description. Feels more like a travel blog — invites reading.</p>
+    </div>
+  </div>
+
+</div>

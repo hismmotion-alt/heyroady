@@ -1,0 +1,76 @@
+<h2>Editorial cards with images — how should the image sit?</h2>
+<p class="subtitle">Two ways to include route photos in the cards</p>
+
+<div class="cards">
+
+  <!-- Option A: Top image, content below -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#f8f9fa;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <img src="https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=300&h=120&fit=crop" alt="LA to San Diego" style="width:100%;height:70px;object-fit:cover;display:block;" />
+          <div style="padding:10px;">
+            <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Southern California</div>
+            <div style="font-weight:800;font-size:11px;color:#1B2D45;margin-bottom:3px;">LA → San Diego</div>
+            <div style="font-size:9px;color:#6b7280;margin-bottom:6px;">Sun, surf, and taco shops all the way down the coast.</div>
+            <div style="border-top:1px solid #f3f4f6;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:8px;color:#9ca3af;">120 mi · 5 stops</span>
+              <span style="color:#58CC02;font-size:9px;font-weight:700;">Read →</span>
+            </div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;">
+          <img src="https://images.unsplash.com/photo-1449034446853-66c86144b0ad?w=300&h=120&fit=crop" alt="SF to Napa" style="width:100%;height:70px;object-fit:cover;display:block;" />
+          <div style="padding:10px;">
+            <div style="font-size:9px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Bay Area</div>
+            <div style="font-weight:800;font-size:11px;color:#1B2D45;margin-bottom:3px;">SF → Napa Valley</div>
+            <div style="font-size:9px;color:#6b7280;margin-bottom:6px;">Golden Gate at sunrise, then wine by noon.</div>
+            <div style="border-top:1px solid #f3f4f6;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:8px;color:#9ca3af;">55 mi · 4 stops</span>
+              <span style="color:#58CC02;font-size:9px;font-weight:700;">Read →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Image on top</h3>
+      <p>Photo sits above the text. Clean blog card feel, like Medium or a travel magazine site.</p>
+    </div>
+  </div>
+
+  <!-- Option B: Full bleed background image with overlay text -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:16px;background:#f8f9fa;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="border-radius:12px;overflow:hidden;position:relative;height:120px;background:url('https://images.unsplash.com/photo-1534190760961-74e8c1c5c3da?w=300&h=240&fit=crop') center/cover;">
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.1) 50%,transparent 100%);"></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:10px;">
+            <div style="font-size:8px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Southern California</div>
+            <div style="font-weight:800;font-size:11px;color:#fff;margin-bottom:2px;">LA → San Diego</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:8px;color:rgba(255,255,255,0.6);">120 mi · 5 stops</span>
+              <span style="background:#58CC02;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:6px;">Read →</span>
+            </div>
+          </div>
+        </div>
+        <div style="border-radius:12px;overflow:hidden;position:relative;height:120px;background:url('https://images.unsplash.com/photo-1449034446853-66c86144b0ad?w=300&h=240&fit=crop') center/cover;">
+          <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.72) 0%,rgba(0,0,0,0.1) 50%,transparent 100%);"></div>
+          <div style="position:absolute;bottom:0;left:0;right:0;padding:10px;">
+            <div style="font-size:8px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">Bay Area</div>
+            <div style="font-weight:800;font-size:11px;color:#fff;margin-bottom:2px;">SF → Napa Valley</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:8px;color:rgba(255,255,255,0.6);">55 mi · 4 stops</span>
+              <span style="background:#58CC02;color:#fff;font-size:8px;font-weight:700;padding:2px 7px;border-radius:6px;">Read →</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Full bleed with overlay</h3>
+      <p>Image fills the whole card, text overlaid with a dark gradient. Dramatic, like a travel app or Airbnb experiences.</p>
+    </div>
+  </div>
+
+</div>

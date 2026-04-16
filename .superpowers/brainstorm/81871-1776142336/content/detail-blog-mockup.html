@@ -1,0 +1,150 @@
+<h2>Route detail page — mini blog layout</h2>
+<p class="subtitle">Full article at the top, summarized route at the bottom</p>
+
+<style>
+.blog-page {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  overflow: hidden;
+  font-size: 10px;
+  color: #1B2D45;
+  max-width: 480px;
+  margin: 0 auto;
+}
+.blog-hero { position:relative; height:130px; overflow:hidden; }
+.blog-hero img { width:100%; height:100%; object-fit:cover; display:block; }
+.blog-hero .overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.1) 55%, transparent 100%);
+  display:flex; flex-direction:column; justify-content:flex-end; padding:14px;
+}
+.blog-section { padding:12px 14px; border-bottom:1px solid #f3f4f6; }
+.blog-section:last-child { border-bottom:none; }
+.inline-img { width:100%; height:70px; object-fit:cover; border-radius:8px; display:block; margin:6px 0; }
+.fact-box {
+  background:#f0fdf4; border-left:3px solid #58CC02;
+  padding:7px 10px; border-radius:0 8px 8px 0; margin:6px 0;
+  font-size:8px; color:#166534; line-height:1.5;
+}
+.stop-row { display:flex; align-items:flex-start; gap:6px; padding:5px 0; border-bottom:1px solid #f9fafb; }
+.stop-row:last-child { border-bottom:none; }
+.stop-num { width:16px; height:16px; border-radius:50%; background:#D85A30; color:#fff; font-size:8px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+.tag { font-size:8px; padding:2px 7px; border-radius:20px; }
+</style>
+
+<div class="mockup">
+  <div class="mockup-header">LA → San Diego — route detail page (scroll to see full layout)</div>
+  <div class="mockup-body" style="padding:0;">
+    <div class="blog-page">
+
+      <!-- HERO -->
+      <div class="blog-hero">
+        <img src="https://picsum.photos/seed/beach11/480/130" alt="LA to San Diego" />
+        <div class="overlay">
+          <div style="font-size:8px;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Southern California</div>
+          <div style="font-weight:800;font-size:15px;color:#fff;line-height:1.2;">Los Angeles → San Diego</div>
+          <div style="font-size:8px;color:rgba(255,255,255,0.65);margin-top:3px;">120 miles &nbsp;·&nbsp; ~2.5 hrs &nbsp;·&nbsp; 5 stops</div>
+        </div>
+      </div>
+
+      <!-- INTRO TEXT -->
+      <div class="blog-section">
+        <div style="font-weight:800;font-size:12px;color:#1B2D45;margin-bottom:5px;">The Classic California Coast Drive</div>
+        <div style="color:#4b5563;font-size:8.5px;line-height:1.6;">
+          Few drives rival the stretch of Pacific Coast Highway between Los Angeles and San Diego. You'll pass through legendary surf towns, palm-lined boardwalks, and sun-bleached cliffs before arriving in one of California's most beloved cities.
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;">
+          <span class="tag" style="background:#f0fdf4;color:#15803d;">🏖 Beach</span>
+          <span class="tag" style="background:#fef3c7;color:#d97706;">🌮 Food</span>
+          <span class="tag" style="background:#eff6ff;color:#2563eb;">🌊 Scenic</span>
+          <span class="tag" style="background:#fdf2f8;color:#9d174d;">📸 Photo spots</span>
+        </div>
+      </div>
+
+      <!-- SECTION: FIRST STOP FEATURE -->
+      <div class="blog-section">
+        <div style="font-weight:800;font-size:10px;color:#1B2D45;margin-bottom:4px;">Start in Manhattan Beach</div>
+        <img class="inline-img" src="https://picsum.photos/seed/manhattan/480/70" alt="Manhattan Beach" />
+        <div style="color:#4b5563;font-size:8.5px;line-height:1.6;">
+          Begin your trip at Manhattan Beach's famous Strand — a paved path stretching the length of the beach. Grab coffee, watch the surfers, and soak in the classic LA beach vibe before hitting the road.
+        </div>
+        <div class="fact-box">💡 <strong>Local tip:</strong> Parking on the Strand fills up by 9am on weekends. Arrive early or park a few blocks inland.</div>
+      </div>
+
+      <!-- SECTION: INTERESTING FACT -->
+      <div class="blog-section" style="background:#fafafa;">
+        <div style="font-weight:800;font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;margin-bottom:5px;">Did you know?</div>
+        <div style="color:#4b5563;font-size:8.5px;line-height:1.6;">
+          The stretch of PCH between LA and San Diego passes through 7 distinct beach cities, each with its own personality — from the surfer culture of Huntington to the artsy vibe of Laguna Beach.
+        </div>
+      </div>
+
+      <!-- SECTION: MID STOP WITH IMAGE -->
+      <div class="blog-section">
+        <div style="font-weight:800;font-size:10px;color:#1B2D45;margin-bottom:4px;">Don't Miss: Laguna Beach</div>
+        <img class="inline-img" src="https://picsum.photos/seed/laguna/480/70" alt="Laguna Beach" />
+        <div style="color:#4b5563;font-size:8.5px;line-height:1.6;">
+          Laguna Beach is arguably the most scenic stop on this route. Dramatic cliffs, hidden coves, and a thriving arts scene make it worth at least 2 hours. Walk down to Victoria Beach for the famous Pirate Tower.
+        </div>
+        <div class="fact-box">📸 <strong>Photo spot:</strong> Heisler Park overlook — best view of the cove at golden hour.</div>
+      </div>
+
+      <!-- SECTION: INTERESTING STOPS -->
+      <div class="blog-section">
+        <div style="font-weight:800;font-size:9px;text-transform:uppercase;letter-spacing:0.05em;color:#9ca3af;margin-bottom:6px;">Hidden gems along the way</div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="https://picsum.photos/seed/gem1/50/50" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0;" />
+            <div><div style="font-weight:700;font-size:9px;">Crystal Cove State Park</div><div style="color:#6b7280;font-size:8px;">Historic beach cottages + snorkeling in clear water.</div></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="https://picsum.photos/seed/gem2/50/50" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0;" />
+            <div><div style="font-weight:700;font-size:9px;">San Clemente Pier</div><div style="color:#6b7280;font-size:8px;">Quiet, locals-only vibe. Best fish &amp; chips on the coast.</div></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <img src="https://picsum.photos/seed/gem3/50/50" style="width:36px;height:36px;object-fit:cover;border-radius:8px;flex-shrink:0;" />
+            <div><div style="font-weight:700;font-size:9px;">Del Mar Bluffs</div><div style="color:#6b7280;font-size:8px;">Clifftop trail with insane ocean views just before San Diego.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIVIDER -->
+      <div style="padding:10px 14px;background:#f9fafb;border-bottom:1px solid #f3f4f6;">
+        <div style="font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:0.05em;color:#1B2D45;">Route Summary</div>
+        <div style="font-size:8px;color:#9ca3af;margin-top:2px;">All stops at a glance</div>
+      </div>
+
+      <!-- ROUTE SUMMARY (structured) -->
+      <div class="blog-section">
+        <div class="stop-row">
+          <div class="stop-num">1</div>
+          <div><div style="font-weight:700;font-size:9px;">Manhattan Beach</div><div style="color:#6b7280;font-size:8px;">Start · Beach walk + coffee · 45 min</div></div>
+        </div>
+        <div class="stop-row">
+          <div class="stop-num">2</div>
+          <div><div style="font-weight:700;font-size:9px;">Huntington Beach</div><div style="color:#6b7280;font-size:8px;">Surf City boardwalk + fish tacos · 1.5 hrs</div></div>
+        </div>
+        <div class="stop-row">
+          <div class="stop-num">3</div>
+          <div><div style="font-weight:700;font-size:9px;">Laguna Beach</div><div style="color:#6b7280;font-size:8px;">Cliffs, coves, Pirate Tower · 2 hrs</div></div>
+        </div>
+        <div class="stop-row">
+          <div class="stop-num">4</div>
+          <div><div style="font-weight:700;font-size:9px;">San Clemente</div><div style="color:#6b7280;font-size:8px;">Quiet pier town, local eats · 45 min</div></div>
+        </div>
+        <div class="stop-row">
+          <div class="stop-num">5</div>
+          <div><div style="font-weight:700;font-size:9px;">San Diego</div><div style="color:#6b7280;font-size:8px;">End · Gaslamp Quarter + Balboa Park</div></div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="blog-section" style="display:flex;gap:6px;">
+        <div style="flex:1;background:#58CC02;color:#fff;font-weight:800;font-size:9px;border-radius:9px;padding:7px;text-align:center;">Plan this trip with AI →</div>
+        <div style="flex:1;border:1.5px solid #e5e7eb;font-size:9px;border-radius:9px;padding:7px;text-align:center;color:#6b7280;font-weight:600;">Open in Maps</div>
+      </div>
+
+    </div>
+  </div>
+</div>

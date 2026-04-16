@@ -12,7 +12,7 @@ export default function RouteSummary({ start, end, stops }: RouteSummaryProps) {
   const allPoints = [start, ...safeStops.map((s) => s.name), end];
   const googleUrl =
     'https://www.google.com/maps/dir/' + allPoints.map(encodeURIComponent).join('/');
-  const planUrl = `/?end=${encodeURIComponent(end)}`;
+  const customizeUrl = `/customize?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}&stops=${safeStops.map((s) => encodeURIComponent(s.name)).join('|')}`;
 
   return (
     <div className="mt-12">
@@ -73,11 +73,11 @@ export default function RouteSummary({ start, end, stops }: RouteSummaryProps) {
 
       <div className="flex gap-3">
         <a
-          href={planUrl}
+          href={customizeUrl}
           className="flex-1 py-3 rounded-xl font-bold text-sm text-center transition-all hover:opacity-90"
           style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
         >
-          Plan this trip with Roady →
+          Customize this trip with Roady →
         </a>
         <a
           href={googleUrl}
