@@ -48,9 +48,22 @@ export default async function RouteDetailPage({ params }: PageProps) {
   const { data } = matter(raw);
   const frontmatter = data as RouteFrontmatter;
 
+  // Bind frontmatter stops into RouteSummary so they always render
+  // (inline JSX array props in MDX can be unreliable with next-mdx-remote/rsc)
+  const titleParts = frontmatter.title.split('→');
+  const routeStart = titleParts[0]?.trim() ?? '';
+  const routeEnd = titleParts[1]?.trim() ?? '';
+  const BoundRouteSummary = (props: Record<string, unknown>) => (
+    <RouteSummary
+      start={(props.start as string) || routeStart}
+      end={(props.end as string) || routeEnd}
+      stops={frontmatter.stops ?? []}
+    />
+  );
+
   const { content } = await compileMDX({
     source: raw,
-    components: mdxComponents,
+    components: { ...mdxComponents, RouteSummary: BoundRouteSummary },
     options: { parseFrontmatter: true },
   });
 
