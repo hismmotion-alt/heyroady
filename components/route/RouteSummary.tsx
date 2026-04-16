@@ -12,6 +12,7 @@ export default function RouteSummary({ start, end, stops }: RouteSummaryProps) {
   const allPoints = [start, ...safeStops.map((s) => s.name), end];
   const googleUrl =
     'https://www.google.com/maps/dir/' + allPoints.map(encodeURIComponent).join('/');
+  const planUrl = `/?end=${encodeURIComponent(end)}`;
 
   return (
     <div className="mt-12">
@@ -22,31 +23,57 @@ export default function RouteSummary({ start, end, stops }: RouteSummaryProps) {
         <p className="text-xs font-extrabold uppercase tracking-widest mb-1" style={{ color: '#9ca3af' }}>
           Route Summary
         </p>
-        <p className="text-sm text-gray-400">All stops at a glance</p>
+        <p className="text-sm text-gray-400">Full journey at a glance</p>
       </div>
 
-      <div className="flex flex-col gap-0 mb-8">
+      {/* Visual timeline */}
+      <div className="mb-8 px-2">
+        {/* Start */}
+        <div className="flex items-center gap-3">
+          <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-offset-2 ring-[#46a302]" style={{ backgroundColor: '#46a302' }} />
+          <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🚗 {start}</p>
+        </div>
+
+        {/* Stops */}
         {safeStops.map((stop, i) => (
-          <div key={stop.name} className="flex items-start gap-4 py-4 border-b border-gray-100 last:border-0">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 text-white"
-              style={{ backgroundColor: '#D85A30' }}
-            >
-              {i + 1}
+          <div key={stop.name} className="flex items-stretch gap-3">
+            <div className="flex flex-col items-center w-4 flex-shrink-0">
+              <div className="w-px flex-1 my-0.5" style={{ backgroundColor: '#e5e7eb' }} />
+              <div
+                className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                style={{ backgroundColor: '#D85A30', fontSize: '10px', minHeight: 20 }}
+              >
+                {i + 1}
+              </div>
+              <div className="w-px flex-1 my-0.5" style={{ backgroundColor: '#e5e7eb' }} />
             </div>
-            <div className="flex-1">
-              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>{stop.name}</p>
-              <p className="text-sm text-gray-500">{stop.description}</p>
+            <div className="flex items-center justify-between py-2.5 flex-1 border-b border-gray-100 last:border-0">
+              <div>
+                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{stop.name}</p>
+                <p className="text-xs text-gray-500">{stop.description}</p>
+              </div>
+              <p className="text-xs text-gray-400 flex-shrink-0 ml-4">⏲ {stop.duration}</p>
             </div>
-            <p className="text-xs text-gray-400 flex-shrink-0">{stop.duration}</p>
           </div>
         ))}
+
+        {/* Connector to end */}
+        <div className="flex items-stretch gap-3">
+          <div className="flex flex-col items-center w-4 flex-shrink-0">
+            <div className="w-px h-4" style={{ backgroundColor: '#e5e7eb' }} />
+          </div>
+        </div>
+
+        {/* End */}
+        <div className="flex items-center gap-3">
+          <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-offset-2 ring-[#1B2D45]" style={{ backgroundColor: '#1B2D45' }} />
+          <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🏁 {end}</p>
+        </div>
       </div>
 
       <div className="flex gap-3">
-        {/* TODO: update href to pre-filled trip planner when that feature lands */}
         <a
-          href="/"
+          href={planUrl}
           className="flex-1 py-3 rounded-xl font-bold text-sm text-center transition-all hover:opacity-90"
           style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
         >

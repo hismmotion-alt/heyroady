@@ -90,8 +90,56 @@ export default async function RouteDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      {/* Quick stats bar */}
+      <div className="border-b" style={{ borderColor: '#f3f4f6', backgroundColor: '#fafafa' }}>
+        <div className="max-w-3xl mx-auto px-6 py-4 flex items-center gap-6 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🛣️</span>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Distance</p>
+              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{frontmatter.miles} miles</p>
+            </div>
+          </div>
+          <div className="w-px h-8 bg-gray-200" />
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⏱️</span>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Drive time</p>
+              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{frontmatter.duration}</p>
+            </div>
+          </div>
+          <div className="w-px h-8 bg-gray-200" />
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📍</span>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Stops</p>
+              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{frontmatter.stopsCount} stops</p>
+            </div>
+          </div>
+          <div className="w-px h-8 bg-gray-200" />
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📍</span>
+            <div>
+              <p className="text-xs text-gray-400 font-medium">Region</p>
+              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{frontmatter.region}</p>
+            </div>
+          </div>
+          <div className="ml-auto flex gap-2 flex-wrap">
+            {(frontmatter.tags ?? []).map((tag) => (
+              <span
+                key={tag}
+                className="text-xs font-semibold px-3 py-1 rounded-full"
+                style={{ backgroundColor: '#f0fdf4', color: '#15803d' }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Content */}
-      <div className="max-w-3xl mx-auto px-6 pt-8 pb-16">
+      <div className="max-w-3xl mx-auto px-6 pt-8 pb-28">
         {/* Back link */}
         <Link
           href="/destinations"
@@ -100,23 +148,28 @@ export default async function RouteDetailPage({ params }: PageProps) {
           ← All road trips
         </Link>
 
-        {/* Tags */}
-        <div className="flex gap-2 flex-wrap mb-8">
-          {(frontmatter.tags ?? []).map((tag) => (
-            <span
-              key={tag}
-              className="text-xs font-semibold px-3 py-1 rounded-full"
-              style={{ backgroundColor: '#f0fdf4', color: '#15803d' }}
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-
         {/* MDX body */}
         <div className="prose prose-lg max-w-none" style={{ color: '#374151' }}>
           {content}
         </div>
+      </div>
+
+      {/* Sticky plan CTA */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 border-t"
+        style={{ backgroundColor: 'rgba(255,255,255,0.97)', borderColor: 'rgba(0,0,0,0.06)', backdropFilter: 'blur(8px)' }}
+      >
+        <div>
+          <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>Ready to drive this route?</p>
+          <p className="text-xs text-gray-400">{frontmatter.title} · {frontmatter.miles} miles</p>
+        </div>
+        <a
+          href={`/?end=${encodeURIComponent(frontmatter.title.split('→')[1]?.trim() ?? frontmatter.title)}`}
+          className="px-6 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 hover:opacity-90"
+          style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
+        >
+          Plan this trip →
+        </a>
       </div>
     </div>
   );
