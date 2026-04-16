@@ -2,6 +2,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { compileMDX } from 'next-mdx-remote/rsc';
 import matter from 'gray-matter';
 import Navbar from '@/components/Navbar';
@@ -11,6 +12,8 @@ import HiddenGems from '@/components/route/HiddenGems';
 import RouteSummary from '@/components/route/RouteSummary';
 import { getAllSlugs, getRouteRaw } from '@/lib/routes';
 import type { RouteFrontmatter } from '@/lib/route-types';
+
+const InstagramReel = dynamic(() => import('@/components/route/InstagramReel'), { ssr: false });
 
 const mdxComponents = { FeaturedStop, FactBox, HiddenGems, RouteSummary };
 
@@ -186,6 +189,16 @@ export default async function RouteDetailPage({ params }: PageProps) {
         >
           ← All road trips
         </Link>
+
+        {/* Instagram Reel */}
+        {frontmatter.instagramReel && (
+          <div className="mb-10">
+            <p className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: '#9ca3af' }}>
+              See it on the road
+            </p>
+            <InstagramReel url={frontmatter.instagramReel} />
+          </div>
+        )}
 
         {/* MDX body */}
         <div className="prose prose-lg max-w-none" style={{ color: '#374151' }}>

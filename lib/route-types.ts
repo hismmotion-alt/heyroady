@@ -11,6 +11,7 @@ export interface RouteFrontmatter {
   stops: RouteStop[];
   tags: string[];
   heroImage: string;
+  instagramReel?: string;
   metaDescription: string;
   metaKeywords: string[];
 }
