@@ -581,7 +581,11 @@ export default function HomePage() {
                 <p className="text-sm text-gray-500 leading-relaxed flex-1">{route.desc}</p>
 
                 <button
-                  onClick={() => router.push(`/preferences?end=${encodeURIComponent(route.to)}`)}
+                  onClick={() => {
+                    setEnd(route.to);
+                    setFlowType('plan');
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
                   className="w-full py-2.5 rounded-xl text-sm font-bold transition-all duration-200 hover:opacity-90"
                   style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
                 >
