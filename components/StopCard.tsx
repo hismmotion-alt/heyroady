@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { Stop } from '@/lib/types';
 
 const categoryStyles: Record<string, { bg: string; text: string; label: string }> = {
@@ -19,14 +20,19 @@ interface StopCardProps {
 
 export default function StopCard({ stop, number, isActive, onClick }: StopCardProps) {
   const cat = categoryStyles[stop.category] || categoryStyles.scenic;
+  const [open, setOpen] = useState(isActive);
+
+  useEffect(() => {
+    if (isActive) setOpen(true);
+  }, [isActive]);
 
   return (
     <div
-      onClick={onClick}
-      className={`rounded-2xl p-5 mb-3 cursor-pointer transition-all duration-200 border-l-4
+      className={`rounded-2xl mb-3 cursor-pointer transition-all duration-200 border-l-4 overflow-hidden
         ${isActive ? 'border-[#D85A30] bg-white shadow-lg scale-[1.01]' : 'border-transparent bg-white hover:border-[#D85A30]/50 hover:shadow-md'}`}
     >
-      <div className="flex items-start gap-3 mb-3">
+      {/* Header — always visible, clicking selects stop */}
+      <div className="flex items-center gap-3 p-5 pb-3" onClick={onClick}>
         <div className="w-8 h-8 rounded-full bg-[#D85A30] text-white flex items-center justify-center font-bold text-sm flex-shrink-0">
           {number}
         </div>
@@ -34,17 +40,39 @@ export default function StopCard({ stop, number, isActive, onClick }: StopCardPr
           <h3 className="font-bold text-gray-900 text-base leading-tight">{stop.name}</h3>
           <p className="text-sm text-gray-500">{stop.city}</p>
         </div>
-        <span className={`text-xs font-medium px-2 py-1 rounded-full ${cat.bg} ${cat.text}`}>{cat.label}</span>
+        <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${cat.bg} ${cat.text}`}>{cat.label}</span>
+        {/* Chevron toggle */}
+        <button
+          onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}
+          className="ml-1 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
+          aria-label={open ? 'Collapse' : 'Expand'}
+        >
+          <svg
+            className="w-4 h-4 transition-transform duration-200"
+            style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
       </div>
 
-      <p className="text-sm text-gray-600 leading-relaxed mb-3">{stop.description}</p>
+      {/* Collapsible details */}
+      {open && (
+        <div className="px-5 pb-5">
+          <p className="text-sm text-gray-600 leading-relaxed mb-3">{stop.description}</p>
+          <div className="bg-[#FDF6EE] rounded-xl px-4 py-3 flex gap-2">
+            <span className="text-base flex-shrink-0">💡</span>
+            <p className="text-sm text-[#993C1D] font-medium leading-snug">{stop.tip}</p>
+          </div>
+          <p className="text-xs text-gray-400 mt-2 text-right">⏲ {stop.duration}</p>
+        </div>
+      )}
 
-      <div className="bg-[#FDF6EE] rounded-xl px-4 py-3 flex gap-2">
-        <span className="text-base flex-shrink-0">💡</span>
-        <p className="text-sm text-[#993C1D] font-medium leading-snug">{stop.tip}</p>
-      </div>
-
-      <p className="text-xs text-gray-400 mt-2 text-right">⏲ {stop.duration}</p>
+      {/* Collapsed duration */}
+      {!open && (
+        <p className="text-xs text-gray-400 px-5 pb-3 text-right">⏲ {stop.duration}</p>
+      )}
     </div>
   );
 }

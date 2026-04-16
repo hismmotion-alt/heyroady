@@ -36,6 +36,7 @@ function TripContent() {
   const [user, setUser] = useState<User | null>(null);
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Hardcoded fallback coordinates for problematic California locations
   const LOCATION_OVERRIDES: Record<string, [number, number]> = {
@@ -240,6 +241,19 @@ function TripContent() {
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
+  const haversineDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 3959;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  };
+
+  const driveLabel = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
+    const miles = haversineDistance(lat1, lng1, lat2, lng2) * 1.3;
+    return `~${formatDuration(miles)} drive`;
+  };
+
   const buildMapsUrls = () => {
     const stops = trip!.stops;
     const allPoints = [start, ...stops.map((s) => s.city), end];
@@ -414,15 +428,35 @@ function TripContent() {
             </span>
           </div>
 
-          {trip.stops.map((stop, i) => (
-            <StopCard
-              key={i}
-              stop={stop}
-              number={i + 1}
-              isActive={activeStop === i}
-              onClick={() => setActiveStop(i)}
-            />
-          ))}
+          {trip.stops.map((stop, i) => {
+            const prevLat = i === 0 ? startCoords[1] : trip.stops[i - 1].lat;
+            const prevLng = i === 0 ? startCoords[0] : trip.stops[i - 1].lng;
+            return (
+              <div key={i}>
+                <div className="flex items-center gap-2 px-2 mb-2">
+                  <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
+                  <span className="text-xs font-medium text-gray-400 flex-shrink-0">
+                    🚗 {driveLabel(prevLat, prevLng, stop.lat, stop.lng)}
+                  </span>
+                  <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
+                </div>
+                <StopCard
+                  stop={stop}
+                  number={i + 1}
+                  isActive={activeStop === i}
+                  onClick={() => setActiveStop(i)}
+                />
+              </div>
+            );
+          })}
+
+          <div className="flex items-center gap-2 px-2 mt-1 mb-3">
+            <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
+            <span className="text-xs font-medium text-gray-400 flex-shrink-0">
+              🚗 {driveLabel(trip.stops[trip.stops.length - 1].lat, trip.stops[trip.stops.length - 1].lng, endCoords[1], endCoords[0])}
+            </span>
+            <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
+          </div>
 
           <div className="flex items-center gap-3 mt-2 px-1">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1B2D45' }} />
@@ -484,6 +518,18 @@ function TripContent() {
           <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>Like this trip?</p>
           <p className="text-xs text-gray-400">Save it to your Roady account</p>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="px-4 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center gap-1.5"
+            style={{ backgroundColor: copied ? '#f0fce4' : '#f3f4f6', color: copied ? '#46a302' : '#6b7280' }}
+          >
+            {copied ? '✓ Copied!' : '🔗 Share'}
+          </button>
         <button
           onClick={handleSaveTrip}
           disabled={!!savedTripId || saving}
@@ -505,6 +551,7 @@ function TripContent() {
             '💾 Save this trip'
           )}
         </button>
+        </div>
       </div>
     </div>
   );
