@@ -181,7 +181,7 @@ export default async function RouteDetailPage({ params }: PageProps) {
       })()}
 
       {/* Content */}
-      <div className="max-w-3xl mx-auto px-6 pt-8 pb-28">
+      <div className={`mx-auto px-6 pt-8 pb-28 ${frontmatter.instagramReel ? 'max-w-6xl' : 'max-w-3xl'}`}>
         {/* Back link */}
         <Link
           href="/destinations"
@@ -190,19 +190,25 @@ export default async function RouteDetailPage({ params }: PageProps) {
           ← All road trips
         </Link>
 
-        {/* Instagram Reel */}
-        {frontmatter.instagramReel && (
-          <div className="mb-10">
-            <p className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: '#9ca3af' }}>
-              See it on the road
-            </p>
-            <InstagramReel url={frontmatter.instagramReel} />
+        <div className={frontmatter.instagramReel ? 'lg:flex lg:gap-12 lg:items-start' : ''}>
+          {/* MDX body */}
+          <div className="flex-1 min-w-0">
+            <div className="prose prose-lg max-w-none" style={{ color: '#374151' }}>
+              {content}
+            </div>
           </div>
-        )}
 
-        {/* MDX body */}
-        <div className="prose prose-lg max-w-none" style={{ color: '#374151' }}>
-          {content}
+          {/* Instagram Reel — sticky sidebar */}
+          {frontmatter.instagramReel && (
+            <div className="lg:w-[360px] lg:flex-shrink-0 mt-10 lg:mt-0">
+              <div className="lg:sticky lg:top-24">
+                <p className="text-xs font-extrabold uppercase tracking-widest mb-4" style={{ color: '#9ca3af' }}>
+                  See it on the road
+                </p>
+                <InstagramReel url={frontmatter.instagramReel} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
