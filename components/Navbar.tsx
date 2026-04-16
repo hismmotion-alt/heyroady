@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase';
@@ -26,6 +26,8 @@ export default function Navbar({
   style,
 }: NavbarProps) {
   const [user, setUser] = useState<User | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -35,6 +37,16 @@ export default function Navbar({
       setUser(session?.user ?? null);
     });
     return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleSignOut = async () => {
@@ -75,23 +87,43 @@ export default function Navbar({
               >
                 My Trips
               </a>
-              {user.user_metadata?.avatar_url ? (
-                <button onClick={handleSignOut} title="Sign out">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={user.user_metadata.avatar_url}
-                    alt="Profile"
-                    className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-[#58CC02] transition-colors"
-                  />
-                </button>
-              ) : (
+              <div className="relative" ref={dropdownRef}>
                 <button
-                  onClick={handleSignOut}
-                  className="text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors"
+                  onClick={() => setDropdownOpen((o) => !o)}
+                  title="Account"
                 >
-                  Sign out
+                  {user.user_metadata?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={user.user_metadata.avatar_url}
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-[#58CC02] transition-colors"
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors">
+                      Account
+                    </span>
+                  )}
                 </button>
-              )}
+
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl border border-gray-100 shadow-lg overflow-hidden z-50">
+                    <a
+                      href="/my-trips"
+                      className="flex items-center px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#46a302] transition-colors"
+                      onClick={() => setDropdownOpen(false)}
+                    >
+                      Profile
+                    </a>
+                    <button
+                      onClick={() => { setDropdownOpen(false); handleSignOut(); }}
+                      className="w-full text-left px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-red-500 transition-colors border-t border-gray-100"
+                    >
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             <a
