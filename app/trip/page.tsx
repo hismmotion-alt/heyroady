@@ -358,7 +358,7 @@ function TripContent() {
             <div className="flex flex-col">
               {/* Start */}
               <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-offset-1" style={{ backgroundColor: '#46a302', ringColor: '#46a302' }} />
+                <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-[#46a302] ring-offset-1" style={{ backgroundColor: '#46a302' }} />
                 <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🚗 {start}</p>
               </div>
 
