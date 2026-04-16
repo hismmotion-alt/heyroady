@@ -225,6 +225,14 @@ function TripContent() {
 
   if (!trip || !startCoords || !endCoords) return null;
 
+  const CATEGORY_EMOJI: Record<string, string> = {
+    nature: '🌿',
+    food: '🍴',
+    culture: '🏛️',
+    adventure: '🏕️',
+    scenic: '🌄',
+  };
+
   const formatDuration = (miles: number) => {
     const hours = miles / 50;
     const h = Math.floor(hours);
@@ -325,7 +333,7 @@ function TripContent() {
               {trip.routeName}
             </h2>
             <p className="text-sm mb-4" style={{ color: '#6B7280' }}>{trip.tagline}</p>
-            <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-3 flex-wrap mb-5">
               <span
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
                 style={{ backgroundColor: 'rgba(88,204,2,0.1)', color: '#58CC02' }}
@@ -345,11 +353,65 @@ function TripContent() {
                 ⏱ ~{formatDuration(trip.totalMiles)}
               </span>
             </div>
+
+            {/* Route timeline */}
+            <div className="flex flex-col">
+              {/* Start */}
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-offset-1" style={{ backgroundColor: '#46a302', ringColor: '#46a302' }} />
+                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🚗 {start}</p>
+              </div>
+
+              {/* Stops */}
+              {trip.stops.map((stop, i) => (
+                <div key={i} className="flex items-stretch gap-3">
+                  {/* Vertical line + dot */}
+                  <div className="flex flex-col items-center w-4 flex-shrink-0">
+                    <div className="w-px flex-1 my-0.5" style={{ backgroundColor: '#e5e7eb' }} />
+                    <button
+                      onClick={() => setActiveStop(i)}
+                      className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 text-[10px] transition-transform hover:scale-110"
+                      style={{ backgroundColor: activeStop === i ? '#D85A30' : '#f97316', minHeight: 20 }}
+                    >
+                      {i + 1}
+                    </button>
+                    <div className="w-px flex-1 my-0.5" style={{ backgroundColor: '#e5e7eb' }} />
+                  </div>
+                  {/* Stop name row */}
+                  <button
+                    onClick={() => setActiveStop(i)}
+                    className="flex items-center gap-1.5 py-2 text-left hover:text-[#D85A30] transition-colors w-full"
+                  >
+                    <span className="text-sm">{CATEGORY_EMOJI[stop.category] || '📍'}</span>
+                    <span className="text-sm font-semibold truncate" style={{ color: activeStop === i ? '#D85A30' : '#374151' }}>
+                      {stop.name}
+                    </span>
+                    <span className="text-xs text-gray-400 flex-shrink-0 ml-auto">⏲ {stop.duration}</span>
+                  </button>
+                </div>
+              ))}
+
+              {/* Connector to end */}
+              <div className="flex items-stretch gap-3">
+                <div className="flex flex-col items-center w-4 flex-shrink-0">
+                  <div className="w-px flex-1" style={{ backgroundColor: '#e5e7eb' }} />
+                </div>
+              </div>
+
+              {/* End */}
+              <div className="flex items-center gap-3">
+                <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-offset-1" style={{ backgroundColor: '#1B2D45' }} />
+                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🏁 {end}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 mb-4 px-1">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#46a302' }} />
-            <p className="text-sm font-semibold text-gray-500">{start}</p>
+          {/* Your Stops section header */}
+          <div className="flex items-center gap-3 mb-3 px-1">
+            <p className="text-xs font-extrabold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Your Stops</p>
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' }}>
+              {trip.stops.length}
+            </span>
           </div>
 
           {trip.stops.map((stop, i) => (
@@ -364,7 +426,7 @@ function TripContent() {
 
           <div className="flex items-center gap-3 mt-2 px-1">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1B2D45' }} />
-            <p className="text-sm font-semibold text-gray-500">{end}</p>
+            <p className="text-sm font-semibold text-gray-500">🏁 {end}</p>
           </div>
 
           {/* Open in Maps */}
