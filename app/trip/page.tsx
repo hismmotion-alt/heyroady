@@ -72,6 +72,10 @@ function TripContent() {
   const [copied, setCopied] = useState(false);
   const [selectedHotelIdx, setSelectedHotelIdx] = useState<number | null>(null);
   const [replacingStop, setReplacingStop] = useState<number | null>(null);
+  const [endLabel, setEndLabel] = useState(end);
+  const [endInputValue, setEndInputValue] = useState(end);
+  const [isEditingEnd, setIsEditingEnd] = useState(false);
+  const [geocodingEnd, setGeocodingEnd] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
@@ -323,10 +327,10 @@ function TripContent() {
   };
 
   const handleSelectHotel = async (idx: number) => {
-    // Toggle off if already selected
     if (selectedHotelIdx === idx) {
       setSelectedHotelIdx(null);
-      // Restore original end coords
+      setEndLabel(end);
+      setEndInputValue(end);
       const original = await geocode(end);
       setEndCoords(original);
       return;
@@ -334,17 +338,32 @@ function TripContent() {
     setSelectedHotelIdx(idx);
     const hotel = trip?.hotels?.[idx];
     if (!hotel) return;
-    // If Foursquare gave us coordinates, use them directly
+    const label = `${hotel.name}, ${hotel.city}`;
+    setEndLabel(label);
+    setEndInputValue(label);
     if (hotel.lat && hotel.lng) {
       setEndCoords([hotel.lng, hotel.lat]);
     } else {
-      // Fallback: geocode the hotel name + city
       try {
-        const coords = await geocode(`${hotel.name}, ${hotel.city}`);
+        const coords = await geocode(label);
         setEndCoords(coords);
-      } catch {
-        // silently skip — map stays on original end
-      }
+      } catch { /* silently skip */ }
+    }
+  };
+
+  const handleEndAddressSubmit = async () => {
+    const value = endInputValue.trim();
+    if (!value || value === endLabel) { setIsEditingEnd(false); return; }
+    setGeocodingEnd(true);
+    try {
+      const coords = await geocode(value);
+      setEndCoords(coords);
+      setEndLabel(value);
+      setSelectedHotelIdx(null);
+    } catch { /* silently skip */ }
+    finally {
+      setGeocodingEnd(false);
+      setIsEditingEnd(false);
     }
   };
 
@@ -556,10 +575,36 @@ const suggestNewStop = async (i: number, preferredCategory?: string) => {
                     </span>
                   </div>
 
-                  {/* End */}
+                  {/* End — editable */}
                   <div className="flex items-center gap-3">
                     <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-offset-1" style={{ backgroundColor: '#1B2D45' }} />
-                    <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🏁 {end}</p>
+                    {isEditingEnd ? (
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <input
+                          autoFocus
+                          value={endInputValue}
+                          onChange={(e) => setEndInputValue(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleEndAddressSubmit(); if (e.key === 'Escape') setIsEditingEnd(false); }}
+                          onBlur={handleEndAddressSubmit}
+                          placeholder="Enter address or hotel name…"
+                          className="flex-1 text-sm font-semibold px-2 py-1 rounded-lg border outline-none"
+                          style={{ borderColor: '#1B2D45', color: '#1B2D45', minWidth: 0 }}
+                        />
+                        {geocodingEnd && <div className="w-3.5 h-3.5 border-2 rounded-full animate-spin flex-shrink-0" style={{ borderColor: '#1B2D45', borderTopColor: 'transparent' }} />}
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setIsEditingEnd(true); setEndInputValue(endLabel); }}
+                        className="flex items-center gap-1.5 text-left group"
+                        title="Click to change destination"
+                      >
+                        <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🏁 {endLabel}</p>
+                        <svg className="w-3 h-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 </div>
               </SortableContext>
