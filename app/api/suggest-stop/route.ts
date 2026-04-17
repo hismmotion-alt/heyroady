@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const excluded = currentStops.map((s) => s.name).join(', ');
 
     const message = await client.messages.create({
-      model: 'claude-opus-4-1-20250805',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 512,
       system: ROADY_SYSTEM_PROMPT,
       messages: [
