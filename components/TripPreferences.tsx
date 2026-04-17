@@ -8,6 +8,10 @@ export interface TripPreferences {
   stopTypes: string[];
   numberOfStops: string;
   stopDuration: string;
+  hotelPreference?: string;
+  hotelGuests?: string;
+  hotelCheckin?: string;
+  hotelNights?: string;
 }
 
 interface Props {
@@ -58,6 +62,12 @@ const DURATIONS = [
   { id: 'mix', label: 'Mix it up', desc: 'A blend of quick and long stops', icon: '🎯' },
 ];
 
+const HOTEL_BUDGETS = [
+  { id: '$', label: '$', desc: 'Budget — motels, hostels, affordable stays', icon: '🏨' },
+  { id: '$$', label: '$$', desc: 'Mid-range — comfortable hotels', icon: '🏩' },
+  { id: '$$$', label: '$$$', desc: 'Luxury — upscale hotels and resorts', icon: '🏰' },
+];
+
 export default function TripPreferencesForm({ onComplete, prefilledGroup, prefilledStopTypes }: Props) {
   const [step, setStep] = useState(0);
   const [travelGroup, setTravelGroup] = useState(prefilledGroup || '');
@@ -65,6 +75,10 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   const [stopTypes, setStopTypes] = useState<string[]>(prefilledStopTypes || []);
   const [numberOfStops, setNumberOfStops] = useState('');
   const [stopDuration, setStopDuration] = useState('');
+  const [hotelPreference, setHotelPreference] = useState('');
+  const [hotelGuests, setHotelGuests] = useState('');
+  const [hotelCheckin, setHotelCheckin] = useState('');
+  const [hotelNights, setHotelNights] = useState('');
 
   // When coming from suggestions, skip already-answered steps
   const skipGroup = !!prefilledGroup;
@@ -78,6 +92,8 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   if (!skipGroup) steps.push('group');
   if (showKidsStep || (skipGroup && prefilledGroup === 'family-kids')) steps.push('kids');
   if (!skipStopTypes) steps.push('stopTypes');
+  steps.push('hotelBudget');
+  steps.push('hotelDetails');
   steps.push('numberOfStops');
   steps.push('duration');
 
@@ -90,6 +106,8 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
       case 'group': return !!travelGroup;
       case 'kids': return kidsOptional || kidsAges.length > 0;
       case 'stopTypes': return stopTypes.length > 0;
+      case 'hotelBudget': return !!hotelPreference;
+      case 'hotelDetails': return !!hotelGuests && !!hotelCheckin && !!hotelNights;
       case 'numberOfStops': return !!numberOfStops;
       case 'duration': return !!stopDuration;
       default: return false;
@@ -108,6 +126,10 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         stopTypes: effectiveStopTypes,
         numberOfStops,
         stopDuration,
+        ...(hotelPreference && { hotelPreference }),
+        ...(hotelGuests && { hotelGuests }),
+        ...(hotelCheckin && { hotelCheckin }),
+        ...(hotelNights && { hotelNights }),
       });
     }
   }
@@ -261,6 +283,92 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
                     onClick={() => toggleMulti(t.id, stopTypes, setStopTypes, 3)}
                     multi
                   />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Step: Hotel Budget */}
+          {currentStepId === 'hotelBudget' && (
+            <>
+              <h2 className="text-3xl font-extrabold mb-2" style={{ color: '#1B2D45' }}>
+                What&apos;s your hotel budget?
+              </h2>
+              <p className="text-gray-400 mb-8">
+                Roady will suggest a hotel at your destination to match.
+              </p>
+              <div className="flex flex-col gap-3">
+                {HOTEL_BUDGETS.map((b) => (
+                  <OptionCard
+                    key={b.id}
+                    item={b}
+                    selected={hotelPreference === b.id}
+                    onClick={() => setHotelPreference(b.id)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* Step: Hotel Details */}
+          {currentStepId === 'hotelDetails' && (
+            <>
+              <h2 className="text-3xl font-extrabold mb-2" style={{ color: '#1B2D45' }}>
+                Hotel details
+              </h2>
+              <p className="text-gray-400 mb-8">
+                Roady will pre-fill your search on Booking.com so you see real availability.
+              </p>
+
+              {/* Guests */}
+              <p className="text-sm font-bold mb-3" style={{ color: '#1B2D45' }}>How many guests?</p>
+              <div className="flex gap-2 flex-wrap mb-7">
+                {['1', '2', '3', '4', '5', '6+'].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setHotelGuests(n)}
+                    className="w-12 h-12 rounded-2xl border-2 font-bold text-sm transition-all"
+                    style={{
+                      borderColor: hotelGuests === n ? '#58CC02' : '#E5E7EB',
+                      backgroundColor: hotelGuests === n ? 'rgba(88,204,2,0.08)' : 'white',
+                      color: hotelGuests === n ? '#46a302' : '#1B2D45',
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+
+              {/* Check-in date */}
+              <p className="text-sm font-bold mb-3" style={{ color: '#1B2D45' }}>Check-in date</p>
+              <input
+                type="date"
+                value={hotelCheckin}
+                min={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setHotelCheckin(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border-2 text-sm font-semibold mb-7 outline-none transition-all"
+                style={{
+                  borderColor: hotelCheckin ? '#58CC02' : '#E5E7EB',
+                  color: '#1B2D45',
+                }}
+              />
+
+              {/* Nights */}
+              <p className="text-sm font-bold mb-3" style={{ color: '#1B2D45' }}>How many nights?</p>
+              <div className="flex gap-2 flex-wrap">
+                {['1', '2', '3', '4', '5', '6', '7+'].map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setHotelNights(n)}
+                    className="w-12 h-12 rounded-2xl border-2 font-bold text-sm transition-all"
+                    style={{
+                      borderColor: hotelNights === n ? '#58CC02' : '#E5E7EB',
+                      backgroundColor: hotelNights === n ? 'rgba(88,204,2,0.08)' : 'white',
+                      color: hotelNights === n ? '#46a302' : '#1B2D45',
+                    }}
+                  >
+                    {n}
+                  </button>
                 ))}
               </div>
             </>

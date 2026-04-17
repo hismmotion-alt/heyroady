@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import StopCard from '@/components/StopCard';
+import HotelCard from '@/components/HotelCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import type { TripData } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
@@ -54,6 +55,10 @@ function TripContent() {
   const stopDuration = searchParams.get('stopDuration') || '';
   const kidsAges = searchParams.get('kidsAges') || '';
   const waypoints = searchParams.get('waypoints') || '';
+  const hotelPreference = searchParams.get('hotelPreference') || '';
+  const hotelGuests = searchParams.get('hotelGuests') || '';
+  const hotelCheckin = searchParams.get('hotelCheckin') || '';
+  const hotelNights = searchParams.get('hotelNights') || '';
 
   const [trip, setTrip] = useState<TripData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -205,7 +210,7 @@ function TripContent() {
           fetch('/api/suggest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges, waypoints }),
+            body: JSON.stringify({ start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights }),
           }),
         ]);
 
@@ -549,6 +554,23 @@ const suggestNewStop = async (i: number, preferredCategory?: string) => {
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1B2D45' }} />
             <p className="text-sm font-semibold text-gray-500">🏁 {end}</p>
           </div>
+
+          {/* Where to Stay — single hotel at final destination */}
+          {trip.hotel && (
+            <div className="mt-6">
+              <div className="flex items-center gap-3 mb-3 px-1">
+                <p className="text-xs font-extrabold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Where to Stay</p>
+              </div>
+              <p className="text-xs font-semibold text-gray-400 mb-2 px-1">📍 In {end}</p>
+              <HotelCard
+                hotel={trip.hotel}
+                stopCity={end}
+                checkin={hotelCheckin || undefined}
+                nights={hotelNights || undefined}
+                guests={hotelGuests || undefined}
+              />
+            </div>
+          )}
 
           {/* Open in Maps */}
           {(() => {

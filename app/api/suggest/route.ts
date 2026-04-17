@@ -67,6 +67,21 @@ function buildPreferenceContext(body: Record<string, string>): string {
     }
   }
 
+  // Hotel budget + details
+  if (body.hotelPreference) {
+    const hotelLabels: Record<string, string> = {
+      '$': 'budget-friendly (motels, hostels, affordable hotels)',
+      '$$': 'mid-range comfortable hotels',
+      '$$$': 'luxury hotels and upscale resorts',
+    };
+    const hotelParts: string[] = [];
+    if (hotelLabels[body.hotelPreference]) hotelParts.push(hotelLabels[body.hotelPreference]);
+    if (body.hotelGuests) hotelParts.push(`accommodating ${body.hotelGuests.replace('+', ' or more')} guest${body.hotelGuests === '1' ? '' : 's'}`);
+    if (hotelParts.length) {
+      parts.push(`Suggest a ${hotelParts.join(', ')} at the final destination.`);
+    }
+  }
+
   // Duration
   if (body.stopDuration) {
     const durationLabels: Record<string, string> = {
@@ -115,6 +130,8 @@ export async function POST(req: Request) {
           role: 'user',
           content: `Plan a California road trip from "${start}" to "${end}".${preferenceContext}${waypointsContext}
 
+IMPORTANT: Order all stops geographically along the route from "${start}" to "${end}". Never suggest a stop that requires backtracking or going in the opposite direction.
+
 Suggest exactly ${stopsInstruction} interesting stops along the way (not including start/end — those are just for routing).
 
 Return this exact JSON structure:
@@ -122,6 +139,11 @@ Return this exact JSON structure:
   "routeName": "string — a catchy name for this route",
   "tagline": "string — one sentence describing the vibe",
   "totalMiles": number,
+  "hotel": {
+    "name": "string — a real hotel at or near the final destination",
+    "city": "string — city name of the final destination",
+    "priceRange": "$" | "$$" | "$$$"
+  },
   "stops": [
     {
       "name": "string — place name",
@@ -177,8 +199,44 @@ Return this exact JSON structure:
             } catch {
               // silently skip — stop renders without enrichment
             }
+
           })
         );
+
+        // Enrich top-level hotel with Foursquare data
+        if (data.hotel?.name) {
+          try {
+            // Use the last stop's coordinates as a proximity hint for the final destination
+            const lastStop = data.stops?.[data.stops.length - 1];
+            const ll = lastStop ? `${lastStop.lat},${lastStop.lng}` : '';
+            const hotelParams = new URLSearchParams({
+              query: data.hotel.name,
+              ...(ll && { ll }),
+              radius: '10000',
+              limit: '1',
+              categories: '19014',
+              fields: 'rating,website,price,photos',
+            });
+            const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
+              headers: { Authorization: fsqKey, Accept: 'application/json' },
+            });
+            if (hotelRes.ok) {
+              const hotelFsq = await hotelRes.json();
+              const hotelPlace = hotelFsq.results?.[0];
+              if (hotelPlace) {
+                if (hotelPlace.rating != null) data.hotel.fsqRating = hotelPlace.rating;
+                if (hotelPlace.price != null) data.hotel.fsqPrice = hotelPlace.price;
+                if (hotelPlace.website) data.hotel.fsqWebsite = hotelPlace.website;
+                const hotelPhoto = hotelPlace.photos?.[0];
+                if (hotelPhoto?.prefix && hotelPhoto?.suffix) {
+                  data.hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
+                }
+              }
+            }
+          } catch {
+            // silently skip
+          }
+        }
       }
 
       return Response.json(data);

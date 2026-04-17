@@ -53,6 +53,10 @@ function PreferencesContent() {
     if (prefs.kidsAges && prefs.kidsAges.length > 0) {
       params.set('kidsAges', prefs.kidsAges.join(','));
     }
+    if (prefs.hotelPreference) params.set('hotelPreference', prefs.hotelPreference);
+    if (prefs.hotelGuests) params.set('hotelGuests', prefs.hotelGuests);
+    if (prefs.hotelCheckin) params.set('hotelCheckin', prefs.hotelCheckin);
+    if (prefs.hotelNights) params.set('hotelNights', prefs.hotelNights);
     if (waypoints) params.set('waypoints', waypoints);
     router.push(`/trip?${params.toString()}`);
   }

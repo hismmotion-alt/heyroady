@@ -1,3 +1,14 @@
+export interface HotelSuggestion {
+  name: string;
+  city: string;
+  priceRange: '$' | '$$' | '$$$';
+  // Foursquare enrichment (optional)
+  fsqRating?: number;
+  fsqPhoto?: string;
+  fsqWebsite?: string;
+  fsqPrice?: number;
+}
+
 export interface Stop {
   name: string;
   city: string;
@@ -21,6 +32,7 @@ export interface TripData {
   tagline: string;
   totalMiles: number;
   stops: Stop[];
+  hotel?: HotelSuggestion;
 }
 
 export interface TripPreferences {
@@ -29,6 +41,10 @@ export interface TripPreferences {
   stopTypes: string[];
   numberOfStops: string;
   stopDuration: string;
+  hotelPreference?: string;
+  hotelGuests?: string;
+  hotelCheckin?: string;
+  hotelNights?: string;
 }
 
 export interface Destination {
