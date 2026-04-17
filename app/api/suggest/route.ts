@@ -169,9 +169,11 @@ ${hotelJsonField}  "stops": [
     });
 
     const raw = (message.content[0] as { type: string; text: string }).text;
+    // Strip markdown code fences if Haiku wraps the response
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim();
 
     try {
-      const data = JSON.parse(raw);
+      const data = JSON.parse(cleaned);
 
       // Enrich stops with Foursquare data in parallel (best-effort, never blocks)
       const fsqKey = process.env.FOURSQUARE_API_KEY;
