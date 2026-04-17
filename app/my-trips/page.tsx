@@ -150,7 +150,9 @@ export default function MyTripsPage() {
             {trips.map((trip) => {
               const completed = !!trip.trip_data.completed;
               const isAnimating = animatingId === trip.id;
-              const vibeCategories = [...new Set(trip.trip_data.stops.map((s) => s.category))];
+              const vibeCategories = trip.trip_data.stops
+                .map((s) => s.category)
+                .filter((cat, idx, arr) => arr.indexOf(cat) === idx);
               return (
                 <div
                   key={trip.id}
