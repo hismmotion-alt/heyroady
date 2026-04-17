@@ -36,6 +36,7 @@ export interface TripData {
   totalMiles: number;
   stops: Stop[];
   hotels?: HotelSuggestion[];
+  completed?: boolean;
 }
 
 export interface TripPreferences {

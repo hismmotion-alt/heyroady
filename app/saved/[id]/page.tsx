@@ -102,11 +102,53 @@ export default function SavedTripPage() {
           </a>
         </div>
 
-        {/* Stops */}
-        <div className="flex flex-col gap-4">
-          {stops.map((stop, i) => (
-            <StopCard key={i} stop={stop} number={i + 1} isActive={false} isFirst={i === 0} isLast={i === stops.length - 1} onClick={() => {}} />
-          ))}
+        {/* Route with start / stops / end */}
+        <div className="flex flex-col">
+          {/* Start */}
+          <div className="flex items-center gap-4 px-4 py-3 rounded-2xl mb-2" style={{ backgroundColor: 'rgba(88,204,2,0.06)', border: '1.5px solid rgba(88,204,2,0.2)' }}>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-lg" style={{ backgroundColor: 'rgba(88,204,2,0.15)' }}>
+              🚗
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#46a302' }}>Starting point</p>
+              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{trip.start}</p>
+            </div>
+          </div>
+
+          {/* Connector */}
+          <div className="flex items-center gap-2 px-6 py-1">
+            <div className="w-px h-4" style={{ backgroundColor: '#e5e7eb' }} />
+          </div>
+
+          {/* Stops */}
+          <div className="flex flex-col gap-2">
+            {stops.map((stop, i) => (
+              <div key={i}>
+                <StopCard stop={stop} number={i + 1} isActive={false} isFirst={i === 0} isLast={i === stops.length - 1} onClick={() => {}} />
+                {i < stops.length - 1 && (
+                  <div className="flex items-center gap-2 px-6 py-1">
+                    <div className="w-px h-4" style={{ backgroundColor: '#e5e7eb' }} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Connector */}
+          <div className="flex items-center gap-2 px-6 py-1">
+            <div className="w-px h-4" style={{ backgroundColor: '#e5e7eb' }} />
+          </div>
+
+          {/* End */}
+          <div className="flex items-center gap-4 px-4 py-3 rounded-2xl mt-2" style={{ backgroundColor: 'rgba(27,45,69,0.05)', border: '1.5px solid rgba(27,45,69,0.12)' }}>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-lg" style={{ backgroundColor: 'rgba(27,45,69,0.1)' }}>
+              🏁
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#6b7280' }}>Final destination</p>
+              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{trip.end}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
