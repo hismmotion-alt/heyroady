@@ -18,6 +18,15 @@ async function geocodePlace(query: string): Promise<[number, number] | null> {
   }
 }
 
+/** Haversine distance in km between two lat/lng points. */
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 /** Sort stops by their projection onto the start→end direction vector.
  *  This guarantees geographic ordering regardless of what Claude returns. */
 function sortStopsAlongRoute(
@@ -111,7 +120,7 @@ function buildPreferenceContext(body: Record<string, string>): string {
     if (hotelLabels[body.hotelPreference]) hotelParts.push(hotelLabels[body.hotelPreference]);
     if (body.hotelGuests) hotelParts.push(`accommodating ${body.hotelGuests.replace('+', ' or more')} guest${body.hotelGuests === '1' ? '' : 's'}`);
     if (hotelParts.length) {
-      parts.push(`Suggest a ${hotelParts.join(', ')} at the final destination.`);
+      parts.push(`Suggest ${hotelParts.join(', ')} hotels. CRITICAL: Every suggested hotel MUST be physically located in or immediately adjacent to the final destination city. Do NOT suggest hotels in other cities, regions, or states.`);
     }
   }
 
@@ -288,10 +297,16 @@ ${hotelJsonField}  "stops": [
                   hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
                 }
                 // Store coordinates so we can update the map when the hotel is selected
+                // Validate: reject coordinates that are > 150km from the route's end destination
                 const geo = hotelPlace.geocodes?.main;
                 if (geo?.latitude && geo?.longitude) {
-                  hotel.lat = geo.latitude;
-                  hotel.lng = geo.longitude;
+                  const tooFar = endCoords
+                    ? haversineKm(endCoords[0], endCoords[1], geo.latitude, geo.longitude) > 150
+                    : false;
+                  if (!tooFar) {
+                    hotel.lat = geo.latitude;
+                    hotel.lng = geo.longitude;
+                  }
                 }
               } catch {
                 // silently skip

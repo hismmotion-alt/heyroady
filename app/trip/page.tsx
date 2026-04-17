@@ -71,6 +71,7 @@ function TripContent() {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [selectedHotelIdx, setSelectedHotelIdx] = useState<number | null>(null);
+  const [hotelCarouselIdx, setHotelCarouselIdx] = useState(0);
   const [replacingStop, setReplacingStop] = useState<number | null>(null);
   const [endLabel, setEndLabel] = useState(end);
   const [endInputValue, setEndInputValue] = useState(end);
@@ -611,14 +612,32 @@ const suggestNewStop = async (i: number, preferredCategory?: string) => {
             </DndContext>
           </div>
 
-          {/* Where to Stay — 3-5 hotels at final destination */}
+          {/* Where to Stay — carousel */}
           {trip.hotels && trip.hotels.length > 0 && (
             <div className="mt-6">
-              <div className="flex items-center gap-3 mb-1 px-1">
-                <p className="text-xs font-extrabold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Where to Stay</p>
-                <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(0,53,128,0.08)', color: '#003580' }}>
-                  {trip.hotels.length}
-                </span>
+              <div className="flex items-center justify-between mb-1 px-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-extrabold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Where to Stay</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400">{hotelCarouselIdx + 1} of {trip.hotels.length}</span>
+                  <button
+                    onClick={() => setHotelCarouselIdx((i) => Math.max(0, i - 1))}
+                    disabled={hotelCarouselIdx === 0}
+                    className="w-6 h-6 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+                    style={{ backgroundColor: 'rgba(27,45,69,0.07)' }}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                  </button>
+                  <button
+                    onClick={() => setHotelCarouselIdx((i) => Math.min(trip.hotels!.length - 1, i + 1))}
+                    disabled={hotelCarouselIdx === trip.hotels.length - 1}
+                    className="w-6 h-6 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
+                    style={{ backgroundColor: 'rgba(27,45,69,0.07)' }}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                </div>
               </div>
               <p className="text-xs text-gray-400 mb-3 px-1">
                 📍 In {selectedHotelIdx !== null ? trip.hotels[selectedHotelIdx].city || end : end}
@@ -628,17 +647,27 @@ const suggestNewStop = async (i: number, preferredCategory?: string) => {
                   </span>
                 )}
               </p>
-              <div className="flex flex-col gap-2">
-                {trip.hotels.map((hotel, idx) => (
-                  <HotelCard
+              <HotelCard
+                hotel={trip.hotels[hotelCarouselIdx]}
+                stopCity={end}
+                checkin={hotelCheckin || undefined}
+                nights={hotelNights || undefined}
+                guests={hotelGuests || undefined}
+                isSelected={selectedHotelIdx === hotelCarouselIdx}
+                onSelect={() => handleSelectHotel(hotelCarouselIdx)}
+              />
+              {/* Dot indicators */}
+              <div className="flex justify-center gap-1.5 mt-3">
+                {trip.hotels.map((_, idx) => (
+                  <button
                     key={idx}
-                    hotel={hotel}
-                    stopCity={end}
-                    checkin={hotelCheckin || undefined}
-                    nights={hotelNights || undefined}
-                    guests={hotelGuests || undefined}
-                    isSelected={selectedHotelIdx === idx}
-                    onSelect={() => handleSelectHotel(idx)}
+                    onClick={() => setHotelCarouselIdx(idx)}
+                    className="rounded-full transition-all"
+                    style={{
+                      width: idx === hotelCarouselIdx ? 16 : 6,
+                      height: 6,
+                      backgroundColor: idx === hotelCarouselIdx ? '#1B2D45' : '#d1d5db',
+                    }}
                   />
                 ))}
               </div>
