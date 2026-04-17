@@ -1,6 +1,39 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ROADY_SYSTEM_PROMPT } from '@/lib/prompts';
 
+/** Geocode a place name → [lat, lng] using Mapbox. Returns null on failure. */
+async function geocodePlace(query: string): Promise<[number, number] | null> {
+  try {
+    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (!token) return null;
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?country=us&limit=1&access_token=${token}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const [lng, lat] = json.features?.[0]?.center ?? [];
+    if (lat == null || lng == null) return null;
+    return [lat, lng];
+  } catch {
+    return null;
+  }
+}
+
+/** Sort stops by their projection onto the start→end direction vector.
+ *  This guarantees geographic ordering regardless of what Claude returns. */
+function sortStopsAlongRoute(
+  stops: { lat: number; lng: number; [key: string]: unknown }[],
+  startLat: number, startLng: number,
+  endLat: number, endLng: number
+) {
+  const dx = endLng - startLng;
+  const dy = endLat - startLat;
+  return [...stops].sort((a, b) => {
+    const projA = (a.lng - startLng) * dx + (a.lat - startLat) * dy;
+    const projB = (b.lng - startLng) * dx + (b.lat - startLat) * dy;
+    return projA - projB;
+  });
+}
+
 function getClient() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -109,6 +142,12 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Start and end locations are required' }, { status: 400 });
     }
 
+    // Geocode start and end in parallel to get real coordinates for sorting + prompt context
+    const [startCoords, endCoords] = await Promise.all([
+      geocodePlace(start),
+      geocodePlace(end),
+    ]);
+
     const preferenceContext = buildPreferenceContext(body);
 
     // Determine how many stops to suggest
@@ -140,9 +179,9 @@ export async function POST(req: Request) {
       messages: [
         {
           role: 'user',
-          content: `Plan a California road trip from "${start}" to "${end}".${preferenceContext}${waypointsContext}
+          content: `Plan a California road trip from "${start}" to "${end}".${startCoords && endCoords ? ` The route starts near (lat ${startCoords[0].toFixed(4)}, lng ${startCoords[1].toFixed(4)}) and ends near (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}).` : ''}${preferenceContext}${waypointsContext}
 
-IMPORTANT: Order all stops geographically along the route from "${start}" to "${end}". Never suggest a stop that requires backtracking or going in the opposite direction.
+IMPORTANT: Order all stops geographically along the route from "${start}" to "${end}". Never suggest a stop that requires backtracking or going in the opposite direction. Every stop's lat/lng must fall within the geographic corridor between the start and end coordinates above.
 
 Suggest exactly ${stopsInstruction} interesting stops along the way (not including start/end — those are just for routing).
 
@@ -174,6 +213,11 @@ ${hotelJsonField}  "stops": [
 
     try {
       const data = JSON.parse(cleaned);
+
+      // Sort stops along the route direction — guaranteed correct order regardless of Claude output
+      if (Array.isArray(data.stops) && startCoords && endCoords) {
+        data.stops = sortStopsAlongRoute(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
+      }
 
       // Enrich stops with Foursquare data in parallel (best-effort, never blocks)
       const fsqKey = process.env.FOURSQUARE_API_KEY;
