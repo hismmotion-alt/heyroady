@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
+import StopCard from '@/components/StopCard';
 import type { TripData, Stop } from '@/lib/types';
 
 type SavedTrip = {
@@ -12,14 +13,6 @@ type SavedTrip = {
   end: string;
   trip_data: TripData;
   created_at: string;
-};
-
-const CATEGORY_EMOJI: Record<string, string> = {
-  nature: '🌿',
-  food: '🍽',
-  culture: '🏛',
-  adventure: '⚡',
-  scenic: '🌅',
 };
 
 export default function SavedTripPage() {
@@ -63,7 +56,7 @@ export default function SavedTripPage() {
     setActiveStop(null);
   };
 
-  const handleSuggestStop = async (idx: number) => {
+  const handleSuggestStop = async (idx: number, preferredCategory?: string) => {
     if (!trip) return;
     setSuggestingIdx(idx);
     try {
@@ -75,6 +68,7 @@ export default function SavedTripPage() {
           end: trip.end,
           currentStops: trip.trip_data.stops,
           position: idx,
+          preferredCategory,
         }),
       });
       if (!res.ok) return;
@@ -190,74 +184,26 @@ export default function SavedTripPage() {
             </div>
           </div>
 
-          {/* Stops */}
-          {stops.map((stop, i) => {
-            const isActive = activeStop === i;
-            const isSuggesting = suggestingIdx === i;
-            return (
-              <div key={i}>
-                {/* Connector line */}
-                <div className="px-6 py-1">
-                  <div className="w-px h-4" style={{ backgroundColor: '#e5e7eb' }} />
-                </div>
-
-                {/* Stop row — click to expand */}
-                <button
-                  onClick={() => setActiveStop(isActive ? null : i)}
-                  className="w-full text-left px-4 py-3 rounded-2xl transition-all hover:shadow-sm"
-                  style={{
-                    backgroundColor: isActive ? 'rgba(88,204,2,0.04)' : '#fafafa',
-                    border: isActive ? '1.5px solid rgba(88,204,2,0.25)' : '1.5px solid #f0f0f0',
-                  }}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white" style={{ backgroundColor: '#1B2D45' }}>
-                      {i + 1}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold truncate" style={{ color: '#1B2D45' }}>{stop.name}</p>
-                      <p className="text-xs text-gray-400">{stop.city} · {stop.duration}</p>
-                    </div>
-                    <span className="text-base flex-shrink-0">{CATEGORY_EMOJI[stop.category] ?? '📍'}</span>
-                    <span className="text-gray-400 text-xs flex-shrink-0">{isActive ? '▲' : '▼'}</span>
-                  </div>
-                </button>
-
-                {/* Expanded details */}
-                {isActive && (
-                  <div className="mx-1 mt-1 mb-1 px-4 py-4 rounded-2xl" style={{ backgroundColor: '#f9fafb', border: '1.5px solid #f0f0f0' }}>
-                    <p className="text-sm text-gray-600 mb-2">{stop.description}</p>
-                    <p className="text-xs text-gray-400 mb-4">
-                      <span className="font-semibold text-gray-500">Tip:</span> {stop.tip}
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleSuggestStop(i)}
-                        disabled={isSuggesting}
-                        className="flex-1 py-2 rounded-xl text-sm font-semibold border transition-all hover:border-[#58CC02] hover:text-[#46a302] disabled:opacity-50"
-                        style={{ borderColor: '#e5e7eb', color: '#1B2D45' }}
-                      >
-                        {isSuggesting ? (
-                          <span className="flex items-center justify-center gap-2">
-                            <span className="w-3.5 h-3.5 border-2 border-[#58CC02] border-t-transparent rounded-full animate-spin inline-block" />
-                            Finding stop…
-                          </span>
-                        ) : '✦ Suggest different'}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteStop(i)}
-                        className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-400 border border-gray-200 hover:border-red-300 hover:text-red-400 transition-all"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                )}
+          {/* Stops via StopCard */}
+          {stops.map((stop, i) => (
+            <div key={i}>
+              <div className="px-6 py-1">
+                <div className="w-px h-4" style={{ backgroundColor: '#e5e7eb' }} />
               </div>
-            );
-          })}
+              <StopCard
+                stop={stop}
+                number={i + 1}
+                isActive={activeStop === i}
+                onClick={() => setActiveStop(activeStop === i ? null : i)}
+                onDelete={() => handleDeleteStop(i)}
+                onSuggestNew={() => handleSuggestStop(i)}
+                onSuggestByCategory={(cat) => handleSuggestStop(i, cat)}
+                isSuggesting={suggestingIdx === i}
+              />
+            </div>
+          ))}
 
-          {/* Add stop button */}
+          {/* Add stop */}
           <div className="px-6 py-1">
             <div className="w-px h-4" style={{ backgroundColor: '#e5e7eb' }} />
           </div>

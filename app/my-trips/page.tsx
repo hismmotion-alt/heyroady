@@ -16,6 +16,14 @@ type SavedTrip = {
 
 const PARTICLE_COLORS = ['#58CC02', '#46a302', '#7ee828', '#FFD700', '#FF6B35'];
 
+const CATEGORY_META: Record<string, { emoji: string; label: string; bg: string; color: string }> = {
+  nature:    { emoji: '🌿', label: 'Nature',    bg: 'rgba(29,158,117,0.1)',  color: '#1D9E75' },
+  food:      { emoji: '🍴', label: 'Food',      bg: 'rgba(239,159,39,0.1)', color: '#EF9F27' },
+  culture:   { emoji: '🏛️', label: 'Culture',   bg: 'rgba(147,51,234,0.1)', color: '#7c3aed' },
+  adventure: { emoji: '🏕️', label: 'Adventure', bg: 'rgba(216,90,48,0.1)',  color: '#D85A30' },
+  scenic:    { emoji: '🌄', label: 'Scenic',    bg: 'rgba(55,138,221,0.1)', color: '#378ADD' },
+};
+
 function Particles({ active }: { active: boolean }) {
   if (!active) return null;
   const particles = Array.from({ length: 8 }, (_, i) => {
@@ -142,6 +150,7 @@ export default function MyTripsPage() {
             {trips.map((trip) => {
               const completed = !!trip.trip_data.completed;
               const isAnimating = animatingId === trip.id;
+              const vibeCategories = [...new Set(trip.trip_data.stops.map((s) => s.category))];
               return (
                 <div
                   key={trip.id}
@@ -197,6 +206,20 @@ export default function MyTripsPage() {
                         </span>
                       )}
                     </div>
+                    {/* Vibe tags */}
+                    {vibeCategories.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {vibeCategories.map((cat) => {
+                          const meta = CATEGORY_META[cat];
+                          if (!meta) return null;
+                          return (
+                            <span key={cat} className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: meta.bg, color: meta.color }}>
+                              {meta.emoji} {meta.label}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex gap-2 mt-auto">
