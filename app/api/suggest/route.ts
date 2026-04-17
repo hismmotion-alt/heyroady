@@ -27,8 +27,9 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Sort stops by their projection onto the start→end direction vector.
- *  This guarantees geographic ordering regardless of what Claude returns. */
+/** Sort stops by projection onto the start→end direction vector AND filter out
+ *  stops that fall outside the route corridor (behind start or past end).
+ *  A 15% slack at each end allows minor detours without being too aggressive. */
 function sortStopsAlongRoute(
   stops: { lat: number; lng: number; [key: string]: unknown }[],
   startLat: number, startLng: number,
@@ -36,11 +37,46 @@ function sortStopsAlongRoute(
 ) {
   const dx = endLng - startLng;
   const dy = endLat - startLat;
-  return [...stops].sort((a, b) => {
-    const projA = (a.lng - startLng) * dx + (a.lat - startLat) * dy;
-    const projB = (b.lng - startLng) * dx + (b.lat - startLat) * dy;
-    return projA - projB;
-  });
+  const projEnd = dx * dx + dy * dy;
+  const slack = 0.15 * projEnd;
+
+  return [...stops]
+    .map((s) => ({
+      stop: s,
+      proj: (s.lng - startLng) * dx + (s.lat - startLat) * dy,
+    }))
+    .filter(({ proj }) => proj >= -slack && proj <= projEnd + slack)
+    .sort((a, b) => a.proj - b.proj)
+    .map(({ stop }) => stop);
+}
+
+/** Enforce minimum spacing between stops along the route.
+ *  First stop must be >= minFraction of total route distance from start.
+ *  Each subsequent stop must be >= minFraction of total route distance from the previous. */
+function enforceStopSpacing(
+  stops: { lat: number; lng: number; [key: string]: unknown }[],
+  startLat: number, startLng: number,
+  endLat: number, endLng: number,
+  minFraction = 0.20
+): { lat: number; lng: number; [key: string]: unknown }[] {
+  const dx = endLng - startLng;
+  const dy = endLat - startLat;
+  const projEnd = dx * dx + dy * dy;
+  const minGap = minFraction * projEnd;
+
+  const withProj = stops.map((s) => ({
+    stop: s,
+    proj: (s.lng - startLng) * dx + (s.lat - startLat) * dy,
+  }));
+
+  const kept: typeof withProj = [];
+  for (const item of withProj) {
+    const lastProj = kept.length === 0 ? 0 : kept[kept.length - 1].proj;
+    if (item.proj - lastProj >= minGap) {
+      kept.push(item);
+    }
+  }
+  return kept.map(({ stop }) => stop);
 }
 
 function getClient() {
@@ -173,11 +209,11 @@ export async function POST(req: Request) {
     const hotelJsonField = wantsHotel
       ? `  "hotels": [
     {
-      "name": "string — a real hotel at or near the final destination",
-      "city": "string — city name of the final destination",
+      "name": "string — a real hotel name",
+      "city": "string — MUST be \"${end}\" exactly (the final destination city only)",
       "priceRange": "$" | "$$" | "$$$"
     }
-    // suggest 3 to 5 distinct hotels at the final destination, varying by style and price
+    // suggest 3 to 5 hotels. EVERY hotel must be physically located inside ${end}. Do NOT suggest hotels in nearby towns, suburbs, or adjacent cities.
   ],\n`
       : '';
 
@@ -189,7 +225,8 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: `Plan a California road trip from "${start}" to "${end}".${startCoords && endCoords ? ` The route starts near (lat ${startCoords[0].toFixed(4)}, lng ${startCoords[1].toFixed(4)}) and ends near (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}).` : ''}${preferenceContext}${waypointsContext}
-
+${startCoords && endCoords ? `
+STRICT COORDINATE BOUNDS: Every stop's lat must be between ${(Math.min(startCoords[0], endCoords[0]) - 0.5).toFixed(2)} and ${(Math.max(startCoords[0], endCoords[0]) + 0.5).toFixed(2)}, and lng between ${(Math.min(startCoords[1], endCoords[1]) - 0.5).toFixed(2)} and ${(Math.max(startCoords[1], endCoords[1]) + 0.5).toFixed(2)}. Stops outside these bounds will be discarded.` : ''}
 IMPORTANT: Order all stops geographically along the route from "${start}" to "${end}". Never suggest a stop that requires backtracking or going in the opposite direction. Every stop's lat/lng must fall within the geographic corridor between the start and end coordinates above.
 
 Suggest exactly ${stopsInstruction} interesting stops along the way (not including start/end — those are just for routing).
@@ -226,6 +263,7 @@ ${hotelJsonField}  "stops": [
       // Sort stops along the route direction — guaranteed correct order regardless of Claude output
       if (Array.isArray(data.stops) && startCoords && endCoords) {
         data.stops = sortStopsAlongRoute(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
+        data.stops = enforceStopSpacing(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
       }
 
       // Enrich stops with Foursquare data in parallel (best-effort, never blocks)
@@ -267,8 +305,7 @@ ${hotelJsonField}  "stops": [
 
         // Enrich each hotel in the hotels array with Foursquare data
         if (wantsHotel && Array.isArray(data.hotels) && data.hotels.length > 0) {
-          const lastStop = data.stops?.[data.stops.length - 1];
-          const ll = lastStop ? `${lastStop.lat},${lastStop.lng}` : '';
+          const ll = endCoords ? `${endCoords[0]},${endCoords[1]}` : '';
           await Promise.allSettled(
             data.hotels.map(async (hotel: any) => {
               if (!hotel?.name) return;
@@ -276,9 +313,8 @@ ${hotelJsonField}  "stops": [
                 const hotelParams = new URLSearchParams({
                   query: hotel.name,
                   ...(ll && { ll }),
-                  radius: '10000',
+                  radius: '20000',
                   limit: '1',
-                  categories: '19014',
                   fields: 'rating,website,price,photos,geocodes',
                 });
                 const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
@@ -301,7 +337,7 @@ ${hotelJsonField}  "stops": [
                 const geo = hotelPlace.geocodes?.main;
                 if (geo?.latitude && geo?.longitude) {
                   const tooFar = endCoords
-                    ? haversineKm(endCoords[0], endCoords[1], geo.latitude, geo.longitude) > 150
+                    ? haversineKm(endCoords[0], endCoords[1], geo.latitude, geo.longitude) > 40
                     : false;
                   if (!tooFar) {
                     hotel.lat = geo.latitude;
