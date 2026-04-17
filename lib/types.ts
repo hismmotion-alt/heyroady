@@ -7,6 +7,9 @@ export interface HotelSuggestion {
   fsqPhoto?: string;
   fsqWebsite?: string;
   fsqPrice?: number;
+  // Coordinates — from Foursquare geocodes (used to update map when hotel is selected)
+  lat?: number;
+  lng?: number;
 }
 
 export interface Stop {
@@ -32,7 +35,7 @@ export interface TripData {
   tagline: string;
   totalMiles: number;
   stops: Stop[];
-  hotel?: HotelSuggestion;
+  hotels?: HotelSuggestion[];
 }
 
 export interface TripPreferences {

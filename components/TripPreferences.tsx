@@ -66,6 +66,7 @@ const HOTEL_BUDGETS = [
   { id: '$', label: '$', desc: 'Budget — motels, hostels, affordable stays', icon: '🏨' },
   { id: '$$', label: '$$', desc: 'Mid-range — comfortable hotels', icon: '🏩' },
   { id: '$$$', label: '$$$', desc: 'Luxury — upscale hotels and resorts', icon: '🏰' },
+  { id: 'none', label: 'No hotel needed', desc: "I'll sort accommodation separately", icon: '🚗' },
 ];
 
 export default function TripPreferencesForm({ onComplete, prefilledGroup, prefilledStopTypes }: Props) {
@@ -93,7 +94,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   if (showKidsStep || (skipGroup && prefilledGroup === 'family-kids')) steps.push('kids');
   if (!skipStopTypes) steps.push('stopTypes');
   steps.push('hotelBudget');
-  steps.push('hotelDetails');
+  if (hotelPreference !== 'none') steps.push('hotelDetails');
   steps.push('numberOfStops');
   steps.push('duration');
 

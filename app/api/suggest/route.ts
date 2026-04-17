@@ -121,6 +121,18 @@ export async function POST(req: Request) {
       ? `\n\nThe traveler specifically wants to include these stops: ${body.waypoints}. Build the itinerary around them — use them as stops or find nearby alternatives if exact matches don't work well on this route.`
       : '';
 
+    const wantsHotel = body.hotelPreference && body.hotelPreference !== 'none';
+    const hotelJsonField = wantsHotel
+      ? `  "hotels": [
+    {
+      "name": "string — a real hotel at or near the final destination",
+      "city": "string — city name of the final destination",
+      "priceRange": "$" | "$$" | "$$$"
+    }
+    // suggest 3 to 5 distinct hotels at the final destination, varying by style and price
+  ],\n`
+      : '';
+
     const message = await client.messages.create({
       model: 'claude-opus-4-1-20250805',
       max_tokens: 2048,
@@ -139,12 +151,7 @@ Return this exact JSON structure:
   "routeName": "string — a catchy name for this route",
   "tagline": "string — one sentence describing the vibe",
   "totalMiles": number,
-  "hotel": {
-    "name": "string — a real hotel at or near the final destination",
-    "city": "string — city name of the final destination",
-    "priceRange": "$" | "$$" | "$$$"
-  },
-  "stops": [
+${hotelJsonField}  "stops": [
     {
       "name": "string — place name",
       "city": "string — city name",
@@ -203,39 +210,48 @@ Return this exact JSON structure:
           })
         );
 
-        // Enrich top-level hotel with Foursquare data
-        if (data.hotel?.name) {
-          try {
-            // Use the last stop's coordinates as a proximity hint for the final destination
-            const lastStop = data.stops?.[data.stops.length - 1];
-            const ll = lastStop ? `${lastStop.lat},${lastStop.lng}` : '';
-            const hotelParams = new URLSearchParams({
-              query: data.hotel.name,
-              ...(ll && { ll }),
-              radius: '10000',
-              limit: '1',
-              categories: '19014',
-              fields: 'rating,website,price,photos',
-            });
-            const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
-              headers: { Authorization: fsqKey, Accept: 'application/json' },
-            });
-            if (hotelRes.ok) {
-              const hotelFsq = await hotelRes.json();
-              const hotelPlace = hotelFsq.results?.[0];
-              if (hotelPlace) {
-                if (hotelPlace.rating != null) data.hotel.fsqRating = hotelPlace.rating;
-                if (hotelPlace.price != null) data.hotel.fsqPrice = hotelPlace.price;
-                if (hotelPlace.website) data.hotel.fsqWebsite = hotelPlace.website;
+        // Enrich each hotel in the hotels array with Foursquare data
+        if (wantsHotel && Array.isArray(data.hotels) && data.hotels.length > 0) {
+          const lastStop = data.stops?.[data.stops.length - 1];
+          const ll = lastStop ? `${lastStop.lat},${lastStop.lng}` : '';
+          await Promise.allSettled(
+            data.hotels.map(async (hotel: any) => {
+              if (!hotel?.name) return;
+              try {
+                const hotelParams = new URLSearchParams({
+                  query: hotel.name,
+                  ...(ll && { ll }),
+                  radius: '10000',
+                  limit: '1',
+                  categories: '19014',
+                  fields: 'rating,website,price,photos,geocodes',
+                });
+                const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
+                  headers: { Authorization: fsqKey, Accept: 'application/json' },
+                });
+                if (!hotelRes.ok) return;
+                const hotelFsq = await hotelRes.json();
+                const hotelPlace = hotelFsq.results?.[0];
+                if (!hotelPlace) return;
+
+                if (hotelPlace.rating != null) hotel.fsqRating = hotelPlace.rating;
+                if (hotelPlace.price != null) hotel.fsqPrice = hotelPlace.price;
+                if (hotelPlace.website) hotel.fsqWebsite = hotelPlace.website;
                 const hotelPhoto = hotelPlace.photos?.[0];
                 if (hotelPhoto?.prefix && hotelPhoto?.suffix) {
-                  data.hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
+                  hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
                 }
+                // Store coordinates so we can update the map when the hotel is selected
+                const geo = hotelPlace.geocodes?.main;
+                if (geo?.latitude && geo?.longitude) {
+                  hotel.lat = geo.latitude;
+                  hotel.lng = geo.longitude;
+                }
+              } catch {
+                // silently skip
               }
-            }
-          } catch {
-            // silently skip
-          }
+            })
+          );
         }
       }
 

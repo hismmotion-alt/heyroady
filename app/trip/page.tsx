@@ -70,6 +70,7 @@ function TripContent() {
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [selectedHotelIdx, setSelectedHotelIdx] = useState<number | null>(null);
   const [replacingStop, setReplacingStop] = useState<number | null>(null);
 
   const sensors = useSensors(
@@ -321,6 +322,32 @@ function TripContent() {
     return { googleUrl, appleUrl };
   };
 
+  const handleSelectHotel = async (idx: number) => {
+    // Toggle off if already selected
+    if (selectedHotelIdx === idx) {
+      setSelectedHotelIdx(null);
+      // Restore original end coords
+      const original = await geocode(end);
+      setEndCoords(original);
+      return;
+    }
+    setSelectedHotelIdx(idx);
+    const hotel = trip?.hotels?.[idx];
+    if (!hotel) return;
+    // If Foursquare gave us coordinates, use them directly
+    if (hotel.lat && hotel.lng) {
+      setEndCoords([hotel.lng, hotel.lat]);
+    } else {
+      // Fallback: geocode the hotel name + city
+      try {
+        const coords = await geocode(`${hotel.name}, ${hotel.city}`);
+        setEndCoords(coords);
+      } catch {
+        // silently skip — map stays on original end
+      }
+    }
+  };
+
   const deleteStop = (i: number) => {
     setTrip((prev) => prev ? { ...prev, stops: prev.stops.filter((_, idx) => idx !== i) } : prev);
     if (activeStop >= i && activeStop > 0) setActiveStop(activeStop - 1);
@@ -409,7 +436,7 @@ const suggestNewStop = async (i: number, preferredCategory?: string) => {
       {/* Main content: map + sidebar */}
       <div className="flex-1 flex overflow-hidden">
         {/* Map */}
-        <div className="flex-1 relative">
+        <div className="w-[55%] flex-shrink-0 relative">
           <RouteMap
             stops={trip.stops}
             start={startCoords}
@@ -419,8 +446,8 @@ const suggestNewStop = async (i: number, preferredCategory?: string) => {
           />
         </div>
 
-        {/* Sidebar: stops */}
-        <div className="w-[400px] flex-shrink-0 overflow-y-auto bg-[#FAFAF8] border-l border-gray-100 p-4 pb-24">
+        {/* Sidebar */}
+        <div className="flex-1 overflow-y-auto bg-[#FAFAF8] border-l border-gray-100 p-4 pb-24">
           {/* Trip summary card */}
           <div
             className="rounded-2xl p-5 mb-5 border-l-4"
@@ -451,124 +478,130 @@ const suggestNewStop = async (i: number, preferredCategory?: string) => {
               </span>
             </div>
 
-            {/* Route timeline */}
-            <div className="flex flex-col">
-              {/* Start */}
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-[#46a302] ring-offset-1" style={{ backgroundColor: '#46a302' }} />
-                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🚗 {start}</p>
-              </div>
-
-              {/* Stops */}
-              {trip.stops.map((stop, i) => (
-                <div key={i} className="flex items-stretch gap-3">
-                  {/* Vertical line + dot */}
-                  <div className="flex flex-col items-center w-4 flex-shrink-0">
-                    <div className="w-px flex-1 my-0.5" style={{ backgroundColor: '#e5e7eb' }} />
-                    <button
-                      onClick={() => setActiveStop(i)}
-                      className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 text-[10px] transition-transform hover:scale-110"
-                      style={{ backgroundColor: activeStop === i ? '#D85A30' : '#f97316', minHeight: 20 }}
-                    >
-                      {i + 1}
-                    </button>
-                    <div className="w-px flex-1 my-0.5" style={{ backgroundColor: '#e5e7eb' }} />
+            {/* Interactive route timeline */}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={trip.stops.map((_, i) => `stop-${i}`)} strategy={verticalListSortingStrategy}>
+                <div className="flex flex-col">
+                  {/* Start */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-[#46a302] ring-offset-1" style={{ backgroundColor: '#46a302' }} />
+                    <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🚗 {start}</p>
                   </div>
-                  {/* Stop name row */}
-                  <button
-                    onClick={() => setActiveStop(i)}
-                    className="flex items-center gap-1.5 py-2 text-left hover:text-[#D85A30] transition-colors w-full"
-                  >
-                    <span className="text-sm">{CATEGORY_EMOJI[stop.category] || '📍'}</span>
-                    <span className="text-sm font-semibold truncate" style={{ color: activeStop === i ? '#D85A30' : '#374151' }}>
-                      {stop.name}
+
+                  {trip.stops.map((stop, i) => {
+                    const prevLat = i === 0 ? startCoords[1] : trip.stops[i - 1].lat;
+                    const prevLng = i === 0 ? startCoords[0] : trip.stops[i - 1].lng;
+                    const isOpen = activeStop === i;
+                    return (
+                      <div key={`stop-${i}`}>
+                        {/* Drive time */}
+                        <div className="flex items-center gap-2 pl-1.5 py-1">
+                          <div className="w-px h-4 flex-shrink-0" style={{ backgroundColor: '#e5e7eb' }} />
+                          <span className="text-xs text-gray-400">🚗 {driveLabel(prevLat, prevLng, stop.lat, stop.lng)}</span>
+                        </div>
+                        {/* Stop row — click to toggle */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex flex-col items-center w-4 flex-shrink-0">
+                            <button
+                              onClick={() => setActiveStop(isOpen ? -1 : i)}
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 text-[10px] transition-all hover:scale-110"
+                              style={{ backgroundColor: isOpen ? '#D85A30' : '#f97316', minHeight: 20 }}
+                            >
+                              {i + 1}
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => setActiveStop(isOpen ? -1 : i)}
+                            className="flex items-center gap-1.5 py-1.5 text-left w-full transition-colors"
+                          >
+                            <span className="text-sm">{CATEGORY_EMOJI[stop.category] || '📍'}</span>
+                            <span className="text-sm font-semibold truncate" style={{ color: isOpen ? '#D85A30' : '#374151' }}>
+                              {stop.name}
+                            </span>
+                            <span className="text-xs text-gray-400 flex-shrink-0 ml-auto">⏲ {stop.duration}</span>
+                            <svg
+                              className="w-3.5 h-3.5 flex-shrink-0 text-gray-400 transition-transform duration-200"
+                              style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                              fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
+                            >
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </button>
+                        </div>
+                        {/* Inline StopCard when expanded */}
+                        {isOpen && (
+                          <div className="ml-7 mt-2">
+                            <SortableStopCard
+                              id={`stop-${i}`}
+                              stop={stop}
+                              number={i + 1}
+                              isActive
+                              onClick={() => {}}
+                              onDelete={() => deleteStop(i)}
+                              onSuggestNew={() => suggestNewStop(i)}
+                              onSuggestByCategory={(cat) => suggestNewStop(i, cat)}
+                              isSuggesting={replacingStop === i}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Final drive to end */}
+                  <div className="flex items-center gap-2 pl-1.5 py-1">
+                    <div className="w-px h-4 flex-shrink-0" style={{ backgroundColor: '#e5e7eb' }} />
+                    <span className="text-xs text-gray-400">
+                      🚗 {driveLabel(trip.stops[trip.stops.length - 1].lat, trip.stops[trip.stops.length - 1].lng, endCoords[1], endCoords[0])}
                     </span>
-                    <span className="text-xs text-gray-400 flex-shrink-0 ml-auto">⏲ {stop.duration}</span>
-                  </button>
-                </div>
-              ))}
-
-              {/* Connector to end */}
-              <div className="flex items-stretch gap-3">
-                <div className="flex flex-col items-center w-4 flex-shrink-0">
-                  <div className="w-px flex-1" style={{ backgroundColor: '#e5e7eb' }} />
-                </div>
-              </div>
-
-              {/* End */}
-              <div className="flex items-center gap-3">
-                <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-offset-1" style={{ backgroundColor: '#1B2D45' }} />
-                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🏁 {end}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Your Stops section header */}
-          <div className="flex items-center gap-3 mb-3 px-1">
-            <p className="text-xs font-extrabold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Your Stops</p>
-            <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' }}>
-              {trip.stops.length}
-            </span>
-          </div>
-
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={trip.stops.map((_, i) => `stop-${i}`)} strategy={verticalListSortingStrategy}>
-              {trip.stops.map((stop, i) => {
-                const prevLat = i === 0 ? startCoords[1] : trip.stops[i - 1].lat;
-                const prevLng = i === 0 ? startCoords[0] : trip.stops[i - 1].lng;
-                return (
-                  <div key={`stop-${i}`}>
-                    <div className="flex items-center gap-2 px-2 mb-2">
-                      <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
-                      <span className="text-xs font-medium text-gray-400 flex-shrink-0">
-                        🚗 {driveLabel(prevLat, prevLng, stop.lat, stop.lng)}
-                      </span>
-                      <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
-                    </div>
-                    <SortableStopCard
-                      id={`stop-${i}`}
-                      stop={stop}
-                      number={i + 1}
-                      isActive={activeStop === i}
-                      onClick={() => setActiveStop(i)}
-                      onDelete={() => deleteStop(i)}
-                      onSuggestNew={() => suggestNewStop(i)}
-                      onSuggestByCategory={(cat) => suggestNewStop(i, cat)}
-                      isSuggesting={replacingStop === i}
-                    />
                   </div>
-                );
-              })}
-            </SortableContext>
-          </DndContext>
 
-          <div className="flex items-center gap-2 px-2 mt-1 mb-3">
-            <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
-            <span className="text-xs font-medium text-gray-400 flex-shrink-0">
-              🚗 {driveLabel(trip.stops[trip.stops.length - 1].lat, trip.stops[trip.stops.length - 1].lng, endCoords[1], endCoords[0])}
-            </span>
-            <div className="flex-1 h-px" style={{ backgroundColor: '#f3f4f6' }} />
+                  {/* End */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-offset-1" style={{ backgroundColor: '#1B2D45' }} />
+                    <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>🏁 {end}</p>
+                  </div>
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
 
-          <div className="flex items-center gap-3 mt-2 px-1">
-            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: '#1B2D45' }} />
-            <p className="text-sm font-semibold text-gray-500">🏁 {end}</p>
-          </div>
-
-          {/* Where to Stay — single hotel at final destination */}
-          {trip.hotel && (
+          {/* Where to Stay — 3-5 hotels at final destination */}
+          {trip.hotels && trip.hotels.length > 0 && (
             <div className="mt-6">
-              <div className="flex items-center gap-3 mb-3 px-1">
+              <div className="flex items-center gap-3 mb-1 px-1">
                 <p className="text-xs font-extrabold uppercase tracking-widest" style={{ color: '#9ca3af' }}>Where to Stay</p>
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(0,53,128,0.08)', color: '#003580' }}>
+                  {trip.hotels.length}
+                </span>
               </div>
-              <p className="text-xs font-semibold text-gray-400 mb-2 px-1">📍 In {end}</p>
-              <HotelCard
-                hotel={trip.hotel}
-                stopCity={end}
-                checkin={hotelCheckin || undefined}
-                nights={hotelNights || undefined}
-                guests={hotelGuests || undefined}
-              />
+              <p className="text-xs text-gray-400 mb-3 px-1">
+                📍 In {selectedHotelIdx !== null ? trip.hotels[selectedHotelIdx].city || end : end}
+                {selectedHotelIdx !== null && (
+                  <span className="ml-2 font-semibold" style={{ color: '#46a302' }}>
+                    · {trip.hotels[selectedHotelIdx].name} selected
+                  </span>
+                )}
+              </p>
+              <div className="flex flex-col gap-2">
+                {trip.hotels.map((hotel, idx) => (
+                  <HotelCard
+                    key={idx}
+                    hotel={hotel}
+                    stopCity={end}
+                    checkin={hotelCheckin || undefined}
+                    nights={hotelNights || undefined}
+                    guests={hotelGuests || undefined}
+                    isSelected={selectedHotelIdx === idx}
+                    onSelect={() => handleSelectHotel(idx)}
+                  />
+                ))}
+              </div>
+              {selectedHotelIdx !== null && (
+                <p className="text-xs text-center mt-2" style={{ color: '#46a302' }}>
+                  ✓ Map destination updated to {trip.hotels[selectedHotelIdx].name}
+                </p>
+              )}
             </div>
           )}
 
