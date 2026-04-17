@@ -143,6 +143,44 @@ Return this exact JSON structure:
 
     try {
       const data = JSON.parse(raw);
+
+      // Enrich stops with Foursquare data in parallel (best-effort, never blocks)
+      const fsqKey = process.env.FOURSQUARE_API_KEY;
+      if (fsqKey && Array.isArray(data.stops)) {
+        await Promise.allSettled(
+          data.stops.map(async (stop: any) => {
+            try {
+              const params = new URLSearchParams({
+                query: stop.name,
+                ll: `${stop.lat},${stop.lng}`,
+                radius: '2000',
+                limit: '1',
+                fields: 'rating,stats,hours,website,price,photos',
+              });
+              const res = await fetch(`https://api.foursquare.com/v3/places/search?${params}`, {
+                headers: { Authorization: fsqKey, Accept: 'application/json' },
+              });
+              if (!res.ok) return;
+              const fsq = await res.json();
+              const place = fsq.results?.[0];
+              if (!place) return;
+
+              if (place.rating != null) stop.fsqRating = place.rating;
+              if (place.stats?.total_ratings) stop.fsqReviewCount = place.stats.total_ratings;
+              if (place.price != null) stop.fsqPrice = place.price;
+              if (place.website) stop.fsqWebsite = place.website;
+              if (place.hours?.display) stop.fsqHours = place.hours.display;
+              const photo = place.photos?.[0];
+              if (photo?.prefix && photo?.suffix) {
+                stop.fsqPhoto = `${photo.prefix}400x300${photo.suffix}`;
+              }
+            } catch {
+              // silently skip — stop renders without enrichment
+            }
+          })
+        );
+      }
+
       return Response.json(data);
     } catch {
       return Response.json({ error: 'Failed to parse trip suggestions' }, { status: 500 });

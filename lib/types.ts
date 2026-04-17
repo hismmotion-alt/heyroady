@@ -7,6 +7,13 @@ export interface Stop {
   lat: number;
   lng: number;
   category: 'nature' | 'food' | 'culture' | 'adventure' | 'scenic';
+  // Foursquare enrichment (optional — present when a match is found)
+  fsqRating?: number;
+  fsqReviewCount?: number;
+  fsqHours?: string;
+  fsqWebsite?: string;
+  fsqPrice?: number;
+  fsqPhoto?: string;
 }
 
 export interface TripData {

@@ -120,6 +120,47 @@ export default function StopCard({
       {/* Collapsible details */}
       {open && (
         <div className="px-4 pb-4">
+          {/* Foursquare photo */}
+          {stop.fsqPhoto && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={stop.fsqPhoto}
+              alt={stop.name}
+              className="w-full h-36 object-cover rounded-xl mb-3"
+            />
+          )}
+
+          {/* Foursquare quick stats */}
+          {(stop.fsqRating != null || stop.fsqHours || stop.fsqPrice != null) && (
+            <div className="flex items-center gap-3 flex-wrap mb-3">
+              {stop.fsqRating != null && (
+                <span className="flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(88,204,2,0.1)', color: '#46a302' }}>
+                  ⭐ {stop.fsqRating.toFixed(1)}{stop.fsqReviewCount ? ` (${stop.fsqReviewCount.toLocaleString()})` : ''}
+                </span>
+              )}
+              {stop.fsqPrice != null && (
+                <span className="text-xs font-semibold text-gray-500">
+                  {'$'.repeat(stop.fsqPrice)}
+                </span>
+              )}
+              {stop.fsqHours && (
+                <span className="text-xs text-gray-400 truncate max-w-[180px]">🕐 {stop.fsqHours}</span>
+              )}
+              {stop.fsqWebsite && (
+                <a
+                  href={stop.fsqWebsite}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-xs font-semibold hover:underline"
+                  style={{ color: '#378ADD' }}
+                >
+                  🌐 Website
+                </a>
+              )}
+            </div>
+          )}
+
           <p className="text-sm text-gray-600 leading-relaxed mb-3">{stop.description}</p>
           <div className="bg-[#FDF6EE] rounded-xl px-4 py-3 flex gap-2">
             <span className="text-base flex-shrink-0">💡</span>
