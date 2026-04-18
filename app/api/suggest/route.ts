@@ -118,22 +118,54 @@ function buildPreferenceContext(body: Record<string, string>): string {
     }
   }
 
-  // Stop types
-  if (body.stopTypes) {
+  // Interests (wizard format — granular labels like "beaches", "wine", "hiking")
+  if (body.interests) {
+    const interestLabels: Record<string, string> = {
+      beaches: 'beaches', hiking: 'hiking', camping: 'camping', wildlife: 'wildlife',
+      sunsets: 'sunsets', surf: 'surfing', food: 'local food', 'local-food': 'local food',
+      wine: 'wine tasting', coffee: 'coffee shops', breweries: 'craft breweries',
+      bakeries: 'bakeries', history: 'history', art: 'art', photography: 'photography spots',
+      boutique: 'boutique shopping', 'boutique-shops': 'boutique shopping',
+      museums: 'museums', culture: 'culture & arts', adventure: 'adventure & thrills',
+      scenic: 'scenic drives', 'national-parks': 'national parks', 'road-stops': 'roadside gems',
+    };
+    const mapped = body.interests.split(',').map((i: string) => interestLabels[i.trim()] || i.trim()).filter(Boolean);
+    if (mapped.length) {
+      parts.push(`They love: ${mapped.join(', ')}. Prioritize stops that match these interests.`);
+    }
+  }
+
+  // Stop types (legacy preferences format)
+  if (body.stopTypes && !body.interests) {
     const typeLabels: Record<string, string> = {
-      food: 'food & dining',
-      nature: 'nature & outdoors',
-      museums: 'museums & culture',
-      scenic: 'scenic views',
-      adventure: 'adventure & thrills',
-      beaches: 'beaches & water',
-      shopping: 'shopping & markets',
-      history: 'history & landmarks',
+      food: 'food & dining', nature: 'nature & outdoors', museums: 'museums & culture',
+      scenic: 'scenic views', adventure: 'adventure & thrills', beaches: 'beaches & water',
+      shopping: 'shopping & markets', history: 'history & landmarks',
     };
     const types = body.stopTypes.split(',').map((t: string) => typeLabels[t] || t).filter(Boolean);
     if (types.length) {
       parts.push(`They are most interested in: ${types.join(', ')}.`);
     }
+  }
+
+  // Vibe
+  if (body.vibe) {
+    const vibeLabels: Record<string, string> = {
+      relaxed: 'relaxed — slow pace, long stops, unhurried mornings',
+      mixed: 'balanced — mix of active exploration and downtime',
+      adventurous: 'adventurous — packed itinerary, max variety, early starts',
+    };
+    if (vibeLabels[body.vibe]) parts.push(`Their trip vibe is ${vibeLabels[body.vibe]}.`);
+  }
+
+  // Distance preference
+  if (body.distance) {
+    const distanceLabels: Record<string, string> = {
+      '~50 miles': 'a short day-trip radius (up to 50 miles from start)',
+      '50–100 miles': 'a weekend escape range (50–100 miles)',
+      '200+ miles': 'a full road trip (200+ miles, multi-day)',
+    };
+    if (distanceLabels[body.distance]) parts.push(`They prefer ${distanceLabels[body.distance]}.`);
   }
 
   // Number of stops
@@ -196,9 +228,19 @@ export async function POST(req: Request) {
     const preferenceContext = buildPreferenceContext(body);
 
     // Determine how many stops to suggest
-    let stopsInstruction = '4-6';
-    if (body.numberOfStops && body.numberOfStops !== 'auto') {
+    let stopsInstruction: string;
+    if (body.numberOfStops && body.numberOfStops !== 'auto' && body.numberOfStops !== '') {
       stopsInstruction = body.numberOfStops;
+    } else {
+      // Derive a smart default from vibe and distance
+      let base = 4;
+      if (body.vibe === 'relaxed') base = 3;
+      else if (body.vibe === 'adventurous') base = 6;
+
+      if (body.distance === '~50 miles') base = Math.min(base, 3);
+      else if (body.distance === '200+ miles') base = Math.max(base, 4);
+
+      stopsInstruction = String(base);
     }
 
     const waypointsContext = body.waypoints

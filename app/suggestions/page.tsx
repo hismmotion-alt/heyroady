@@ -264,6 +264,8 @@ function SuggestionsContent() {
                 const params = new URLSearchParams({ start, end: dest.name });
                 if (travelStyle) params.set('travelStyle', travelStyle);
                 if (interests) params.set('interests', interests);
+                if (vibe) params.set('vibe', vibe);
+                if (distance) params.set('distance', distance);
                 router.push(`/preferences?${params.toString()}`);
               }}
             />

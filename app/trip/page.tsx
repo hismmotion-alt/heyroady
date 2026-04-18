@@ -93,6 +93,9 @@ function TripContent() {
   const hotelGuests = searchParams.get('hotelGuests') || '';
   const hotelCheckin = searchParams.get('hotelCheckin') || '';
   const hotelNights = searchParams.get('hotelNights') || '';
+  const vibe = searchParams.get('vibe') || '';
+  const distance = searchParams.get('distance') || '';
+  const interests = searchParams.get('interests') || '';
 
   const [trip, setTrip] = useState<TripData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -242,7 +245,7 @@ function TripContent() {
           fetch('/api/suggest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights }),
+            body: JSON.stringify({ start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests }),
           }),
         ]);
         setStartCoords(startCoord);

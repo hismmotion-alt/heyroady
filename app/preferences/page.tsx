@@ -17,9 +17,28 @@ const STYLE_TO_GROUP: Record<string, string> = {
 const INTEREST_TO_STOP: Record<string, string> = {
   nature: 'nature',
   food: 'food',
+  'local-food': 'food',
   culture: 'museums',
   adventure: 'adventure',
   beaches: 'beaches',
+  hiking: 'nature',
+  camping: 'nature',
+  wildlife: 'nature',
+  sunsets: 'scenic',
+  surf: 'beaches',
+  wine: 'food',
+  coffee: 'food',
+  breweries: 'food',
+  bakeries: 'food',
+  history: 'history',
+  art: 'museums',
+  photography: 'scenic',
+  boutique: 'shopping',
+  'boutique-shops': 'shopping',
+  museums: 'museums',
+  scenic: 'scenic',
+  'national-parks': 'nature',
+  'road-stops': 'scenic',
 };
 
 function PreferencesContent() {
@@ -29,6 +48,8 @@ function PreferencesContent() {
   const end = searchParams.get('end') || '';
   const travelStyle = searchParams.get('travelStyle') || '';
   const interests = searchParams.get('interests') || '';
+  const vibe = searchParams.get('vibe') || '';
+  const distance = searchParams.get('distance') || '';
   const waypoints = searchParams.get('waypoints') || '';
 
   if (!start || !end) {
@@ -58,6 +79,9 @@ function PreferencesContent() {
     if (prefs.hotelCheckin) params.set('hotelCheckin', prefs.hotelCheckin);
     if (prefs.hotelNights) params.set('hotelNights', prefs.hotelNights);
     if (waypoints) params.set('waypoints', waypoints);
+    if (vibe) params.set('vibe', vibe);
+    if (distance) params.set('distance', distance);
+    if (interests) params.set('interests', interests);
     router.push(`/trip?${params.toString()}`);
   }
 
