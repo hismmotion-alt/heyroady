@@ -352,12 +352,16 @@ ${hotelJsonField}  "stops": [
             data.hotels.map(async (hotel: any) => {
               if (!hotel?.name) return;
               try {
+                // Include city in query for better matching; request fsq_id for photo fallback
+                const query = hotel.city ? `${hotel.name} ${hotel.city}` : hotel.name;
                 const hotelParams = new URLSearchParams({
-                  query: hotel.name,
+                  query,
                   ...(ll && { ll }),
                   radius: '20000',
                   limit: '1',
-                  fields: 'rating,website,price,photos,geocodes',
+                  // Accommodation categories: hotel, B&B, motel, resort, hostel, inn
+                  categories: '19014,19021,19025,19026,19048,19050',
+                  fields: 'fsq_id,rating,website,price,photos,geocodes',
                 });
                 const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
                   headers: { Authorization: fsqKey, Accept: 'application/json' },
@@ -370,12 +374,30 @@ ${hotelJsonField}  "stops": [
                 if (hotelPlace.rating != null) hotel.fsqRating = hotelPlace.rating;
                 if (hotelPlace.price != null) hotel.fsqPrice = hotelPlace.price;
                 if (hotelPlace.website) hotel.fsqWebsite = hotelPlace.website;
-                const hotelPhoto = hotelPlace.photos?.[0];
+
+                // Step 1: try photos from search result
+                let hotelPhoto = hotelPlace.photos?.[0];
+
+                // Step 2: if none, hit the dedicated photos endpoint (more coverage)
+                if (!hotelPhoto && hotelPlace.fsq_id) {
+                  try {
+                    const photoRes = await fetch(
+                      `https://api.foursquare.com/v3/places/${hotelPlace.fsq_id}/photos?limit=1`,
+                      { headers: { Authorization: fsqKey, Accept: 'application/json' } }
+                    );
+                    if (photoRes.ok) {
+                      const photos = await photoRes.json();
+                      hotelPhoto = photos?.[0];
+                    }
+                  } catch { /* skip */ }
+                }
+
                 if (hotelPhoto?.prefix && hotelPhoto?.suffix) {
                   hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
                 }
+
                 // Store coordinates so we can update the map when the hotel is selected
-                // Validate: reject coordinates that are > 150km from the route's end destination
+                // Validate: reject coordinates that are > 40km from the route's end destination
                 const geo = hotelPlace.geocodes?.main;
                 if (geo?.latitude && geo?.longitude) {
                   const tooFar = endCoords

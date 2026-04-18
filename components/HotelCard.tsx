@@ -44,13 +44,26 @@ export default function HotelCard({ hotel, stopCity, checkin, nights, guests, is
     >
       <div className="flex gap-0">
         {/* Photo */}
-        <div className="w-24 flex-shrink-0">
+        <div className="w-24 flex-shrink-0 relative overflow-hidden" style={{ minHeight: 90 }}>
           {hotel.fsqPhoto ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={hotel.fsqPhoto} alt={hotel.name} className="w-24 h-full object-cover" style={{ minHeight: 90 }} />
+            <img src={hotel.fsqPhoto} alt={hotel.name} className="w-24 h-full object-cover absolute inset-0" style={{ minHeight: 90 }} />
           ) : (
-            <div className="w-24 flex items-center justify-center text-3xl" style={{ minHeight: 90, backgroundColor: '#f0f4ff' }}>
-              🏨
+            <div
+              className="w-24 h-full absolute inset-0 flex flex-col items-center justify-center gap-1"
+              style={{
+                minHeight: 90,
+                background: hotel.priceRange === '$$$'
+                  ? 'linear-gradient(135deg, #1B2D45 0%, #2d4a6e 100%)'
+                  : hotel.priceRange === '$$'
+                  ? 'linear-gradient(135deg, #1e3a5f 0%, #378ADD 100%)'
+                  : 'linear-gradient(135deg, #2d5016 0%, #58CC02 100%)',
+              }}
+            >
+              <span className="text-white font-extrabold text-lg leading-none">
+                {hotel.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase()}
+              </span>
+              <span className="text-[10px] font-bold text-white/60 tracking-wider">HOTEL</span>
             </div>
           )}
         </div>
