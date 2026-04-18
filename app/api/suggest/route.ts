@@ -396,6 +396,48 @@ ${hotelJsonField}  "stops": [
                   hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
                 }
 
+                // Step 3: Google Places fallback if Foursquare still has no photo
+                if (!hotel.fsqPhoto) {
+                  const googleKey = process.env.GOOGLE_PLACES_API_KEY;
+                  if (googleKey) {
+                    try {
+                      const gpRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'X-Goog-Api-Key': googleKey,
+                          'X-Goog-FieldMask': 'places.photos',
+                        },
+                        body: JSON.stringify({
+                          textQuery: `${hotel.name} hotel ${hotel.city || ''}`.trim(),
+                          maxResultCount: 1,
+                          ...(endCoords && {
+                            locationBias: {
+                              circle: {
+                                center: { latitude: endCoords[0], longitude: endCoords[1] },
+                                radius: 30000,
+                              },
+                            },
+                          }),
+                        }),
+                      });
+                      if (gpRes.ok) {
+                        const gpData = await gpRes.json();
+                        const photoName = gpData.places?.[0]?.photos?.[0]?.name;
+                        if (photoName) {
+                          const mediaRes = await fetch(
+                            `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=400&key=${googleKey}&skipHttpRedirect=true`
+                          );
+                          if (mediaRes.ok) {
+                            const mediaData = await mediaRes.json();
+                            if (mediaData.photoUri) hotel.fsqPhoto = mediaData.photoUri;
+                          }
+                        }
+                      }
+                    } catch { /* skip */ }
+                  }
+                }
+
                 // Store coordinates so we can update the map when the hotel is selected
                 // Validate: reject coordinates that are > 40km from the route's end destination
                 const geo = hotelPlace.geocodes?.main;
