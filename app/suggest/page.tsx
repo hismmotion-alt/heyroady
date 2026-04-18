@@ -10,7 +10,6 @@ type Answers = {
   travelStyle: string;
   interests: string[];
   vibe: string;
-  days: string;
   distance: string;
 };
 
@@ -24,10 +23,10 @@ type PreviewData = {
 
 // ─── Step options ─────────────────────────────────────────────────────────────
 const TRAVEL_STYLE_OPTIONS = [
-  { id: 'solo',    label: 'Solo',    desc: 'Your pace, your playlist. Flexible stops.',         emoji: '🎒' },
-  { id: 'couple',  label: 'Couple',  desc: 'Scenic drives, slower evenings, boutique stays.',   emoji: '💑' },
-  { id: 'family',  label: 'Family',  desc: 'Kid-friendly stops, shorter drives.',               emoji: '👨‍👩‍👦' },
-  { id: 'friends', label: 'Friends', desc: 'Group-friendly venues, late evenings.',             emoji: '🎉' },
+  { id: 'solo',    label: 'Solo',    desc: 'Your pace, your playlist. Flexible stops.',         emoji: '🎒', tileBg: 'linear-gradient(135deg,#fff7ed,#fed7aa)' },
+  { id: 'couple',  label: 'Couple',  desc: 'Scenic drives, slower evenings, boutique stays.',   emoji: '💑', tileBg: 'linear-gradient(135deg,#fdf2f8,#fbcfe8)' },
+  { id: 'family',  label: 'Family',  desc: 'Kid-friendly stops, shorter drives.',               emoji: '👨‍👩‍👦', tileBg: 'linear-gradient(135deg,#eff6ff,#bfdbfe)' },
+  { id: 'friends', label: 'Friends', desc: 'Group-friendly venues, late evenings.',             emoji: '🎉', tileBg: 'linear-gradient(135deg,#f5f3ff,#ddd6fe)' },
 ];
 
 const VIBE_OPTIONS = [
@@ -103,12 +102,6 @@ const STEPS = [
     title: "What's your trip vibe?",
     description: 'This sets the energy for your whole trip.',
     type: 'pills' as const,
-  },
-  {
-    id: 'days', label: 'DURATION',
-    title: 'How many days is your trip?',
-    description: 'Roady will plan the right amount to see and do.',
-    type: 'number' as const,
   },
   {
     id: 'distance', label: 'DISTANCE',
@@ -298,62 +291,6 @@ function buildInterestsPreview(interests: string[]): PreviewData {
   };
 }
 
-function buildDaysPreview(days: number): PreviewData {
-  if (!days || days < 1) {
-    return {
-      tripName: 'Enter number of days…',
-      description: 'Roady will suggest the perfect route length and stop count based on your schedule.',
-      pills: [],
-      rows: [
-        { label: 'Stops total',   value: '—' },
-        { label: 'Drive total',   value: '—' },
-        { label: 'Nights',        value: '—' },
-        { label: 'Best format',   value: '—' },
-      ],
-      social: { count: '2,400+', style: 'travelers', destinations: 'Big Sur and Sonoma' },
-    };
-  }
-  if (days <= 2) {
-    return {
-      tripName: `${days}-day escape · Coastal day trip`,
-      description: `${days} day${days > 1 ? 's' : ''} is perfect for 3–5 stops. Roady keeps the driving tight and the stops memorable.`,
-      pills: [`${days} day${days > 1 ? 's' : ''}`, '3–5 stops', 'tight & memorable'],
-      rows: [
-        { label: 'Stops total',   value: `3–5 stops` },
-        { label: 'Drive total',   value: `${days * 2}–${days * 3} hrs` },
-        { label: 'Nights',        value: `${days - 1} night${days > 1 ? 's' : ''}` },
-        { label: 'Best format',   value: 'Day trip or quick overnight' },
-      ],
-      social: { count: '3,100 weekenders', style: 'weekenders', destinations: 'Santa Cruz and Marin' },
-    };
-  }
-  if (days <= 5) {
-    return {
-      tripName: `${days}-day road trip · PCH highlights`,
-      description: `${days} days is the sweet spot — enough time for proper stops without rushing. Roady builds a balanced itinerary.`,
-      pills: [`${days} days`, `${days * 2}–${days * 3} stops`, 'well-balanced'],
-      rows: [
-        { label: 'Stops total',   value: `${days * 2}–${days * 3} stops` },
-        { label: 'Drive total',   value: `${days * 3}–${days * 4} hrs` },
-        { label: 'Nights',        value: `${days - 1} nights` },
-        { label: 'Best format',   value: 'Classic road trip' },
-      ],
-      social: { count: '4,200 road-trippers', style: 'road-trippers', destinations: 'Big Sur and Santa Barbara' },
-    };
-  }
-  return {
-    tripName: `${days}-day California deep dive`,
-    description: `${days} days lets Roady plan a real journey — multiple regions, diverse stops, unhurried pace. The full California experience.`,
-    pills: [`${days} days`, `${days * 2}+ stops`, 'full journey'],
-    rows: [
-      { label: 'Stops total',   value: `${days * 2}–${days * 3}+ stops` },
-      { label: 'Drive total',   value: `${Math.round(days * 3.5)}+ hrs over trip` },
-      { label: 'Nights',        value: `${days - 1} nights` },
-      { label: 'Best format',   value: 'Multi-region adventure' },
-    ],
-    social: { count: '1,800 long-trippers', style: 'long-trippers', destinations: 'PCH coast and Yosemite' },
-  };
-}
 
 function getPreview(answers: Answers, stepIdx: number): PreviewData {
   const defaultPreview: PreviewData = {
@@ -376,14 +313,11 @@ function getPreview(answers: Answers, stepIdx: number): PreviewData {
     description: 'Roady uses your picks to filter stops — beaches, food halls, art galleries, trails, and more.',
   };
   if (stepIdx === 2) return VIBE_PREVIEWS[answers.vibe] || { ...defaultPreview, tripName: 'Select a vibe…', description: 'Relaxed, mixed, or adventurous — this sets the energy of your whole itinerary.' };
-  if (stepIdx === 3) return buildDaysPreview(parseInt(answers.days) || 0);
-  if (stepIdx === 4) return DISTANCE_PREVIEWS[answers.distance] || { ...defaultPreview, tripName: 'Select a distance…', description: 'Roady will filter destinations to only those within your chosen driving range.' };
+  if (stepIdx === 3) return DISTANCE_PREVIEWS[answers.distance] || { ...defaultPreview, tripName: 'Select a distance…', description: 'Roady will filter destinations to only those within your chosen driving range.' };
   return defaultPreview;
 }
 
 // ─── Live Preview panel ────────────────────────────────────────────────────────
-const CARD_PHOTO_BG = 'linear-gradient(135deg, #e0f2fe 0%, #dcfce7 60%, #fef9c3 100%)';
-
 function LivePreview({ answers, stepIdx }: { answers: Answers; stepIdx: number }) {
   const preview = getPreview(answers, stepIdx);
   const avatars = [
@@ -407,7 +341,7 @@ function LivePreview({ answers, stepIdx }: { answers: Answers; stepIdx: number }
       <div className="bg-white rounded-2xl overflow-hidden border border-gray-200 mb-4 shadow-sm">
         <div
           className="h-36 flex items-end px-4 pb-3"
-          style={{ background: CARD_PHOTO_BG }}
+          style={{ background: 'linear-gradient(135deg, #e0f2fe 0%, #dcfce7 60%, #fef9c3 100%)' }}
         >
           <span className="text-xs font-mono text-gray-400 bg-white/70 px-2 py-0.5 rounded">coastal photo</span>
         </div>
@@ -477,7 +411,7 @@ function SuggestContent() {
 
   const [step, setStep]       = useState(0);
   const [answers, setAnswers] = useState<Answers>({
-    travelStyle: '', interests: [], vibe: '', days: '', distance: '',
+    travelStyle: '', interests: [], vibe: '', distance: '',
   });
 
   const [user, setUser] = useState<User | null>(null);
@@ -511,7 +445,6 @@ function SuggestContent() {
 
   const isAnswered = (() => {
     if (current.type === 'interests') return answers.interests.length > 0;
-    if (current.type === 'number')    return answers.days.trim() !== '' && Number(answers.days) >= 1;
     if (current.type === 'tiles')     return !!answers.travelStyle;
     if (current.id === 'vibe')        return !!answers.vibe;
     if (current.id === 'distance')    return !!answers.distance;
@@ -538,7 +471,6 @@ function SuggestContent() {
         travelStyle: answers.travelStyle,
         interests: answers.interests.join(','),
         vibe: answers.vibe,
-        days: answers.days,
         distance: answers.distance,
       });
       router.push(`/suggestions?${params.toString()}`);
@@ -557,8 +489,14 @@ function SuggestContent() {
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 flex-shrink-0 gap-3">
-          {/* Left: nav links */}
-          <div className="flex items-center gap-3 flex-wrap min-w-0">
+          {/* Left: logo → home */}
+          <button onClick={() => router.push('/')} className="flex-shrink-0" title="Go home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/roady-logo.png" alt="Roady" style={{ height: 36, width: 'auto' }} />
+          </button>
+
+          {/* Right: nav links */}
+          <div className="flex items-center gap-3 flex-wrap justify-end min-w-0">
             <a href="/#how-it-works" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
               How It Works
             </a>
@@ -580,7 +518,7 @@ function SuggestContent() {
                   )}
                 </button>
                 {dropdownOpen && (
-                  <div className="absolute left-0 mt-2 w-40 bg-white rounded-xl border border-gray-100 shadow-lg overflow-hidden z-50">
+                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl border border-gray-100 shadow-lg overflow-hidden z-50">
                     <a href="/my-trips" className="flex items-center px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#46a302]"
                       onClick={() => setDropdownOpen(false)}>My Trips</a>
                     <button onClick={async () => { setDropdownOpen(false); const s = createClient(); await s.auth.signOut(); router.push('/'); }}
@@ -596,12 +534,6 @@ function SuggestContent() {
               </a>
             )}
           </div>
-
-          {/* Right: logo → home */}
-          <button onClick={() => router.push('/')} className="flex-shrink-0" title="Go home">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/roady-logo.png" alt="Roady" style={{ height: 36, width: 'auto' }} />
-          </button>
         </div>
 
         {/* Progress */}
@@ -645,7 +577,7 @@ function SuggestContent() {
                     {/* Illustration area */}
                     <div
                       className="h-20 flex items-center justify-center text-4xl"
-                      style={{ background: sel ? 'rgba(88,204,2,0.08)' : CARD_PHOTO_BG }}
+                      style={{ background: sel ? 'rgba(88,204,2,0.08)' : opt.tileBg }}
                     >
                       {opt.emoji}
                     </div>
@@ -728,22 +660,6 @@ function SuggestContent() {
                   </button>
                 );
               })}
-            </div>
-          )}
-
-          {/* ── Days — number input ── */}
-          {current.type === 'number' && (
-            <div>
-              <input
-                type="number"
-                placeholder="3"
-                value={answers.days}
-                onChange={(e) => setAnswers((prev) => ({ ...prev, days: e.target.value }))}
-                min="1" max="14"
-                className="w-32 px-5 py-4 rounded-2xl border-2 bg-white font-bold text-gray-900 placeholder:text-gray-300 outline-none transition-all"
-                style={{ fontSize: '28px', borderColor: answers.days ? '#58CC02' : '#E5E7EB' }}
-              />
-              <p className="text-xs text-gray-400 mt-3">days (1 – 14)</p>
             </div>
           )}
 
