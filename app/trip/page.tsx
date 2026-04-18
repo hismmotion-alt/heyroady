@@ -478,32 +478,38 @@ function TripContent() {
             >
               My Trips
             </a>
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(window.location.href);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              className="text-sm font-semibold px-3 py-1.5 rounded-full border transition-all"
-              style={{
-                borderColor: copied ? '#D85A30' : '#e5e7eb',
-                color: copied ? '#D85A30' : '#6B7280',
-              }}
-            >
-              {copied ? '✓ Copied!' : '🔗 Share'}
-            </button>
-            <button
-              onClick={handleSaveTrip}
-              disabled={!!savedTripId || saving}
-              className="text-sm font-semibold px-4 py-2 rounded-full text-white transition-all"
-              style={{
-                backgroundColor: savedTripId ? '#46a302' : '#D85A30',
-                cursor: savedTripId ? 'default' : 'pointer',
-                opacity: saving ? 0.8 : 1,
-              }}
-            >
-              {saving ? 'Saving…' : savedTripId ? '✓ Saved' : '💾 Save Trip'}
-            </button>
+            {/* Icon button group */}
+            <div className="flex items-center gap-0.5 rounded-xl border border-gray-200 px-1 py-1 bg-white shadow-sm">
+              <button
+                onClick={handleSaveTrip}
+                disabled={!!savedTripId || saving}
+                title={savedTripId ? 'Saved' : 'Save trip'}
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-gray-50"
+                style={{ color: savedTripId ? '#D85A30' : '#6B7280', cursor: savedTripId ? 'default' : 'pointer' }}
+              >
+                {saving ? (
+                  <div className="w-3.5 h-3.5 border-2 rounded-full animate-spin" style={{ borderColor: '#6B7280', borderTopColor: 'transparent' }} />
+                ) : (
+                  <svg className="w-4 h-4" fill={savedTripId ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.href);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                title="Share"
+                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-gray-50"
+                style={{ color: copied ? '#D85A30' : '#6B7280' }}
+              >
+                {copied ? (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                )}
+              </button>
+            </div>
             {user?.user_metadata?.avatar_url && (
               // eslint-disable-next-line @next/next/no-img-element
               <img

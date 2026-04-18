@@ -121,30 +121,6 @@ function HomeContent() {
   const [routes, setRoutes] = useState<Route[]>(DEFAULT_ROUTES);
   const [routesLoading, setRoutesLoading] = useState(false);
   const [routesLocation, setRoutesLocation] = useState('');
-  const [taglineIndex, setTaglineIndex] = useState(0);
-  const [taglinePhase, setTaglinePhase] = useState<'typing' | 'hold' | 'erasing'>('typing');
-  const taglineText = 'Your California road trip, reimagined';
-
-  useEffect(() => {
-    if (taglinePhase === 'typing') {
-      if (taglineIndex < taglineText.length) {
-        const delay = taglineIndex === 0 ? 400 : 30 + Math.random() * 40;
-        const timer = setTimeout(() => setTaglineIndex((i) => i + 1), delay);
-        return () => clearTimeout(timer);
-      } else {
-        const timer = setTimeout(() => setTaglinePhase('erasing'), 5000);
-        return () => clearTimeout(timer);
-      }
-    } else if (taglinePhase === 'erasing') {
-      if (taglineIndex > 0) {
-        const timer = setTimeout(() => setTaglineIndex((i) => i - 1), 15);
-        return () => clearTimeout(timer);
-      } else {
-        const timer = setTimeout(() => setTaglinePhase('typing'), 400);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [taglineIndex, taglinePhase, taglineText.length]);
 
   const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
   const [endSuggestions, setEndSuggestions] = useState<string[]>([]);
@@ -155,7 +131,7 @@ function HomeContent() {
   const startRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const suggestRef = useRef<HTMLDivElement>(null);
-  const scrollY = useParallax();
+
   const tripsFade = useFadeIn(0.1);
   const howFade = useFadeIn(0.15);
   const footerFade = useFadeIn(0.3);
@@ -251,64 +227,15 @@ function HomeContent() {
 
       {/* Hero */}
       <section id="hero" className="relative pt-28 pb-16 sm:pt-36 sm:pb-24" style={{ overflow: 'visible' }}>
-        {/* Floating parallax shapes */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
-          <div
-            className="absolute rounded-full opacity-[0.07]"
-            style={{
-              width: 400, height: 400, top: -80, left: -120,
-              background: 'radial-gradient(circle, #58CC02, transparent 70%)',
-              transform: `translateY(${scrollY * 0.12}px)`,
-              transition: 'transform 0.1s linear',
-            }}
-          />
-          <div
-            className="absolute rounded-full opacity-[0.05]"
-            style={{
-              width: 300, height: 300, top: 200, right: -60,
-              background: 'radial-gradient(circle, #46a302, transparent 70%)',
-              transform: `translateY(${scrollY * 0.2}px)`,
-              transition: 'transform 0.1s linear',
-            }}
-          />
-          <div
-            className="absolute rounded-full opacity-[0.04]"
-            style={{
-              width: 200, height: 200, bottom: -40, left: '40%',
-              background: 'radial-gradient(circle, #378ADD, transparent 70%)',
-              transform: `translateY(${scrollY * -0.08}px)`,
-              transition: 'transform 0.1s linear',
-            }}
-          />
-        </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-6">
           <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
             {/* Left content */}
-            <div
-              className="flex-1 text-left max-w-xl"
-              style={{ transform: `translateY(${scrollY * 0.04}px)`, transition: 'transform 0.1s linear' }}
-            >
+            <div className="flex-1 text-left max-w-xl">
 
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-8" style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-                <span style={{ position: 'relative', minHeight: 20, whiteSpace: 'nowrap' }}>
-                  <span style={{ opacity: taglineIndex > 0 ? 0 : 1, transition: 'opacity 0.2s' }}>Your California road trip, reimagined</span>
-                  {taglineIndex > 0 && (
-                    <span style={{ position: 'absolute', left: 0, top: 0, display: 'flex', alignItems: 'center', gap: 2, whiteSpace: 'nowrap' }}>
-                      <span>{taglineText.slice(0, taglineIndex)}</span>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          width: 2,
-                          height: 16,
-                          backgroundColor: '#46a302',
-                          animation: 'cursorBlink 0.8s step-end infinite',
-                        }}
-                      />
-                    </span>
-                  )}
-                </span>
+                <span>☀ local friend · California only</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] mb-6 tracking-tight" style={{ color: '#1B2D45' }}>
@@ -322,30 +249,34 @@ function HomeContent() {
               </p>
 
               {/* Flow toggle buttons */}
-              <div className="flex gap-3 mb-8">
-                <button
-                  type="button"
-                  onClick={() => setFlowType('suggest')}
-                  className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
-                  style={{
-                    backgroundColor: flowType === 'suggest' ? '#58CC02' : 'transparent',
-                    color: flowType === 'suggest' ? '#ffffff' : '#1B2D45',
-                    border: flowType === 'suggest' ? 'none' : '2px solid #58CC02',
-                  }}
-                >
-                  Get Suggestions
-                </button>
+              <div className="flex gap-2 mb-8 p-1 rounded-xl" style={{ backgroundColor: '#F3F4F2', display: 'inline-flex' }}>
                 <button
                   type="button"
                   onClick={() => setFlowType('plan')}
-                  className="px-6 py-3 rounded-lg font-semibold text-sm transition-all duration-200"
+                  className="flex flex-col items-start px-5 py-2.5 rounded-lg transition-all duration-200"
                   style={{
-                    backgroundColor: flowType === 'plan' ? '#58CC02' : 'transparent',
-                    color: flowType === 'plan' ? '#ffffff' : '#1B2D45',
-                    border: flowType === 'plan' ? 'none' : '2px solid #58CC02',
+                    backgroundColor: flowType === 'plan' ? '#ffffff' : 'transparent',
+                    color: flowType === 'plan' ? '#1B2D45' : '#6B7280',
+                    boxShadow: flowType === 'plan' ? '0 2px 6px rgba(27,45,69,0.08)' : 'none',
+                    minWidth: 140,
                   }}
                 >
-                  Plan a Trip
+                  <span className="font-bold text-sm">Plan a Trip</span>
+                  <span className="text-xs font-normal mt-0.5" style={{ color: '#9CA3AF' }}>I know where I&apos;m going</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFlowType('suggest')}
+                  className="flex flex-col items-start px-5 py-2.5 rounded-lg transition-all duration-200"
+                  style={{
+                    backgroundColor: flowType === 'suggest' ? '#ffffff' : 'transparent',
+                    color: flowType === 'suggest' ? '#1B2D45' : '#6B7280',
+                    boxShadow: flowType === 'suggest' ? '0 2px 6px rgba(27,45,69,0.08)' : 'none',
+                    minWidth: 140,
+                  }}
+                >
+                  <span className="font-bold text-sm">Get Suggestions</span>
+                  <span className="text-xs font-normal mt-0.5" style={{ color: '#9CA3AF' }}>Roady, surprise me</span>
                 </button>
               </div>
 
@@ -447,6 +378,20 @@ function HomeContent() {
                   </form>
 
                   <p className="text-sm text-gray-400">Free to use. No sign-up required.</p>
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <span className="text-xs font-semibold text-gray-400 self-center">Quick starts:</span>
+                    {['San Francisco', 'Los Angeles', 'San Diego', 'Sacramento'].map((city) => (
+                      <button
+                        key={city}
+                        type="button"
+                        onClick={() => { setStart(city); doFetchRoutes(city); }}
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:border-[#58CC02] hover:text-[#46a302]"
+                        style={{ borderColor: '#E5E7EB', color: '#1B2D45', backgroundColor: '#ffffff' }}
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
                 </>
               )}
 
@@ -524,7 +469,7 @@ function HomeContent() {
             {mapAnimation && (
               <div
                 className="hidden lg:flex flex-shrink-0 items-center justify-center"
-                style={{ width: 580, height: 580, marginRight: '-60px', transform: `translateY(${scrollY * -0.03}px)`, transition: 'transform 0.1s linear' }}
+                style={{ width: 580, height: 580, marginRight: '-60px' }}
               >
                 <Lottie animationData={mapAnimation} loop style={{ width: '100%', height: '100%' }} />
               </div>

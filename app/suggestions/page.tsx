@@ -70,20 +70,12 @@ function DestinationCard({
           {dest.description}
         </p>
 
-        {/* Why match + why drive */}
-        <div className="px-3 py-2.5 rounded-xl mb-3 space-y-1.5" style={{ backgroundColor: '#f0fce4' }}>
-          <div className="flex gap-1.5">
-            <span className="text-sm flex-shrink-0">✨</span>
-            <p className="text-xs font-medium leading-snug" style={{ color: '#1a6e00' }}>
-              {dest.whyMatch}
-            </p>
-          </div>
-          <div className="flex gap-1.5">
-            <span className="text-sm flex-shrink-0">🚗</span>
-            <p className="text-xs font-medium leading-snug" style={{ color: '#1a6e00' }}>
-              {dest.whyDrive}
-            </p>
-          </div>
+        {/* Roady says callout */}
+        <div className="px-3 py-2.5 rounded-xl mb-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
+          <p className="text-xs leading-snug" style={{ color: '#993C1D' }}>
+            <strong className="font-bold">Roady says:</strong> {dest.whyMatch}
+            {dest.whyDrive && <> {dest.whyDrive}</>}
+          </p>
         </div>
 
         {/* Badges */}
@@ -234,6 +226,8 @@ function SuggestionsContent() {
     );
   }
 
+  const tweakUrl = `/suggest?start=${encodeURIComponent(start)}`;
+
   return (
     <div
       className="min-h-screen"
@@ -242,12 +236,22 @@ function SuggestionsContent() {
       <Navbar />
 
       <div className="max-w-6xl mx-auto px-6 pt-28 pb-16">
-        <h1 className="text-3xl font-extrabold mb-2" style={{ color: '#1B2D45' }}>
-          Your perfect destinations
-        </h1>
-        <p className="text-gray-500 mb-10">
-          Based on your preferences, here are 3 great matches from {start}.
-        </p>
+        {/* Answer-echo bar */}
+        <div className="rounded-2xl p-4 mb-8 flex items-start justify-between gap-4 flex-wrap" style={{ background: 'linear-gradient(135deg, rgba(88,204,2,0.08), #fff)', border: '1px solid #E5E7EB' }}>
+          <div>
+            <p className="font-extrabold text-base mb-2" style={{ color: '#1B2D45' }}>Roady picked 3 spots for you 🌲</p>
+            <div className="flex flex-wrap gap-1.5">
+              {start && <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>From {start}</span>}
+              {travelStyle && STYLE_LABELS[travelStyle] && <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>{STYLE_LABELS[travelStyle]}</span>}
+              {interests && interests.split(',').filter(Boolean).map((i) => (
+                <span key={i} className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>{i.charAt(0).toUpperCase() + i.slice(1)}</span>
+              ))}
+              {days && <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>{days} days</span>}
+              {distance && <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>≤{distance}</span>}
+            </div>
+          </div>
+          <a href={tweakUrl} className="text-sm font-bold whitespace-nowrap transition-colors" style={{ color: '#46a302' }}>✎ Tweak answers</a>
+        </div>
 
         {/* Horizontal 3-column grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

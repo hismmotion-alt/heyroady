@@ -162,9 +162,10 @@ export default function StopCard({
           )}
 
           <p className="text-sm text-gray-600 leading-relaxed mb-3">{stop.description}</p>
-          <div className="bg-[#FDF6EE] rounded-xl px-4 py-3 flex gap-2">
-            <span className="text-base flex-shrink-0">💡</span>
-            <p className="text-sm text-[#993C1D] font-medium leading-snug">{stop.tip}</p>
+          <div className="rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
+            <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
+              <strong className="font-bold">Roady says:</strong> {stop.tip}
+            </p>
           </div>
           <p className="text-xs text-gray-400 mt-2 text-right">⏲ {stop.duration}</p>
         </div>

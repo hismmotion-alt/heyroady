@@ -55,12 +55,6 @@ const STOP_COUNTS = [
   { id: 'auto', label: 'Choose for me', desc: 'Let Roady decide the best number', icon: '✨' },
 ];
 
-const DURATIONS = [
-  { id: 'quick', label: 'Quick stops', desc: '15–30 minutes each', icon: '⚡' },
-  { id: 'moderate', label: 'Take it easy', desc: '1–2 hours each', icon: '☕' },
-  { id: 'deep', label: 'Deep dive', desc: '2+ hours to really explore', icon: '🔍' },
-  { id: 'mix', label: 'Mix it up', desc: 'A blend of quick and long stops', icon: '🎯' },
-];
 
 const HOTEL_BUDGETS = [
   { id: '$', label: '$', desc: 'Budget — motels, hostels, affordable stays', icon: '🏨' },
@@ -75,7 +69,6 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   const [kidsAges, setKidsAges] = useState<string[]>([]);
   const [stopTypes, setStopTypes] = useState<string[]>(prefilledStopTypes || []);
   const [numberOfStops, setNumberOfStops] = useState('');
-  const [stopDuration, setStopDuration] = useState('');
   const [hotelPreference, setHotelPreference] = useState('');
   const [hotelGuests, setHotelGuests] = useState('');
   const [hotelCheckin, setHotelCheckin] = useState('');
@@ -96,7 +89,6 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   steps.push('hotelBudget');
   if (hotelPreference !== 'none') steps.push('hotelDetails');
   steps.push('numberOfStops');
-  steps.push('duration');
 
   const totalSteps = steps.length;
   const currentStepId = steps[step];
@@ -110,7 +102,6 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
       case 'hotelBudget': return !!hotelPreference;
       case 'hotelDetails': return !!hotelGuests && !!hotelCheckin && !!hotelNights;
       case 'numberOfStops': return !!numberOfStops;
-      case 'duration': return !!stopDuration;
       default: return false;
     }
   }
@@ -126,7 +117,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         ...(effectiveGroup === 'family-kids' && kidsAges.length > 0 && { kidsAges }),
         stopTypes: effectiveStopTypes,
         numberOfStops,
-        stopDuration,
+        stopDuration: '',
         ...(hotelPreference && { hotelPreference }),
         ...(hotelGuests && { hotelGuests }),
         ...(hotelCheckin && { hotelCheckin }),
@@ -206,13 +197,16 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         </span>
       </header>
 
-      {/* Progress bar */}
+      {/* Progress bar + dots */}
       <div className="px-6 pb-6">
-        <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
-          <div
-            className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${progress}%`, backgroundColor: '#58CC02' }}
-          />
+        <div className="flex gap-1.5 mb-3">
+          {Array.from({ length: totalSteps }).map((_, i) => (
+            <div
+              key={i}
+              className="h-1 rounded-full flex-1 transition-all duration-300"
+              style={{ backgroundColor: i <= step ? '#58CC02' : '#E5E7EB' }}
+            />
+          ))}
         </div>
       </div>
 
@@ -381,10 +375,10 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
               <h2 className="text-3xl font-extrabold mb-2" style={{ color: '#1B2D45' }}>
                 How many stops would you like?
               </h2>
-              <p className="text-gray-400 mb-8">
+              <p className="text-gray-400 mb-6">
                 More stops means more to see — fewer means more time at each.
               </p>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 mb-5">
                 {STOP_COUNTS.map((c) => (
                   <OptionCard
                     key={c.id}
@@ -394,30 +388,23 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
                   />
                 ))}
               </div>
+              {numberOfStops === '3' && (
+                <div className="rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
+                  <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
+                    <strong className="font-bold">Roady tip:</strong> 3 stops is a relaxed pace — plenty of room to linger at lunch.
+                  </p>
+                </div>
+              )}
+              {numberOfStops === '5' && (
+                <div className="rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
+                  <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
+                    <strong className="font-bold">Roady tip:</strong> 5 stops is an action-packed day — great if you love variety and don&apos;t want to miss anything.
+                  </p>
+                </div>
+              )}
             </>
           )}
 
-          {/* Step: Duration */}
-          {currentStepId === 'duration' && (
-            <>
-              <h2 className="text-3xl font-extrabold mb-2" style={{ color: '#1B2D45' }}>
-                How much time at each stop?
-              </h2>
-              <p className="text-gray-400 mb-8">
-                This helps Roady plan the right pace for your trip.
-              </p>
-              <div className="flex flex-col gap-3">
-                {DURATIONS.map((d) => (
-                  <OptionCard
-                    key={d.id}
-                    item={d}
-                    selected={stopDuration === d.id}
-                    onClick={() => setStopDuration(d.id)}
-                  />
-                ))}
-              </div>
-            </>
-          )}
         </div>
       </div>
 
