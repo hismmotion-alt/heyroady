@@ -2,18 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import type { TripPreferences } from '@/lib/types';
 
-export interface TripPreferences {
-  travelGroup: string;
-  kidsAges?: string[];
-  stopTypes: string[];
-  numberOfStops: string;
-  stopDuration: string;
-  hotelPreference?: string;
-  hotelGuests?: string;
-  hotelCheckin?: string;
-  hotelNights?: string;
-}
+export type { TripPreferences };
 
 interface Props {
   onComplete: (prefs: TripPreferences) => void;
