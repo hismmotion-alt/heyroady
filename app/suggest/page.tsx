@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Answers = {
@@ -380,7 +382,7 @@ function getPreview(answers: Answers, stepIdx: number): PreviewData {
 }
 
 // ─── Live Preview panel ────────────────────────────────────────────────────────
-const STRIPE_BG = 'repeating-linear-gradient(-45deg, #e8e3da, #e8e3da 6px, #ddd8ce 6px, #ddd8ce 12px)';
+const CARD_PHOTO_BG = 'linear-gradient(135deg, #e0f2fe 0%, #dcfce7 60%, #fef9c3 100%)';
 
 function LivePreview({ answers, stepIdx }: { answers: Answers; stepIdx: number }) {
   const preview = getPreview(answers, stepIdx);
@@ -405,7 +407,7 @@ function LivePreview({ answers, stepIdx }: { answers: Answers; stepIdx: number }
       <div className="bg-white rounded-2xl overflow-hidden border border-gray-200 mb-4 shadow-sm">
         <div
           className="h-36 flex items-end px-4 pb-3"
-          style={{ background: STRIPE_BG }}
+          style={{ background: CARD_PHOTO_BG }}
         >
           <span className="text-xs font-mono text-gray-400 bg-white/70 px-2 py-0.5 rounded">coastal photo</span>
         </div>
@@ -478,6 +480,29 @@ function SuggestContent() {
     travelStyle: '', interests: [], vibe: '', days: '', distance: '',
   });
 
+  const [user, setUser] = useState<User | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
   if (!start) { router.push('/'); return null; }
 
   const current   = STEPS[step];
@@ -531,13 +556,51 @@ function SuggestContent() {
       <aside className="w-full lg:w-[440px] xl:w-[480px] flex-shrink-0 flex flex-col bg-white border-b lg:border-b-0 lg:border-r border-gray-200 lg:h-screen">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-8 pt-8 pb-5 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#58CC02' }} />
-            <span className="font-extrabold text-lg" style={{ color: '#1B2D45' }}>Roady</span>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 flex-shrink-0 gap-3">
+          {/* Left: nav links */}
+          <div className="flex items-center gap-3 flex-wrap min-w-0">
+            <a href="/#how-it-works" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
+              How It Works
+            </a>
+            <a href="/destinations" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
+              Destinations
+            </a>
+            <a href="/my-trips" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
+              My Trips
+            </a>
+            {user ? (
+              <div className="relative" ref={dropdownRef}>
+                <button onClick={() => setDropdownOpen((o) => !o)} title="Account">
+                  {user.user_metadata?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.user_metadata.avatar_url} alt="Profile"
+                      className="w-6 h-6 rounded-full border-2 border-gray-200 hover:border-[#58CC02] transition-colors" />
+                  ) : (
+                    <span className="text-xs font-semibold text-gray-400 hover:text-[#46a302] transition-colors">Account</span>
+                  )}
+                </button>
+                {dropdownOpen && (
+                  <div className="absolute left-0 mt-2 w-40 bg-white rounded-xl border border-gray-100 shadow-lg overflow-hidden z-50">
+                    <a href="/my-trips" className="flex items-center px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#46a302]"
+                      onClick={() => setDropdownOpen(false)}>My Trips</a>
+                    <button onClick={async () => { setDropdownOpen(false); const s = createClient(); await s.auth.signOut(); router.push('/'); }}
+                      className="w-full text-left px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:text-red-500 border-t border-gray-100">
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <a href="/login" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
+                Log in
+              </a>
+            )}
           </div>
-          <button onClick={() => router.push('/')} className="text-sm font-semibold text-gray-400 hover:text-gray-600 transition-colors">
-            Save & exit
+
+          {/* Right: logo → home */}
+          <button onClick={() => router.push('/')} className="flex-shrink-0" title="Go home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/roady-logo.png" alt="Roady" style={{ height: 36, width: 'auto' }} />
           </button>
         </div>
 
@@ -582,7 +645,7 @@ function SuggestContent() {
                     {/* Illustration area */}
                     <div
                       className="h-20 flex items-center justify-center text-4xl"
-                      style={{ background: sel ? 'rgba(88,204,2,0.08)' : STRIPE_BG }}
+                      style={{ background: sel ? 'rgba(88,204,2,0.08)' : CARD_PHOTO_BG }}
                     >
                       {opt.emoji}
                     </div>
