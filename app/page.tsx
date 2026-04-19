@@ -121,6 +121,7 @@ function HomeContent() {
   const [routes, setRoutes] = useState<Route[]>(DEFAULT_ROUTES);
   const [routesLoading, setRoutesLoading] = useState(false);
   const [routesLocation, setRoutesLocation] = useState('');
+  const [recentStarts, setRecentStarts] = useState<string[]>([]);
 
   const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
   const [endSuggestions, setEndSuggestions] = useState<string[]>([]);
@@ -191,6 +192,13 @@ function HomeContent() {
   const router = useRouter();
 
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem('roady_recent_starts');
+      if (saved) setRecentStarts(JSON.parse(saved));
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
     fetch('/map-search.json')
       .then((res) => res.json())
       .then((data) => setMapAnimation(data))
@@ -208,6 +216,9 @@ function HomeContent() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!start.trim() || !end.trim()) return;
+    const updated = [start.trim(), ...recentStarts.filter(r => r !== start.trim())].slice(0, 5);
+    setRecentStarts(updated);
+    try { localStorage.setItem('roady_recent_starts', JSON.stringify(updated)); } catch { /* ignore */ }
     router.push(`/preferences?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
   };
 
@@ -341,7 +352,6 @@ function HomeContent() {
                       style={{
                         backgroundColor: '#58CC02',
                         color: '#ffffff',
-                        animation: 'glowPulse 2.8s ease-in-out infinite',
                         transformStyle: 'preserve-3d',
                         transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease',
                       }}
@@ -378,7 +388,23 @@ function HomeContent() {
                   </form>
 
                   <p className="text-sm text-gray-400">Free to use. No sign-up required.</p>
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  {recentStarts.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-4">
+                      <span className="text-xs font-semibold text-gray-400 self-center">Recent:</span>
+                      {recentStarts.map((addr) => (
+                        <button
+                          key={addr}
+                          type="button"
+                          onClick={() => { setStart(addr); doFetchRoutes(addr); }}
+                          className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:border-[#58CC02] hover:text-[#46a302]"
+                          style={{ borderColor: '#E5E7EB', color: '#1B2D45', backgroundColor: '#ffffff' }}
+                        >
+                          {addr}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <span className="text-xs font-semibold text-gray-400 self-center">Quick starts:</span>
                     {['San Francisco', 'Los Angeles', 'San Diego', 'Sacramento'].map((city) => (
                       <button
