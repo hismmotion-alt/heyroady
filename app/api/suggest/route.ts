@@ -345,124 +345,100 @@ ${hotelJsonField}  "stops": [
           })
         );
 
-        // Enrich each hotel in the hotels array with Foursquare data
+        // Enrich each hotel in the hotels array with Foursquare + Google Places data
         if (wantsHotel && Array.isArray(data.hotels) && data.hotels.length > 0) {
           const ll = endCoords ? `${endCoords[0]},${endCoords[1]}` : '';
           await Promise.allSettled(
             data.hotels.map(async (hotel: any) => {
               if (!hotel?.name) return;
+
+              // ── Foursquare: rating, price, coords, maybe photo ──
               try {
-                // Include city in query for better matching; request fsq_id for photo fallback
                 const query = hotel.city ? `${hotel.name} ${hotel.city}` : hotel.name;
                 const hotelParams = new URLSearchParams({
                   query,
                   ...(ll && { ll }),
                   radius: '20000',
                   limit: '1',
-                  // Accommodation categories: hotel, B&B, motel, resort, hostel, inn
                   categories: '19014,19021,19025,19026,19048,19050',
                   fields: 'fsq_id,rating,website,price,photos,geocodes',
                 });
                 const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
                   headers: { Authorization: fsqKey, Accept: 'application/json' },
                 });
-                if (!hotelRes.ok) return;
-                const hotelFsq = await hotelRes.json();
-                const hotelPlace = hotelFsq.results?.[0];
-                if (!hotelPlace) return;
+                if (hotelRes.ok) {
+                  const hotelFsq = await hotelRes.json();
+                  const hotelPlace = hotelFsq.results?.[0];
+                  if (hotelPlace) {
+                    if (hotelPlace.rating != null) hotel.fsqRating = hotelPlace.rating;
+                    if (hotelPlace.price != null) hotel.fsqPrice = hotelPlace.price;
+                    if (hotelPlace.website) hotel.fsqWebsite = hotelPlace.website;
 
-                if (hotelPlace.rating != null) hotel.fsqRating = hotelPlace.rating;
-                if (hotelPlace.price != null) hotel.fsqPrice = hotelPlace.price;
-                if (hotelPlace.website) hotel.fsqWebsite = hotelPlace.website;
-
-                // Step 1: try photos from search result
-                let hotelPhoto = hotelPlace.photos?.[0];
-
-                // Step 2: if none, hit the dedicated photos endpoint (more coverage)
-                if (!hotelPhoto && hotelPlace.fsq_id) {
-                  try {
-                    const photoRes = await fetch(
-                      `https://api.foursquare.com/v3/places/${hotelPlace.fsq_id}/photos?limit=1`,
-                      { headers: { Authorization: fsqKey, Accept: 'application/json' } }
-                    );
-                    if (photoRes.ok) {
-                      const photos = await photoRes.json();
-                      hotelPhoto = photos?.[0];
+                    let hotelPhoto = hotelPlace.photos?.[0];
+                    if (!hotelPhoto && hotelPlace.fsq_id) {
+                      try {
+                        const photoRes = await fetch(
+                          `https://api.foursquare.com/v3/places/${hotelPlace.fsq_id}/photos?limit=1`,
+                          { headers: { Authorization: fsqKey, Accept: 'application/json' } }
+                        );
+                        if (photoRes.ok) hotelPhoto = (await photoRes.json())?.[0];
+                      } catch { /* skip */ }
                     }
-                  } catch { /* skip */ }
-                }
+                    if (hotelPhoto?.prefix && hotelPhoto?.suffix) {
+                      hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
+                    }
 
-                if (hotelPhoto?.prefix && hotelPhoto?.suffix) {
-                  hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
+                    const geo = hotelPlace.geocodes?.main;
+                    if (geo?.latitude && geo?.longitude) {
+                      const tooFar = endCoords
+                        ? haversineKm(endCoords[0], endCoords[1], geo.latitude, geo.longitude) > 40
+                        : false;
+                      if (!tooFar) { hotel.lat = geo.latitude; hotel.lng = geo.longitude; }
+                    }
+                  }
                 }
+              } catch { /* silently skip */ }
 
-                // Step 3: Google Places fallback if Foursquare still has no photo
-                if (!hotel.fsqPhoto) {
-                  const googleKey = process.env.GOOGLE_PLACES_API_KEY;
-                  if (googleKey) {
-                    try {
-                      const gpRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'X-Goog-Api-Key': googleKey,
-                          'X-Goog-FieldMask': 'places.photos',
-                        },
-                        body: JSON.stringify({
-                          textQuery: `${hotel.name} hotel ${hotel.city || ''}`.trim(),
-                          maxResultCount: 1,
-                          ...(endCoords && {
-                            locationBias: {
-                              circle: {
-                                center: { latitude: endCoords[0], longitude: endCoords[1] },
-                                radius: 30000,
-                              },
+              // ── Google Places: photo fallback (always runs if still no photo) ──
+              if (!hotel.fsqPhoto) {
+                const googleKey = process.env.GOOGLE_PLACES_API_KEY;
+                if (googleKey) {
+                  try {
+                    const gpRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-Goog-Api-Key': googleKey,
+                        'X-Goog-FieldMask': 'places.photos',
+                      },
+                      body: JSON.stringify({
+                        textQuery: `${hotel.name} hotel ${hotel.city || ''}`.trim(),
+                        maxResultCount: 1,
+                        ...(endCoords && {
+                          locationBias: {
+                            circle: {
+                              center: { latitude: endCoords[0], longitude: endCoords[1] },
+                              radius: 30000,
                             },
-                          }),
+                          },
                         }),
-                      });
-                      const gpText = await gpRes.text();
-                      if (!gpRes.ok) {
-                        console.error('[Google Places] search failed', gpRes.status, gpText);
-                      } else {
-                        const gpData = JSON.parse(gpText);
-                        const photoName = gpData.places?.[0]?.photos?.[0]?.name;
-                        if (photoName) {
-                          const mediaRes = await fetch(
-                            `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=400&key=${googleKey}&skipHttpRedirect=true`
-                          );
-                          const mediaText = await mediaRes.text();
-                          if (!mediaRes.ok) {
-                            console.error('[Google Places] media failed', mediaRes.status, mediaText);
-                          } else {
-                            const mediaData = JSON.parse(mediaText);
-                            if (mediaData.photoUri) hotel.fsqPhoto = mediaData.photoUri;
-                            else console.error('[Google Places] no photoUri in response', mediaText);
-                          }
-                        } else {
-                          console.error('[Google Places] no photo name in response', gpText);
+                      }),
+                    });
+                    if (gpRes.ok) {
+                      const gpData = await gpRes.json();
+                      const photoName = gpData.places?.[0]?.photos?.[0]?.name;
+                      if (photoName) {
+                        const mediaRes = await fetch(
+                          `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=400&key=${googleKey}&skipHttpRedirect=true`
+                        );
+                        if (mediaRes.ok) {
+                          const mediaData = await mediaRes.json();
+                          if (mediaData.photoUri) hotel.fsqPhoto = mediaData.photoUri;
                         }
                       }
-                    } catch (e) { console.error('[Google Places] exception', e); }
-                  } else {
-                    console.error('[Google Places] GOOGLE_PLACES_API_KEY not set');
-                  }
+                    }
+                  } catch { /* silently skip */ }
                 }
-
-                // Store coordinates so we can update the map when the hotel is selected
-                // Validate: reject coordinates that are > 40km from the route's end destination
-                const geo = hotelPlace.geocodes?.main;
-                if (geo?.latitude && geo?.longitude) {
-                  const tooFar = endCoords
-                    ? haversineKm(endCoords[0], endCoords[1], geo.latitude, geo.longitude) > 40
-                    : false;
-                  if (!tooFar) {
-                    hotel.lat = geo.latitude;
-                    hotel.lng = geo.longitude;
-                  }
-                }
-              } catch {
-                // silently skip
               }
             })
           );
