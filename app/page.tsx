@@ -198,7 +198,7 @@ function HomeContent() {
       const saved = localStorage.getItem('roady_recent_starts');
       if (saved) setRecentStarts(JSON.parse(saved));
       const home = localStorage.getItem('roady_home_address');
-      if (home) setHomeAddress(home);
+      if (home) { setHomeAddress(home); setStart(home); }
     } catch { /* ignore */ }
   }, []);
 
@@ -302,14 +302,31 @@ function HomeContent() {
                     <div className="flex-1 relative" ref={startRef}>
                       <div className="flex items-center w-full rounded-xl border-2 border-gray-200 bg-white transition-all duration-200 focus-within:border-[#58CC02] overflow-hidden">
                         {homeAddress && (
-                          <button
-                            type="button"
-                            onMouseDown={() => { setStart(homeAddress); setShowSaveHome(false); doFetchRoutes(homeAddress); }}
-                            className="flex-shrink-0 ml-3 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors"
+                          <div
+                            className="group/home flex-shrink-0 ml-3 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap"
                             style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
                           >
-                            🏠 Home
-                          </button>
+                            <button
+                              type="button"
+                              onMouseDown={() => { setStart(homeAddress); setShowSaveHome(false); doFetchRoutes(homeAddress); }}
+                              className="flex items-center gap-1"
+                            >
+                              🏠 Home
+                            </button>
+                            <button
+                              type="button"
+                              onMouseDown={() => {
+                                setHomeAddress('');
+                                setStart('');
+                                try { localStorage.removeItem('roady_home_address'); } catch { /* ignore */ }
+                              }}
+                              className="hidden group-hover/home:flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none transition-colors hover:bg-green-200"
+                              style={{ color: '#46a302' }}
+                              title="Remove home"
+                            >
+                              ×
+                            </button>
+                          </div>
                         )}
                         <input
                           type="text"
@@ -350,6 +367,7 @@ function HomeContent() {
                               onMouseDown={() => {
                                 const addr = start.trim();
                                 setHomeAddress(addr);
+                                setStart(addr);
                                 try { localStorage.setItem('roady_home_address', addr); } catch { /* ignore */ }
                                 setShowSaveHome(false);
                               }}
