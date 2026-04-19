@@ -421,20 +421,31 @@ ${hotelJsonField}  "stops": [
                           }),
                         }),
                       });
-                      if (gpRes.ok) {
-                        const gpData = await gpRes.json();
+                      const gpText = await gpRes.text();
+                      if (!gpRes.ok) {
+                        console.error('[Google Places] search failed', gpRes.status, gpText);
+                      } else {
+                        const gpData = JSON.parse(gpText);
                         const photoName = gpData.places?.[0]?.photos?.[0]?.name;
                         if (photoName) {
                           const mediaRes = await fetch(
                             `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=400&key=${googleKey}&skipHttpRedirect=true`
                           );
-                          if (mediaRes.ok) {
-                            const mediaData = await mediaRes.json();
+                          const mediaText = await mediaRes.text();
+                          if (!mediaRes.ok) {
+                            console.error('[Google Places] media failed', mediaRes.status, mediaText);
+                          } else {
+                            const mediaData = JSON.parse(mediaText);
                             if (mediaData.photoUri) hotel.fsqPhoto = mediaData.photoUri;
+                            else console.error('[Google Places] no photoUri in response', mediaText);
                           }
+                        } else {
+                          console.error('[Google Places] no photo name in response', gpText);
                         }
                       }
-                    } catch { /* skip */ }
+                    } catch (e) { console.error('[Google Places] exception', e); }
+                  } else {
+                    console.error('[Google Places] GOOGLE_PLACES_API_KEY not set');
                   }
                 }
 
