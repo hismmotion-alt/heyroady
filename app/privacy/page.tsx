@@ -1,7 +1,8 @@
 import Navbar from '@/components/Navbar';
 
 export const metadata = {
-  title: 'Privacy Policy — Roady',
+  title: 'Privacy Policy | Roady',
+  description: 'Privacy policy for Roady, the AI-powered California road trip planner.',
 };
 
 export default function PrivacyPage() {

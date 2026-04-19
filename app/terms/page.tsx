@@ -1,7 +1,8 @@
 import Navbar from '@/components/Navbar';
 
 export const metadata = {
-  title: 'Terms of Service — Roady',
+  title: 'Terms of Service | Roady',
+  description: 'Terms of service for Roady, the AI-powered California road trip planner.',
 };
 
 export default function TermsPage() {

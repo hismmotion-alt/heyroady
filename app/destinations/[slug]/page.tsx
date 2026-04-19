@@ -30,10 +30,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const raw = getRouteRaw(params.slug);
     const { data } = matter(raw);
     const frontmatter = data as RouteFrontmatter;
+    const title = `${frontmatter.title} Road Trip Guide | Roady`;
+    const description = frontmatter.metaDescription;
+    const image = frontmatter.heroImage ?? '/roady-logo.png';
     return {
-      title: `${frontmatter.title} Road Trip Guide | Roady`,
-      description: frontmatter.metaDescription,
+      title,
+      description,
       keywords: frontmatter.metaKeywords,
+      openGraph: {
+        title,
+        description,
+        url: `https://heyroady.com/destinations/${params.slug}`,
+        images: [{ url: image, alt: frontmatter.title }],
+        type: 'article',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [image],
+      },
     };
   } catch {
     return { title: 'Route Not Found | Roady' };

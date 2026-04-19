@@ -6,6 +6,21 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 export const metadata: Metadata = {
   title: 'Roady — Your California Road Trip, Reimagined',
   description: 'AI-powered California road trip planner with hidden gems, insider tips, and local knowledge.',
+  metadataBase: new URL('https://heyroady.com'),
+  openGraph: {
+    title: 'Roady — Your California Road Trip, Reimagined',
+    description: 'AI-powered California road trip planner with hidden gems, insider tips, and local knowledge.',
+    url: 'https://heyroady.com',
+    siteName: 'Roady',
+    images: [{ url: '/roady-logo.png', width: 800, alt: 'Roady — California Road Trip Planner' }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Roady — Your California Road Trip, Reimagined',
+    description: 'AI-powered California road trip planner with hidden gems, insider tips, and local knowledge.',
+    images: ['/roady-logo.png'],
+  },
   icons: {
     icon: '/roady-icon.png',
     apple: '/roady-icon.png',
