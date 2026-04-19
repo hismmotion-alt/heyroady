@@ -27,9 +27,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Sort stops by projection onto the start→end direction vector AND filter out
- *  stops that fall outside the route corridor (behind start or past end).
- *  A 15% slack at each end allows minor detours without being too aggressive. */
+/** Sort stops by projection onto the start→end direction vector. */
 function sortStopsAlongRoute(
   stops: { lat: number; lng: number; [key: string]: unknown }[],
   startLat: number, startLng: number,
@@ -37,46 +35,14 @@ function sortStopsAlongRoute(
 ) {
   const dx = endLng - startLng;
   const dy = endLat - startLat;
-  const projEnd = dx * dx + dy * dy;
-  const slack = 0.15 * projEnd;
 
   return [...stops]
     .map((s) => ({
       stop: s,
       proj: (s.lng - startLng) * dx + (s.lat - startLat) * dy,
     }))
-    .filter(({ proj }) => proj >= -slack && proj <= projEnd + slack)
     .sort((a, b) => a.proj - b.proj)
     .map(({ stop }) => stop);
-}
-
-/** Enforce minimum spacing between stops along the route.
- *  First stop must be >= minFraction of total route distance from start.
- *  Each subsequent stop must be >= minFraction of total route distance from the previous. */
-function enforceStopSpacing(
-  stops: { lat: number; lng: number; [key: string]: unknown }[],
-  startLat: number, startLng: number,
-  endLat: number, endLng: number,
-  minFraction = 0.20
-): { lat: number; lng: number; [key: string]: unknown }[] {
-  const dx = endLng - startLng;
-  const dy = endLat - startLat;
-  const projEnd = dx * dx + dy * dy;
-  const minGap = minFraction * projEnd;
-
-  const withProj = stops.map((s) => ({
-    stop: s,
-    proj: (s.lng - startLng) * dx + (s.lat - startLat) * dy,
-  }));
-
-  const kept: typeof withProj = [];
-  for (const item of withProj) {
-    const lastProj = kept.length === 0 ? 0 : kept[kept.length - 1].proj;
-    if (item.proj - lastProj >= minGap) {
-      kept.push(item);
-    }
-  }
-  return kept.map(({ stop }) => stop);
 }
 
 function getClient() {
@@ -305,7 +271,6 @@ ${hotelJsonField}  "stops": [
       // Sort stops along the route direction — guaranteed correct order regardless of Claude output
       if (Array.isArray(data.stops) && startCoords && endCoords) {
         data.stops = sortStopsAlongRoute(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
-        data.stops = enforceStopSpacing(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
       }
 
       // Enrich stops with Foursquare data in parallel (best-effort, never blocks)
