@@ -198,7 +198,7 @@ function HomeContent() {
       const saved = localStorage.getItem('roady_recent_starts');
       if (saved) setRecentStarts(JSON.parse(saved));
       const home = localStorage.getItem('roady_home_address');
-      if (home) { setHomeAddress(home); setStart(home); }
+      if (home) { setHomeAddress(home); setStart(home); setSuggestStart(home); }
     } catch { /* ignore */ }
   }, []);
 
@@ -300,27 +300,22 @@ function HomeContent() {
                 <>
                   <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="flex-1 relative" ref={startRef}>
-                      <div className="flex items-center w-full rounded-xl border-2 border-gray-200 bg-white transition-all duration-200 focus-within:border-[#58CC02] overflow-hidden">
+                      <div className={`flex items-center w-full rounded-xl border-2 bg-white transition-all duration-200 ${homeAddress && start === homeAddress ? 'border-[#58CC02] px-3 py-3' : 'border-gray-200 focus-within:border-[#58CC02]'}`}>
                         {homeAddress && (
                           <div
-                            className="group/home flex-shrink-0 ml-3 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap"
+                            className="group/home flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap"
                             style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
                           >
-                            <button
-                              type="button"
-                              onMouseDown={() => { setStart(homeAddress); setShowSaveHome(false); doFetchRoutes(homeAddress); }}
-                              className="flex items-center gap-1"
-                            >
-                              🏠 Home
-                            </button>
+                            <span>🏠 Home</span>
                             <button
                               type="button"
                               onMouseDown={() => {
                                 setHomeAddress('');
                                 setStart('');
+                                setSuggestStart('');
                                 try { localStorage.removeItem('roady_home_address'); } catch { /* ignore */ }
                               }}
-                              className="hidden group-hover/home:flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none transition-colors hover:bg-green-200"
+                              className="hidden group-hover/home:flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none hover:bg-green-200 transition-colors"
                               style={{ color: '#46a302' }}
                               title="Remove home"
                             >
@@ -328,22 +323,23 @@ function HomeContent() {
                             </button>
                           </div>
                         )}
-                        <input
-                          type="text"
-                          placeholder="Starting from..."
-                          value={start}
-                          onChange={(e) => { setStart(e.target.value); fetchStart(e.target.value); fetchRoutes(e.target.value); }}
-                          onFocus={() => { if (startSuggestions.length > 0) setStartOpen(true); }}
-                          onBlur={() => {
-                            if (start.trim() && start.trim() !== homeAddress) {
-                              setTimeout(() => setShowSaveHome(true), 150);
-                            }
-                          }}
-                          className="flex-1 px-5 py-4 bg-transparent outline-none font-medium text-gray-900 placeholder:text-gray-400 min-w-0"
-                          required
-                          autoComplete="off"
-                          autoFocus={!!searchParams.get('end')}
-                        />
+                        {!(homeAddress && start === homeAddress) && (
+                          <input
+                            type="text"
+                            placeholder="Starting from..."
+                            value={start}
+                            onChange={(e) => { setStart(e.target.value); fetchStart(e.target.value); fetchRoutes(e.target.value); }}
+                            onFocus={() => { if (startSuggestions.length > 0) setStartOpen(true); }}
+                            onBlur={() => {
+                              if (start.trim() && start.trim() !== homeAddress) {
+                                setTimeout(() => setShowSaveHome(true), 150);
+                              }
+                            }}
+                            className="flex-1 px-5 py-4 bg-transparent outline-none font-medium text-gray-900 placeholder:text-gray-400 min-w-0"
+                            autoComplete="off"
+                            autoFocus={!!searchParams.get('end')}
+                          />
+                        )}
                       </div>
                       {startOpen && startSuggestions.length > 0 && (
                         <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
@@ -368,6 +364,7 @@ function HomeContent() {
                                 const addr = start.trim();
                                 setHomeAddress(addr);
                                 setStart(addr);
+                                setSuggestStart(addr);
                                 try { localStorage.setItem('roady_home_address', addr); } catch { /* ignore */ }
                                 setShowSaveHome(false);
                               }}
@@ -499,16 +496,41 @@ function HomeContent() {
                     className="flex flex-col sm:flex-row gap-3 mb-4"
                   >
                     <div className="flex-1 relative" ref={suggestRef}>
-                      <input
-                        type="text"
-                        placeholder="Your starting address or city..."
-                        value={suggestStart}
-                        onChange={(e) => { setSuggestStart(e.target.value); fetchSuggest(e.target.value); fetchRoutes(e.target.value); }}
-                        onFocus={() => { if (suggestSuggestions.length > 0) setSuggestOpen(true); }}
-                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
-                        required
-                        autoComplete="off"
-                      />
+                      <div className={`flex items-center w-full rounded-xl border-2 bg-white transition-all duration-200 ${homeAddress && suggestStart === homeAddress ? 'border-[#58CC02] px-3 py-3' : 'border-gray-200 focus-within:border-[#58CC02]'}`}>
+                        {homeAddress && (
+                          <div
+                            className="group/home flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap"
+                            style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
+                          >
+                            <span>🏠 Home</span>
+                            <button
+                              type="button"
+                              onMouseDown={() => {
+                                setHomeAddress('');
+                                setSuggestStart('');
+                                setStart('');
+                                try { localStorage.removeItem('roady_home_address'); } catch { /* ignore */ }
+                              }}
+                              className="hidden group-hover/home:flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none hover:bg-green-200 transition-colors"
+                              style={{ color: '#46a302' }}
+                              title="Remove home"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        )}
+                        {!(homeAddress && suggestStart === homeAddress) && (
+                          <input
+                            type="text"
+                            placeholder="Your starting address or city..."
+                            value={suggestStart}
+                            onChange={(e) => { setSuggestStart(e.target.value); fetchSuggest(e.target.value); fetchRoutes(e.target.value); }}
+                            onFocus={() => { if (suggestSuggestions.length > 0) setSuggestOpen(true); }}
+                            className="flex-1 px-5 py-4 bg-transparent outline-none font-medium text-gray-900 placeholder:text-gray-400 min-w-0"
+                            autoComplete="off"
+                          />
+                        )}
+                      </div>
                       {suggestOpen && suggestSuggestions.length > 0 && (
                         <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
                           {suggestSuggestions.map((s) => (
