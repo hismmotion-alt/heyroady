@@ -13,8 +13,27 @@ interface HotelCardProps {
 }
 
 function bookingUrl({ hotel, checkin, nights, guests }: Pick<HotelCardProps, 'hotel' | 'checkin' | 'nights' | 'guests'>): string {
-  const ss = encodeURIComponent(`${hotel.name} ${hotel.city}`);
-  const params = new URLSearchParams({ aid: AFFILIATE_ID, ss });
+  // If Foursquare gave us a direct Booking.com URL, use it (with affiliate tag)
+  if (hotel.fsqWebsite?.includes('booking.com')) {
+    try {
+      const url = new URL(hotel.fsqWebsite);
+      url.searchParams.set('aid', AFFILIATE_ID);
+      if (checkin) {
+        url.searchParams.set('checkin', checkin);
+        const nightCount = parseInt(nights?.replace('+', '') || '1', 10);
+        const checkoutDate = new Date(checkin);
+        checkoutDate.setDate(checkoutDate.getDate() + nightCount);
+        url.searchParams.set('checkout', checkoutDate.toISOString().split('T')[0]);
+      }
+      if (guests) url.searchParams.set('group_adults', guests.replace('+', ''));
+      return url.toString();
+    } catch {
+      // fall through to search URL
+    }
+  }
+
+  // Search by hotel name only — more targeted than "Name + City" which shows city-level results
+  const params = new URLSearchParams({ aid: AFFILIATE_ID, ss: hotel.name, dest_type: 'hotel' });
 
   if (checkin) {
     params.set('checkin', checkin);
