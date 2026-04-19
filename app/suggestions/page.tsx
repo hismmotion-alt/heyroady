@@ -154,6 +154,14 @@ function SuggestionsContent() {
   const [destinations, setDestinations] = useState<Destination[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [homeAddress, setHomeAddress] = useState('');
+
+  useEffect(() => {
+    try {
+      const h = localStorage.getItem('roady_home_address');
+      if (h) setHomeAddress(h);
+    } catch { /* ignore */ }
+  }, []);
 
   const badges: Badge[] = buildBadges(travelStyle, interests, distance);
 
@@ -246,7 +254,7 @@ function SuggestionsContent() {
           <div>
             <p className="font-extrabold text-base mb-2" style={{ color: '#1B2D45' }}>Roady picked 3 spots for you 🌲</p>
             <div className="flex flex-wrap gap-1.5">
-              {start && <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>From {start}</span>}
+              {start && <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>{start === homeAddress ? '🏠 Home' : `From ${start}`}</span>}
               {travelStyle && STYLE_LABELS[travelStyle] && <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>{STYLE_LABELS[travelStyle]}</span>}
               {interests && interests.split(',').filter(Boolean).map((i) => (
                 <span key={i} className="px-2.5 py-1 rounded-full text-xs font-bold bg-white border border-gray-200" style={{ color: '#1B2D45' }}>{i.charAt(0).toUpperCase() + i.slice(1)}</span>

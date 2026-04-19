@@ -122,6 +122,8 @@ function HomeContent() {
   const [routesLoading, setRoutesLoading] = useState(false);
   const [routesLocation, setRoutesLocation] = useState('');
   const [recentStarts, setRecentStarts] = useState<string[]>([]);
+  const [homeAddress, setHomeAddress] = useState('');
+  const [showSaveHome, setShowSaveHome] = useState(false);
 
   const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
   const [endSuggestions, setEndSuggestions] = useState<string[]>([]);
@@ -175,7 +177,7 @@ function HomeContent() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (startRef.current && !startRef.current.contains(e.target as Node)) setStartOpen(false);
+      if (startRef.current && !startRef.current.contains(e.target as Node)) { setStartOpen(false); setShowSaveHome(false); }
       if (endRef.current && !endRef.current.contains(e.target as Node)) setEndOpen(false);
       if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) setSuggestOpen(false);
     };
@@ -195,6 +197,8 @@ function HomeContent() {
     try {
       const saved = localStorage.getItem('roady_recent_starts');
       if (saved) setRecentStarts(JSON.parse(saved));
+      const home = localStorage.getItem('roady_home_address');
+      if (home) setHomeAddress(home);
     } catch { /* ignore */ }
   }, []);
 
@@ -296,29 +300,73 @@ function HomeContent() {
                 <>
                   <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="flex-1 relative" ref={startRef}>
-                      <input
-                        type="text"
-                        placeholder="Starting from..."
-                        value={start}
-                        onChange={(e) => { setStart(e.target.value); fetchStart(e.target.value); fetchRoutes(e.target.value); }}
-                        onFocus={() => { if (startSuggestions.length > 0) setStartOpen(true); }}
-                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
-                        required
-                        autoComplete="off"
-                        autoFocus={!!searchParams.get('end')}
-                      />
+                      <div className="flex items-center w-full rounded-xl border-2 border-gray-200 bg-white transition-all duration-200 focus-within:border-[#58CC02] overflow-hidden">
+                        {homeAddress && (
+                          <button
+                            type="button"
+                            onMouseDown={() => { setStart(homeAddress); setShowSaveHome(false); doFetchRoutes(homeAddress); }}
+                            className="flex-shrink-0 ml-3 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-colors"
+                            style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
+                          >
+                            🏠 Home
+                          </button>
+                        )}
+                        <input
+                          type="text"
+                          placeholder="Starting from..."
+                          value={start}
+                          onChange={(e) => { setStart(e.target.value); fetchStart(e.target.value); fetchRoutes(e.target.value); }}
+                          onFocus={() => { if (startSuggestions.length > 0) setStartOpen(true); }}
+                          onBlur={() => {
+                            if (start.trim() && start.trim() !== homeAddress) {
+                              setTimeout(() => setShowSaveHome(true), 150);
+                            }
+                          }}
+                          className="flex-1 px-5 py-4 bg-transparent outline-none font-medium text-gray-900 placeholder:text-gray-400 min-w-0"
+                          required
+                          autoComplete="off"
+                          autoFocus={!!searchParams.get('end')}
+                        />
+                      </div>
                       {startOpen && startSuggestions.length > 0 && (
                         <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
                           {startSuggestions.map((s) => (
                             <li
                               key={s}
                               className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
-                              onMouseDown={() => { setStart(s); setStartOpen(false); doFetchRoutes(s); }}
+                              onMouseDown={() => { setStart(s); setStartOpen(false); setShowSaveHome(false); doFetchRoutes(s); }}
                             >
                               {s}
                             </li>
                           ))}
                         </ul>
+                      )}
+                      {showSaveHome && !startOpen && start.trim() && (
+                        <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 px-4 py-3 flex items-center justify-between gap-3">
+                          <span className="text-sm font-medium text-gray-600">🏠 Save as Home?</span>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onMouseDown={() => {
+                                const addr = start.trim();
+                                setHomeAddress(addr);
+                                try { localStorage.setItem('roady_home_address', addr); } catch { /* ignore */ }
+                                setShowSaveHome(false);
+                              }}
+                              className="px-3 py-1 rounded-lg text-xs font-bold text-white"
+                              style={{ backgroundColor: '#58CC02' }}
+                            >
+                              Yes
+                            </button>
+                            <button
+                              type="button"
+                              onMouseDown={() => setShowSaveHome(false)}
+                              className="px-3 py-1 rounded-lg text-xs font-bold text-gray-500 bg-gray-100"
+                            >
+                              No
+                            </button>
+                          </div>
+                        </div>
                       )}
                     </div>
                     <div className="flex-1 relative" ref={endRef}>

@@ -265,9 +265,9 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
 
         {/* Header */}
         <div className="flex items-center justify-between px-8 pt-8 pb-5">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#58CC02' }} />
-            <span className="font-extrabold text-lg" style={{ color: '#1B2D45' }}>Roady</span>
+          <div className="flex items-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/roady-logo.png" alt="Roady" style={{ height: 36, width: 'auto' }} />
           </div>
           <button
             onClick={() => router.push('/')}
