@@ -648,6 +648,83 @@
       "tags": ["BLM land", "sea caves", "tide pools", "off the beaten path"],
       "description": "2,700 acres of rugged coastal bluffs managed by the BLM — sea caves, blowholes, and migrating whale sightings from shore, with almost no visitors. One of the last wild stretches of California coast.",
       "tip": "Access via Lighthouse Road south of Point Arena town. Free, no facilities, no fee. The bluff trail follows the headland for 3+ miles. The blow holes at the south end of the headland are active at high tide on any significant swell."
+    },
+    {
+      "name": "Pfeiffer Beach",
+      "city": "Big Sur",
+      "region": "Central Coast",
+      "lat": 36.2404,
+      "lng": -121.8119,
+      "category": "scenic",
+      "tags": ["purple sand", "photography", "beach", "Big Sur"],
+      "description": "The only purple-sand beach in California — manganese garnet washes down from the cliffs and stains the sand lavender after storms. The Keyhole Rock arch frames a perfect sunset shot.",
+      "tip": "The turnoff is unmarked — it's Sycamore Canyon Road, 0.3 miles south of Pfeiffer Big Sur State Park entrance. Narrow road, $12 cash only. Arrive before 4pm for the best Keyhole light angle. Purple sand is most vivid November–March after heavy rain."
+    },
+    {
+      "name": "Partington Cove",
+      "city": "Big Sur",
+      "region": "Central Coast",
+      "lat": 36.1763,
+      "lng": -121.6876,
+      "category": "nature",
+      "tags": ["sea cave", "hiking", "Prohibition history", "hidden"],
+      "description": "A hand-carved tunnel bored through solid rock during Prohibition to smuggle tannic acid (and allegedly whiskey) to boats waiting below. The tunnel opens onto a rocky cove inaccessible from any other direction.",
+      "tip": "Unmarked pullout at mile marker 35.9 on Hwy 1. The trail splits — left goes to the tunnel (the move), right goes to a coastal bluff overlook. 1-mile roundtrip, free, almost never crowded. Wear shoes you can get wet."
+    },
+    {
+      "name": "Calla Lily Valley",
+      "city": "Big Sur",
+      "region": "Central Coast",
+      "lat": 36.4466,
+      "lng": -121.9220,
+      "category": "nature",
+      "tags": ["wildflowers", "seasonal", "photography", "spring"],
+      "description": "A hidden valley where hundreds of wild calla lilies bloom beside a creek that runs to the beach — the only place in California they grow wild. Peak season is mid-February to mid-March.",
+      "tip": "Park at the Garrapata State Beach pullout at mile marker 18.4 (no fee). Walk north along the bluff about 0.4 miles — the lily-filled canyon is on your right. The bloom window is narrow; check locals' Instagram geotags for current timing."
+    },
+    {
+      "name": "Limekiln State Park",
+      "city": "Big Sur",
+      "region": "Central Coast",
+      "lat": 36.0108,
+      "lng": -121.5245,
+      "category": "nature",
+      "tags": ["waterfalls", "redwoods", "historic ruins", "hiking"],
+      "description": "Four 19th-century stone limekilns hidden in a redwood canyon — furnaces that once burned limestone for San Francisco's building boom. A 50-foot waterfall is a 10-minute walk from the kilns.",
+      "tip": "$10 day use. The Limekiln Trail (1 mile roundtrip) visits both the kilns and the waterfall. Come on a weekday — it's genuinely uncrowded even in summer. The beach at the park entrance has good tide pools at low tide."
+    },
+    {
+      "name": "Sand Dollar Beach",
+      "city": "Big Sur",
+      "region": "Central Coast",
+      "lat": 35.9217,
+      "lng": -121.4565,
+      "category": "nature",
+      "tags": ["beach", "tide pools", "Big Sur", "wide beach"],
+      "description": "Big Sur's largest sandy beach — a rare half-mile crescent in a coastline of mostly inaccessible cliffs. The jade-green water is clearest in summer, and tide pools stretch south toward Plaskett Creek.",
+      "tip": "$10 day use, pit toilets. 100 steps down a switchback path from the parking lot. Best tide pools at the south end of the beach — go 1.5 hours before low tide. Far fewer crowds than the northern Big Sur beaches."
+    },
+    {
+      "name": "Point Sur State Historic Park",
+      "city": "Big Sur",
+      "region": "Central Coast",
+      "lat": 36.3069,
+      "lng": -121.8951,
+      "category": "culture",
+      "tags": ["lighthouse", "tours", "history", "whale watching"],
+      "description": "A working 1889 lighthouse on a 361-foot volcanic rock connected to shore by a sand tombolo — the only complete 19th-century lighthouse complex still standing in California, fully restored and staffed.",
+      "tip": "Tours run Saturdays, Sundays, and some weekdays ($15/person, 3 hours, groups capped at 40). Book ahead at pointsur.org. The tour climbs the rock — wear sturdy shoes. Gray whale migration passes directly in front December–April."
+    },
+    {
+      "name": "Salmon Creek Falls",
+      "city": "Big Sur",
+      "region": "Central Coast",
+      "lat": 35.9053,
+      "lng": -121.4658,
+      "category": "nature",
+      "tags": ["waterfall", "hidden", "hiking", "off the beaten path"],
+      "description": "A 100-foot double-plunge waterfall at the southern end of Big Sur — one of the least-visited in the area despite being roadside accessible. The upper pool is framed by a natural amphitheater of ferns.",
+      "tip": "Pull out at the Salmon Creek Trailhead, 4 miles north of Ragged Point (mile marker 5.5). A 0.5-mile trail follows the creek to the falls. Free. Most visitors drive past without stopping even though it's right off the highway."
     }
   ]
 }
