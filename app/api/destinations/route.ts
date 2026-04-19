@@ -68,6 +68,41 @@ Return exactly this JSON (no markdown, no extra text):
     const raw = (message.content[0] as { type: string; text: string }).text;
     const cleaned = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
     const data = JSON.parse(cleaned);
+
+    // Enrich each destination with a real Google Places photo (best-effort, parallel)
+    const googleKey = process.env.GOOGLE_PLACES_API_KEY;
+    if (googleKey && Array.isArray(data.destinations)) {
+      await Promise.allSettled(
+        data.destinations.map(async (dest: { name: string; photoUrl?: string }) => {
+          try {
+            const searchRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Goog-Api-Key': googleKey,
+                'X-Goog-FieldMask': 'places.photos',
+              },
+              body: JSON.stringify({ textQuery: `${dest.name} California` }),
+            });
+            if (!searchRes.ok) return;
+            const searchData = await searchRes.json();
+            const photoName = searchData.places?.[0]?.photos?.[0]?.name;
+            if (!photoName) return;
+
+            const mediaRes = await fetch(
+              `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=800&skipHttpRedirect=true`,
+              { headers: { 'X-Goog-Api-Key': googleKey } }
+            );
+            if (!mediaRes.ok) return;
+            const mediaData = await mediaRes.json();
+            if (mediaData.photoUri) dest.photoUrl = mediaData.photoUri;
+          } catch {
+            // Photo fetch failed — card will use gradient fallback
+          }
+        })
+      );
+    }
+
     return Response.json(data);
   } catch (error) {
     if (error instanceof Anthropic.APIError) {

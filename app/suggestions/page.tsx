@@ -38,19 +38,24 @@ function DestinationCard({
   badges: Badge[];
   onPlan: () => void;
 }) {
-  const imageUrl = `https://picsum.photos/seed/${encodeURIComponent(dest.name)}/800/480`;
-
   return (
     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 cursor-default">
       {/* Image */}
       <div className="relative h-48 overflow-hidden bg-gray-100">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={imageUrl}
-          alt={dest.name}
-          className="w-full h-full object-cover"
-          loading="lazy"
-        />
+        {dest.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={dest.photoUrl}
+            alt={dest.name}
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <div
+            className="w-full h-full"
+            style={{ background: 'linear-gradient(135deg, #1B2D45 0%, #378ADD 100%)' }}
+          />
+        )}
         <span
           className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold"
           style={{ backgroundColor: 'rgba(88,204,2,0.9)', color: '#ffffff' }}

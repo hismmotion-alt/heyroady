@@ -54,8 +54,10 @@ export interface TripPreferences {
 export interface Destination {
   name: string;
   region: string;
+  estimatedMiles?: number;
   matchScore: number;
   description: string;
   whyMatch: string;
   whyDrive: string;
+  photoUrl?: string;
 }
