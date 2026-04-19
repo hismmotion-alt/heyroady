@@ -4,14 +4,14 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 function buildDistanceConstraint(distance: string, start: string): string {
   if (!distance) return '';
-  if (distance === '~50 miles') {
-    return `\nDISTANCE CONSTRAINT (NON-NEGOTIABLE): Every destination MUST be within 50 miles driving distance from ${start}. REJECT any destination more than 50 miles away. Do not suggest anything beyond a short day-trip radius.`;
+  if (distance === '50-100 miles') {
+    return `\nDISTANCE CONSTRAINT (NON-NEGOTIABLE): Every destination MUST be between 50 and 100 miles driving distance from ${start}. REJECT anything under 50 miles (too close — feels like a day-trip) or over 100 miles (too far for this preference). Verify the mileage before including each destination.`;
   }
-  if (distance === '50–100 miles') {
-    return `\nDISTANCE CONSTRAINT (NON-NEGOTIABLE): Every destination MUST be between 50 and 100 miles driving distance from ${start}. REJECT anything under 50 miles (too close) or over 100 miles (too far).`;
+  if (distance === '100-150 miles') {
+    return `\nDISTANCE CONSTRAINT (NON-NEGOTIABLE): Every destination MUST be between 100 and 150 miles driving distance from ${start}. REJECT anything under 100 miles (too close) or over 150 miles (too far). This is a one-tank road trip range — think wine country, coastal towns, or mountain foothills reachable in 2–3 hours. Verify the mileage before including each destination.`;
   }
   if (distance === '200+ miles') {
-    return `\nDISTANCE CONSTRAINT (NON-NEGOTIABLE): Every destination MUST be at least 200 miles driving distance from ${start}. REJECT anything closer than 200 miles — nearby spots like Santa Barbara, Ojai, or Malibu are NOT acceptable. For a Los Angeles start, valid options include San Francisco (~380 mi), Big Sur (~330 mi), Lake Tahoe (~450 mi), Yosemite (~310 mi). Pick destinations that justify a multi-day road trip.`;
+    return `\nDISTANCE CONSTRAINT (NON-NEGOTIABLE): Every destination MUST be at least 200 miles driving distance from ${start}. REJECT anything closer than 200 miles. Nearby spots like Santa Barbara (~90 mi from LA), Ojai (~80 mi), or Malibu (~30 mi) are absolutely NOT acceptable for this option. For a Los Angeles start, valid options include San Francisco (~380 mi), Big Sur (~330 mi), Lake Tahoe (~450 mi), Yosemite (~310 mi), or similar long-haul destinations. Verify the mileage before including each destination.`;
   }
   return `\nDistance preference: approximately ${distance} from ${start}.`;
 }

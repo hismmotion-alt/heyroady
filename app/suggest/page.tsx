@@ -36,9 +36,9 @@ const VIBE_OPTIONS = [
 ];
 
 const DISTANCE_OPTIONS = [
-  { id: '~50 miles',    label: 'Up to 50 mi',  desc: 'Quick coastal or inland escape', emoji: '🏙' },
-  { id: '50–100 miles', label: '50–100 mi',    desc: 'Day-trip distance',              emoji: '🌄' },
-  { id: '200+ miles',   label: '200+ mi',      desc: 'Full road trip range',           emoji: '🗺' },
+  { id: '50-100 miles',  label: '50–100 mi',  desc: 'Weekend escape distance',  emoji: '🌄' },
+  { id: '100-150 miles', label: '100–150 mi', desc: 'One-tank road trip',        emoji: '🛣' },
+  { id: '200+ miles',    label: '200+ mi',    desc: 'Full multi-day road trip',  emoji: '🗺' },
 ];
 
 const INTERESTS_GROUPED = [
@@ -203,19 +203,7 @@ const VIBE_PREVIEWS: Record<string, PreviewData> = {
 };
 
 const DISTANCE_PREVIEWS: Record<string, PreviewData> = {
-  '~50 miles': {
-    tripName: 'Day-tripper · Marin Headlands',
-    description: 'Golden Gate views, Muir Woods, Point Reyes. Epic scenery within a tight radius — back home by dinner.',
-    pills: ['within 50 mi', '1 day', 'no overnight'],
-    rows: [
-      { label: 'Drive window',   value: 'Under 1 hr from start' },
-      { label: 'Trip format',    value: 'Day trip · no overnight' },
-      { label: 'Best for',       value: 'Spontaneous weekends' },
-      { label: 'Destinations',   value: 'Marin · East Bay · Peninsula' },
-    ],
-    social: { count: '540 day-trippers', style: 'day-trippers', destinations: 'Marin and Half Moon Bay' },
-  },
-  '50–100 miles': {
+  '50-100 miles': {
     tripName: 'Weekend escape · Santa Cruz coast',
     description: 'Far enough to feel away, close enough to drive on Friday evening. Beach towns, redwoods, and farm stands.',
     pills: ['50–100 mi', '1–2 nights', 'weekend range'],
@@ -227,17 +215,29 @@ const DISTANCE_PREVIEWS: Record<string, PreviewData> = {
     ],
     social: { count: '1,100 weekenders', style: 'weekenders', destinations: 'Santa Cruz and Napa' },
   },
+  '100-150 miles': {
+    tripName: 'One-tank trip · Wine country & coast',
+    description: 'A proper getaway without committing to days of driving. Hit Paso Robles, Carmel, or Sonoma on a single tank.',
+    pills: ['100–150 mi', '2 nights', 'one-tank range'],
+    rows: [
+      { label: 'Drive window',   value: '2–3 hrs from start' },
+      { label: 'Trip format',    value: '2–3 days · 2 nights' },
+      { label: 'Best for',       value: 'Long weekend getaways' },
+      { label: 'Destinations',   value: 'Paso Robles · Carmel · Sonoma' },
+    ],
+    social: { count: '1,800 weekenders', style: 'weekenders', destinations: 'Paso Robles and Carmel' },
+  },
   '200+ miles': {
     tripName: 'Full road trip · PCH from SF to LA',
-    description: 'The whole coast. Big Sur, Hearst Castle, Santa Barbara. Multi-day adventure with proper stops along the way.',
+    description: 'The whole coast. Big Sur, Hearst Castle, San Francisco. Multi-day adventure with proper stops along the way.',
     pills: ['200+ mi', '3–5 nights', 'full road trip'],
     rows: [
       { label: 'Drive window',   value: '4–8+ hrs from start' },
       { label: 'Trip format',    value: 'Multi-day · 3–5 nights' },
       { label: 'Best for',       value: 'True California road trips' },
-      { label: 'Destinations',   value: 'Big Sur · SB · Palm Springs' },
+      { label: 'Destinations',   value: 'SF · Big Sur · Lake Tahoe' },
     ],
-    social: { count: '3,200 road-trippers', style: 'road-trippers', destinations: 'Big Sur and Santa Barbara' },
+    social: { count: '3,200 road-trippers', style: 'road-trippers', destinations: 'Big Sur and San Francisco' },
   },
 };
 
