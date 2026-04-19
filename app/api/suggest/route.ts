@@ -27,6 +27,33 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/**
+ * Discard stops outside the geographic corridor between start and end.
+ * Two checks (both must pass):
+ *   1. Bounding box: lat/lng within ±1.5° of the start+end min/max
+ *   2. Ellipse: sum of distances to start + end ≤ routeDistance × 1.2 + 20 km
+ */
+function filterStopsInCorridor(
+  stops: { lat: number; lng: number; [key: string]: unknown }[],
+  startLat: number, startLng: number,
+  endLat: number, endLng: number
+): typeof stops {
+  const latMin = Math.min(startLat, endLat) - 1.5;
+  const latMax = Math.max(startLat, endLat) + 1.5;
+  const lngMin = Math.min(startLng, endLng) - 1.5;
+  const lngMax = Math.max(startLng, endLng) + 1.5;
+
+  const routeKm = haversineKm(startLat, startLng, endLat, endLng);
+  const maxDetour = routeKm * 1.2 + 20;
+
+  return stops.filter(s => {
+    if (s.lat < latMin || s.lat > latMax || s.lng < lngMin || s.lng > lngMax) return false;
+    const dStart = haversineKm(startLat, startLng, s.lat, s.lng);
+    const dEnd = haversineKm(endLat, endLng, s.lat, s.lng);
+    return dStart + dEnd <= maxDetour;
+  });
+}
+
 /** Sort stops by projection onto the start→end direction vector. */
 function sortStopsAlongRoute(
   stops: { lat: number; lng: number; [key: string]: unknown }[],
@@ -272,6 +299,7 @@ ${hotelJsonField}  "stops": [
       // Sort stops along the route direction — guaranteed correct order regardless of Claude output
       if (Array.isArray(data.stops) && startCoords && endCoords) {
         data.stops = sortStopsAlongRoute(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
+        data.stops = filterStopsInCorridor(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
       }
 
       // Enrich stops with Foursquare data in parallel (best-effort, never blocks)
