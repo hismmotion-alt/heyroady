@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ROADY_SYSTEM_PROMPT } from '@/lib/prompts';
+import { getCuratedStopsForRoute, buildCuratedStopsContext } from '@/lib/curated-stops';
 
 /** Geocode a place name → [lat, lng] using Mapbox. Returns null on failure. */
 async function geocodePlace(query: string): Promise<[number, number] | null> {
@@ -220,6 +221,10 @@ export async function POST(req: Request) {
 
     const preferenceContext = buildPreferenceContext(body);
 
+    const curatedStopsContext = (startCoords && endCoords)
+      ? buildCuratedStopsContext(getCuratedStopsForRoute(startCoords[0], startCoords[1], endCoords[0], endCoords[1]))
+      : '';
+
     // Determine how many stops to suggest
     let stopsInstruction: string;
     if (body.numberOfStops && body.numberOfStops !== 'auto' && body.numberOfStops !== '') {
@@ -260,7 +265,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: 'user',
-          content: `Plan a California road trip from "${start}" to "${end}".${startCoords && endCoords ? ` The route starts near (lat ${startCoords[0].toFixed(4)}, lng ${startCoords[1].toFixed(4)}) and ends near (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}).` : ''}${preferenceContext}${waypointsContext}
+          content: `Plan a California road trip from "${start}" to "${end}".${startCoords && endCoords ? ` The route starts near (lat ${startCoords[0].toFixed(4)}, lng ${startCoords[1].toFixed(4)}) and ends near (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}).` : ''}${preferenceContext}${waypointsContext}${curatedStopsContext}
 ${startCoords && endCoords ? `
 STRICT COORDINATE BOUNDS: Every stop's lat must be between ${(Math.min(startCoords[0], endCoords[0]) - 0.5).toFixed(2)} and ${(Math.max(startCoords[0], endCoords[0]) + 0.5).toFixed(2)}, and lng between ${(Math.min(startCoords[1], endCoords[1]) - 0.5).toFixed(2)} and ${(Math.max(startCoords[1], endCoords[1]) + 0.5).toFixed(2)}. Stops outside these bounds will be discarded.` : ''}
 IMPORTANT: Order all stops geographically along the route from "${start}" to "${end}". Never suggest a stop that requires backtracking or going in the opposite direction. Every stop's lat/lng must fall within the geographic corridor between the start and end coordinates above.
