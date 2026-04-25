@@ -7,6 +7,14 @@ import { createClient } from '@/lib/supabase';
 import type { User } from '@supabase/supabase-js';
 import type { Message, TripData } from '@/lib/types';
 
+type SavedTrip = {
+  id: string;
+  start: string;
+  end: string;
+  trip_data: TripData;
+  created_at: string;
+};
+
 type ChatMessage = Message & { id: string };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -47,6 +55,8 @@ function ChatContent() {
 
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
+  const [tripsLoading, setTripsLoading] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
@@ -64,6 +74,22 @@ function ChatContent() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fetch saved trips when user logs in
+  useEffect(() => {
+    if (!user) { setSavedTrips([]); return; }
+    setTripsLoading(true);
+    const supabase = createClient();
+    supabase
+      .from('saved_trips')
+      .select('id, start, end, trip_data, created_at')
+      .order('created_at', { ascending: false })
+      .limit(10)
+      .then(({ data, error }) => {
+        if (!error && data) setSavedTrips(data as SavedTrip[]);
+        setTripsLoading(false);
+      });
+  }, [user]);
 
   // Scroll to bottom when messages or loading state changes
   useEffect(() => {
@@ -373,14 +399,11 @@ function ChatContent() {
         </div>
       </aside>
 
-      {/* ── RIGHT PANEL — Conversations ── */}
+      {/* ── RIGHT PANEL — Saved Trips ── */}
       <main className="flex-1 lg:h-full lg:overflow-y-auto px-6 lg:px-10 py-8">
         <div className="max-w-md">
-          {/* Right panel header with "New chat" button */}
           <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-extrabold" style={{ color: '#1B2D45' }}>
-              Your conversations
-            </h2>
+            <h2 className="text-lg font-extrabold" style={{ color: '#1B2D45' }}>Your saved trips</h2>
             <button
               onClick={handleNewChat}
               className="text-xs font-bold px-3 py-1.5 rounded-full transition-all border-2 border-coral text-coral bg-transparent hover:bg-coral hover:text-white"
@@ -389,25 +412,15 @@ function ChatContent() {
             </button>
           </div>
 
-          {/* Auth-differentiated content */}
           {!authLoading && (
             <>
-              {user ? (
+              {!user && (
                 <>
-                  <p className="text-sm text-gray-400 mb-6">Your chat history will appear here.</p>
+                  <p className="text-sm text-gray-400 mb-6">Sign in to save trips Roady suggests.</p>
                   <div className="rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center">
-                    <p className="text-2xl mb-2">💬</p>
-                    <p className="text-sm font-semibold text-gray-500">Your past conversations will appear here</p>
-                    <p className="text-xs text-gray-400 mt-1">Conversation history coming soon</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-gray-400 mb-6">Sign in to keep track of your chats.</p>
-                  <div className="rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center">
-                    <p className="text-2xl mb-2">💬</p>
-                    <p className="text-sm font-semibold text-gray-500">Sign in to save your chats</p>
-                    <p className="text-xs text-gray-400 mt-1 mb-4">Your conversations will be saved across sessions</p>
+                    <p className="text-2xl mb-2">🗺️</p>
+                    <p className="text-sm font-semibold text-gray-500 mb-1">Sign in to save trips</p>
+                    <p className="text-xs text-gray-400 mb-4">Trips you generate will appear here</p>
                     <Link
                       href="/login?next=/chat"
                       className="inline-block px-4 py-2 rounded-full text-sm font-bold text-white transition-opacity hover:opacity-90"
@@ -415,6 +428,48 @@ function ChatContent() {
                     >
                       Sign In
                     </Link>
+                  </div>
+                </>
+              )}
+
+              {user && tripsLoading && (
+                <div className="flex flex-col gap-3 mt-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 rounded-2xl bg-gray-100 animate-pulse" />
+                  ))}
+                </div>
+              )}
+
+              {user && !tripsLoading && savedTrips.length === 0 && (
+                <>
+                  <p className="text-sm text-gray-400 mb-6">Trips Roady builds for you will be saved here.</p>
+                  <div className="rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center">
+                    <p className="text-2xl mb-2">🗺️</p>
+                    <p className="text-sm font-semibold text-gray-500">No saved trips yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Ask Roady to build a trip and save it here</p>
+                  </div>
+                </>
+              )}
+
+              {user && !tripsLoading && savedTrips.length > 0 && (
+                <>
+                  <p className="text-sm text-gray-400 mb-4">Pick up where you left off.</p>
+                  <div className="flex flex-col gap-3">
+                    {savedTrips.map((trip) => (
+                      <button
+                        key={trip.id}
+                        onClick={() => router.push(`/saved/${trip.id}`)}
+                        className="text-left bg-white rounded-2xl border border-gray-100 px-4 py-3 hover:border-[#D85A30] hover:shadow-sm transition-all"
+                      >
+                        <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                          {trip.start} → {trip.end}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {new Date(trip.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          {trip.trip_data?.stops ? ` · ${trip.trip_data.stops.length} stops` : ''}
+                        </p>
+                      </button>
+                    ))}
                   </div>
                 </>
               )}
