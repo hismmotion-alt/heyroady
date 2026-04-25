@@ -61,3 +61,8 @@ export interface Destination {
   whyDrive: string;
   photoUrl?: string;
 }
+
+export interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}

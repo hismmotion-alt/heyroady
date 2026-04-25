@@ -296,22 +296,22 @@ function HomeContent() {
                 <button
                   type="button"
                   onClick={() => router.push('/chat')}
-                  className="relative overflow-hidden flex flex-col items-start px-4 py-2 rounded-lg transition-all duration-200 hover:opacity-90"
+                  className="relative overflow-hidden flex flex-col items-start px-3 py-1.5 rounded-lg transition-all duration-200 hover:opacity-90"
                   style={{
                     backgroundColor: '#D85A30',
                     color: '#ffffff',
-                    minWidth: 120,
+                    minWidth: 90,
                   }}
                 >
                   <span
-                    className="pointer-events-none absolute inset-0 w-1/3"
+                    className="pointer-events-none absolute inset-0 w-1/4"
                     style={{
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%)',
-                      animation: 'shineSweep 2.4s ease-in-out infinite',
+                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.28) 50%, transparent 100%)',
+                      animation: 'shineSweep 3.2s cubic-bezier(0.4,0,0.6,1) infinite',
                     }}
                   />
-                  <span className="relative font-bold text-xs">Chat with Roady</span>
-                  <span className="relative text-[10px] font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.75)' }}>Describe your trip</span>
+                  <span className="relative font-bold" style={{ fontSize: 10 }}>Chat with Roady</span>
+                  <span className="relative font-normal mt-0.5" style={{ fontSize: 9, color: 'rgba(255,255,255,0.75)' }}>Describe your trip</span>
                 </button>
               </div>
 
