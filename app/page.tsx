@@ -134,6 +134,7 @@ function HomeContent() {
   const startRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const suggestRef = useRef<HTMLDivElement>(null);
+  const routesSectionRef = useRef<HTMLElement>(null);
 
   const tripsFade = useFadeIn(0.1);
   const howFade = useFadeIn(0.15);
@@ -168,7 +169,13 @@ function HomeContent() {
     try {
       const res = await fetch('/api/routes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: location }) });
       const data = await res.json();
-      if (data.routes) { setRoutes(data.routes); setRoutesLocation(location); }
+      if (data.routes) {
+        setRoutes(data.routes);
+        setRoutesLocation(location);
+        setTimeout(() => {
+          routesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
     } catch { /* keep defaults */ }
     finally { setRoutesLoading(false); }
   }, []);
@@ -487,19 +494,26 @@ function HomeContent() {
                       ))}
                     </div>
                   )}
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <span className="text-xs font-semibold text-gray-400 self-center">Quick starts:</span>
-                    {['San Francisco', 'Los Angeles', 'San Diego', 'Sacramento'].map((city) => (
-                      <button
-                        key={city}
-                        type="button"
-                        onClick={() => { setStart(city); doFetchRoutes(city); }}
-                        className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:border-[#58CC02] hover:text-[#46a302]"
-                        style={{ borderColor: '#E5E7EB', color: '#1B2D45', backgroundColor: '#ffffff' }}
-                      >
-                        {city}
-                      </button>
-                    ))}
+                  <div className="mt-3">
+                    <span className="text-xs font-semibold text-gray-400">Routes Worth Driving:</span>
+                    <div className="flex flex-wrap gap-2 mt-1.5">
+                      {DEFAULT_ROUTES.map((route) => (
+                        <button
+                          key={route.name}
+                          type="button"
+                          onClick={() => {
+                            setEnd(route.to);
+                            setFlowType('plan');
+                            routesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          }}
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:border-[#58CC02] hover:text-[#46a302]"
+                          style={{ borderColor: '#E5E7EB', color: '#1B2D45', backgroundColor: '#ffffff' }}
+                        >
+                          <span>{route.emoji}</span>
+                          <span>{route.name}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}
@@ -613,18 +627,21 @@ function HomeContent() {
       </section>
 
       {/* Routes Worth Driving */}
-      <section className="py-20 px-6" style={{ backgroundColor: '#f9fafb' }}>
+      <section ref={routesSectionRef} className="py-20 px-6" style={{ backgroundColor: '#f9fafb' }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-12 flex items-end justify-between flex-wrap gap-4">
             <div>
               <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
                 Routes Worth Driving
               </h2>
-              <p className="text-gray-500 text-lg">
-                {routesLocation
-                  ? <>Personalized routes from <span className="font-semibold" style={{ color: '#1B2D45' }}>{routesLocation}</span></>
-                  : "California's most loved road trips — ready to plan in seconds."}
-              </p>
+              {routesLocation ? (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold" style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}>
+                  <span>📍</span>
+                  <span>Personalized for <span style={{ color: '#1B2D45' }}>{routesLocation}</span></span>
+                </div>
+              ) : (
+                <p className="text-gray-500 text-lg">California&apos;s most loved road trips — ready to plan in seconds.</p>
+              )}
             </div>
             {routesLoading && (
               <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#46a302' }}>
