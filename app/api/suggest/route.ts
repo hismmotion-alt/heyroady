@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ROADY_SYSTEM_PROMPT } from '@/lib/prompts';
-import { getCuratedStopsForRoute, buildCuratedStopsContext } from '@/lib/curated-stops';
+import { getCuratedSpotsForDestination, buildCuratedStopsContext } from '@/lib/curated-stops';
 
 /** Geocode a place name → [lat, lng] using Mapbox. Returns null on failure. */
 async function geocodePlace(query: string): Promise<[number, number] | null> {
@@ -28,49 +28,12 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/**
- * Discard stops outside the geographic corridor between start and end.
- * Two checks (both must pass):
- *   1. Bounding box: lat/lng within ±1.5° of the start+end min/max
- *   2. Ellipse: sum of distances to start + end ≤ routeDistance × 1.2 + 20 km
- */
-function filterStopsInCorridor(
+/** Discard spots that are more than 40km from the destination. */
+function filterSpotsAtDestination(
   stops: { lat: number; lng: number; [key: string]: unknown }[],
-  startLat: number, startLng: number,
   endLat: number, endLng: number
 ): typeof stops {
-  const latMin = Math.min(startLat, endLat) - 1.5;
-  const latMax = Math.max(startLat, endLat) + 1.5;
-  const lngMin = Math.min(startLng, endLng) - 1.5;
-  const lngMax = Math.max(startLng, endLng) + 1.5;
-
-  const routeKm = haversineKm(startLat, startLng, endLat, endLng);
-  const maxDetour = routeKm * 1.2 + 20;
-
-  return stops.filter(s => {
-    if (s.lat < latMin || s.lat > latMax || s.lng < lngMin || s.lng > lngMax) return false;
-    const dStart = haversineKm(startLat, startLng, s.lat, s.lng);
-    const dEnd = haversineKm(endLat, endLng, s.lat, s.lng);
-    return dStart + dEnd <= maxDetour;
-  });
-}
-
-/** Sort stops by projection onto the start→end direction vector. */
-function sortStopsAlongRoute(
-  stops: { lat: number; lng: number; [key: string]: unknown }[],
-  startLat: number, startLng: number,
-  endLat: number, endLng: number
-) {
-  const dx = endLng - startLng;
-  const dy = endLat - startLat;
-
-  return [...stops]
-    .map((s) => ({
-      stop: s,
-      proj: (s.lng - startLng) * dx + (s.lat - startLat) * dy,
-    }))
-    .sort((a, b) => a.proj - b.proj)
-    .map(({ stop }) => stop);
+  return stops.filter(s => haversineKm(endLat, endLng, s.lat, s.lng) <= 40);
 }
 
 function getClient() {
@@ -125,7 +88,7 @@ function buildPreferenceContext(body: Record<string, string>): string {
     };
     const mapped = body.interests.split(',').map((i: string) => interestLabels[i.trim()] || i.trim()).filter(Boolean);
     if (mapped.length) {
-      parts.push(`They love: ${mapped.join(', ')}. Prioritize stops that match these interests.`);
+      parts.push(`They love: ${mapped.join(', ')}. Prioritize spots that match these interests.`);
     }
   }
 
@@ -162,12 +125,12 @@ function buildPreferenceContext(body: Record<string, string>): string {
     if (distanceLabels[body.distance]) parts.push(`They prefer ${distanceLabels[body.distance]}.`);
   }
 
-  // Number of stops
+  // Number of spots
   if (body.numberOfStops) {
     if (body.numberOfStops === 'auto') {
-      parts.push('Choose the best number of stops for this route (between 3 and 6).');
+      parts.push('Choose the best number of spots to explore (between 3 and 6).');
     } else {
-      parts.push(`They want exactly ${body.numberOfStops} stop${body.numberOfStops === '1' ? '' : 's'} along the way.`);
+      parts.push(`They want exactly ${body.numberOfStops} spot${body.numberOfStops === '1' ? '' : 's'} to explore at the destination.`);
     }
   }
 
@@ -189,10 +152,10 @@ function buildPreferenceContext(body: Record<string, string>): string {
   // Duration
   if (body.stopDuration) {
     const durationLabels: Record<string, string> = {
-      quick: 'quick stops (15–30 min each)',
-      moderate: 'moderate stops (1–2 hours each)',
-      deep: 'long, immersive stops (2+ hours each)',
-      mix: 'a mix of quick and longer stops',
+      quick: 'quick spots (15–30 min each)',
+      moderate: 'moderate spots (1–2 hours each)',
+      deep: 'long, immersive spots (2+ hours each)',
+      mix: 'a mix of quick and longer spots',
     };
     if (durationLabels[body.stopDuration]) {
       parts.push(`They prefer ${durationLabels[body.stopDuration]}.`);
@@ -200,7 +163,7 @@ function buildPreferenceContext(body: Record<string, string>): string {
   }
 
   if (parts.length === 0) return '';
-  return `\n\nTraveler preferences:\n${parts.join('\n')}\nPlease tailor the stops to match these preferences.`;
+  return `\n\nTraveler preferences:\n${parts.join('\n')}\nPlease tailor the spots to match these preferences.`;
 }
 
 export async function POST(req: Request) {
@@ -221,14 +184,14 @@ export async function POST(req: Request) {
 
     const preferenceContext = buildPreferenceContext(body);
 
-    const curatedStopsContext = (startCoords && endCoords)
-      ? buildCuratedStopsContext(getCuratedStopsForRoute(startCoords[0], startCoords[1], endCoords[0], endCoords[1]))
+    const curatedStopsContext = endCoords
+      ? buildCuratedStopsContext(getCuratedSpotsForDestination(endCoords[0], endCoords[1]))
       : '';
 
-    // Determine how many stops to suggest
-    let stopsInstruction: string;
+    // Determine how many spots to suggest
+    let spotsInstruction: string;
     if (body.numberOfStops && body.numberOfStops !== 'auto' && body.numberOfStops !== '') {
-      stopsInstruction = body.numberOfStops;
+      spotsInstruction = body.numberOfStops;
     } else {
       // Derive a smart default from vibe and distance
       let base = 4;
@@ -239,7 +202,7 @@ export async function POST(req: Request) {
       else if (body.distance === '100-150 miles') base = Math.min(base, 4);
       else if (body.distance === '200+ miles') base = Math.max(base, 4);
 
-      stopsInstruction = String(base);
+      spotsInstruction = String(base);
     }
 
     const waypointsContext = body.waypoints
@@ -266,11 +229,10 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: `Plan a California road trip from "${start}" to "${end}".${startCoords && endCoords ? ` The route starts near (lat ${startCoords[0].toFixed(4)}, lng ${startCoords[1].toFixed(4)}) and ends near (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}).` : ''}${preferenceContext}${waypointsContext}${curatedStopsContext}
-${startCoords && endCoords ? `
-STRICT COORDINATE BOUNDS: Every stop's lat must be between ${(Math.min(startCoords[0], endCoords[0]) - 0.5).toFixed(2)} and ${(Math.max(startCoords[0], endCoords[0]) + 0.5).toFixed(2)}, and lng between ${(Math.min(startCoords[1], endCoords[1]) - 0.5).toFixed(2)} and ${(Math.max(startCoords[1], endCoords[1]) + 0.5).toFixed(2)}. Stops outside these bounds will be discarded.` : ''}
-IMPORTANT: Order all stops geographically along the route from "${start}" to "${end}". Never suggest a stop that requires backtracking or going in the opposite direction. Every stop's lat/lng must fall within the geographic corridor between the start and end coordinates above.
+${endCoords ? `
+STRICT COORDINATE BOUNDS: Every spot must be within 40km of "${end}" (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}). Spots outside this radius will be discarded.` : ''}
 
-Suggest exactly ${stopsInstruction} interesting stops along the way (not including start/end — those are just for routing).
+Suggest exactly ${spotsInstruction} interesting spots to explore in "${end}". These are things to do and see at the destination — not stops along the drive. Order them in a logical exploration sequence.
 
 Return this exact JSON structure:
 {
@@ -301,10 +263,9 @@ ${hotelJsonField}  "stops": [
     try {
       const data = JSON.parse(cleaned);
 
-      // Sort stops along the route direction — guaranteed correct order regardless of Claude output
-      if (Array.isArray(data.stops) && startCoords && endCoords) {
-        data.stops = sortStopsAlongRoute(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
-        data.stops = filterStopsInCorridor(data.stops, startCoords[0], startCoords[1], endCoords[0], endCoords[1]);
+      // Filter out any spots Claude placed outside the destination radius
+      if (Array.isArray(data.stops) && endCoords) {
+        data.stops = filterSpotsAtDestination(data.stops, endCoords[0], endCoords[1]);
       }
 
       // Enrich stops with Foursquare data in parallel (best-effort, never blocks)

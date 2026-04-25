@@ -279,7 +279,7 @@ function TripContent() {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#FDF6EE' }}>
         <div className="text-center">
-          <LoadingSpinner message="Roady is finding the best stops for you..." />
+          <LoadingSpinner message="Roady is finding the best spots for you..." />
           <p className="text-gray-400 text-sm mt-4">Planning: {start} → {end}</p>
         </div>
       </div>
@@ -538,7 +538,7 @@ function TripContent() {
             </div>
             <div className="flex flex-wrap gap-1.5">
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#FDF6EE', color: '#993C1D' }}>
-                📍 {trip.stops.length} stops
+                📍 {trip.stops.length} spots
               </span>
               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: '#FDF6EE', color: '#993C1D' }}>
                 🛣 {trip.totalMiles} mi
@@ -575,7 +575,7 @@ function TripContent() {
                 {tab === 'overview' && 'Overview'}
                 {tab === 'stops' && (
                   <>
-                    Stops{' '}
+                    Spots{' '}
                     <span
                       className="ml-1 inline-flex items-center justify-center text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{ backgroundColor: '#D85A30', color: 'white' }}
@@ -604,7 +604,7 @@ function TripContent() {
               <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base" style={{ backgroundColor: 'rgba(216,90,48,0.1)' }}>📍</div>
-                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Stops</p>
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wider">Spots</p>
                 </div>
                 <p className="text-2xl font-extrabold" style={{ color: '#1B2D45' }}>{trip.stops.length}</p>
                 <p className="text-xs text-gray-400 mt-1 truncate">
@@ -621,7 +621,7 @@ function TripContent() {
                   {formatDuration(trip.totalMiles)}{' '}
                   <span className="text-sm font-semibold text-gray-400">/ {trip.totalMiles}mi</span>
                 </p>
-                <p className="text-xs text-gray-400 mt-1">{trip.stops.length} stops along the way</p>
+                <p className="text-xs text-gray-400 mt-1">{trip.stops.length} spots to explore</p>
               </div>
 
               <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm hover:-translate-y-0.5 transition-all">
@@ -697,7 +697,7 @@ function TripContent() {
             {/* Horizontal stop strip */}
             <div className="mb-6">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-lg" style={{ color: '#1B2D45' }}>Your stops</h3>
+                <h3 className="font-bold text-lg" style={{ color: '#1B2D45' }}>Your spots</h3>
                 <button
                   onClick={() => setActiveTab('stops')}
                   className="text-sm font-semibold transition-opacity hover:opacity-70"
@@ -912,7 +912,7 @@ function TripContent() {
         {activeTab === 'stops' && (
           <div>
             <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-              <h2 className="text-2xl font-extrabold" style={{ color: '#1B2D45' }}>All Stops</h2>
+              <h2 className="text-2xl font-extrabold" style={{ color: '#1B2D45' }}>Explore {end}</h2>
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setStopFilter(null)}

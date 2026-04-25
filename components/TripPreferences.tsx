@@ -71,11 +71,11 @@ const INTERESTS = [
 ];
 
 const STOP_COUNTS = [
-  { id: '1',    label: '1 stop',        desc: 'Quick and focused',             emoji: '1️⃣' },
-  { id: '2',    label: '2 stops',       desc: 'A couple of highlights',        emoji: '2️⃣' },
-  { id: '3',    label: '3 stops',       desc: 'A nice balance',                emoji: '3️⃣' },
-  { id: '4',    label: '4 stops',       desc: 'Plenty to explore',             emoji: '4️⃣' },
-  { id: '5',    label: '5 stops',       desc: 'The full experience',           emoji: '5️⃣' },
+  { id: '1',    label: '1 spot',        desc: 'Quick and focused',             emoji: '1️⃣' },
+  { id: '2',    label: '2 spots',       desc: 'A couple of highlights',        emoji: '2️⃣' },
+  { id: '3',    label: '3 spots',       desc: 'A nice balance',                emoji: '3️⃣' },
+  { id: '4',    label: '4 spots',       desc: 'Plenty to explore',             emoji: '4️⃣' },
+  { id: '5',    label: '5 spots',       desc: 'The full experience',           emoji: '5️⃣' },
   { id: 'auto', label: 'Choose for me', desc: "Let Roady decide the best number", emoji: '✨' },
 ];
 
@@ -101,21 +101,21 @@ const STEP_TITLES: Record<string, string> = {
   stopTypes:    'Pick a few things you love.',
   hotelBudget:  "What's your hotel budget?",
   hotelDetails: 'Hotel details',
-  numberOfStops:'How many stops?',
+  numberOfStops:'How many spots?',
 };
 
 const STEP_DESCRIPTIONS: Record<string, string> = {
-  group:        "This helps Roady find the right kind of stops for your crew.",
-  kids:         "Select all that apply so we find age-appropriate stops.",
-  stopTypes:    "Tap as many as you want — Roady will find stops that match your vibe. You can change these anytime.",
+  group:        "This helps Roady find the right kind of spots for your crew.",
+  kids:         "Select all that apply so we find age-appropriate spots.",
+  stopTypes:    "Tap as many as you want — Roady will find spots that match your vibe. You can change these anytime.",
   hotelBudget:  "Roady will suggest a hotel at your destination to match.",
   hotelDetails: "Roady will pre-fill your search on Booking.com so you see real availability.",
-  numberOfStops:"More stops means more to see — fewer means more time at each.",
+  numberOfStops:"More spots means more to explore — fewer means more time at each.",
 };
 
 const STEP_TIPS: Record<string, string> = {
   stopTypes:    "3–5 picks works best. Too few → thin results. Too many → generic ones.",
-  numberOfStops:"3 stops is a relaxed pace — plenty of room to linger. 5 is action-packed.",
+  numberOfStops:"3 spots is a relaxed pace — plenty of room to linger. 5 is action-packed.",
 };
 
 export default function TripPreferencesForm({ onComplete, prefilledGroup, prefilledStopTypes }: Props) {
@@ -321,8 +321,8 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
               <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
                 <strong className="font-bold">Roady tip:</strong>{' '}
                 {numberOfStops === '3'
-                  ? '3 stops is a relaxed pace — plenty of room to linger at lunch.'
-                  : '5 stops is action-packed — great if you love variety and don\'t want to miss anything.'}
+                  ? '3 spots is a relaxed pace — plenty of room to linger at each.'
+                  : '5 spots is action-packed — great if you love variety and don\'t want to miss anything.'}
               </p>
             </div>
           </div>

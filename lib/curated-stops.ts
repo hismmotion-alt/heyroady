@@ -45,11 +45,25 @@ export function getCuratedStopsForRoute(
     .map(({ stop }) => stop);
 }
 
+/** Return up to maxResults curated spots near the destination (within 80km). */
+export function getCuratedSpotsForDestination(
+  endLat: number,
+  endLng: number,
+  maxResults = 10
+): CuratedStop[] {
+  return (stopsData.stops as CuratedStop[])
+    .map(s => ({ stop: s, dist: haversineKm(endLat, endLng, s.lat, s.lng) }))
+    .filter(({ dist }) => dist <= 80)
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, maxResults)
+    .map(({ stop }) => stop);
+}
+
 /** Format curated stops as a prompt-ready string for injection into the Claude user message. */
 export function buildCuratedStopsContext(stops: CuratedStop[]): string {
   if (stops.length === 0) return '';
   const list = stops
     .map(s => `- ${s.name} (${s.city}): ${s.description} Insider tip: ${s.tip}`)
     .join('\n');
-  return `\n\nHere are hand-picked local stops near this route — prioritize these over generic tourist spots when they fit the traveler's preferences:\n${list}\nYou may use any of these or suggest other equally specific, non-obvious stops. Avoid well-known tourist traps.`;
+  return `\n\nHere are hand-picked local spots at or near this destination — prioritize these over generic tourist spots when they fit the traveler's preferences:\n${list}\nYou may use any of these or suggest other equally specific, non-obvious spots. Avoid well-known tourist traps.`;
 }
