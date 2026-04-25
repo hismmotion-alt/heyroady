@@ -293,6 +293,19 @@ function HomeContent() {
                   <span className="font-bold text-sm">Get Suggestions</span>
                   <span className="text-xs font-normal mt-0.5" style={{ color: '#9CA3AF' }}>Roady, surprise me</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => router.push('/chat')}
+                  className="flex flex-col items-start px-5 py-2.5 rounded-lg transition-all duration-200"
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: '#6B7280',
+                    minWidth: 140,
+                  }}
+                >
+                  <span className="font-bold text-sm">Chat with Roady</span>
+                  <span className="text-xs font-normal mt-0.5" style={{ color: '#9CA3AF' }}>Describe your trip</span>
+                </button>
               </div>
 
               {/* Plan a Trip flow */}
