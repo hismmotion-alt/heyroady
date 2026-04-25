@@ -276,7 +276,7 @@ function HomeContent() {
                     minWidth: 140,
                   }}
                 >
-                  <span className="font-bold text-sm">Plan a Trip</span>
+                  <span className="font-bold text-sm">🗺️ Plan a Trip</span>
                   <span className="text-xs font-normal mt-0.5" style={{ color: '#9CA3AF' }}>I know where I&apos;m going</span>
                 </button>
                 <button
@@ -290,7 +290,7 @@ function HomeContent() {
                     minWidth: 140,
                   }}
                 >
-                  <span className="font-bold text-sm">Get Suggestions</span>
+                  <span className="font-bold text-sm">✨ Get Suggestions</span>
                   <span className="text-xs font-normal mt-0.5" style={{ color: '#9CA3AF' }}>Roady, surprise me</span>
                 </button>
                 <button

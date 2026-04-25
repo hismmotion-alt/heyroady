@@ -15,6 +15,14 @@ type SavedTrip = {
   created_at: string;
 };
 
+const CATEGORY_META: Record<string, { emoji: string; label: string; bg: string; color: string }> = {
+  nature:    { emoji: '🌿', label: 'Nature',    bg: 'rgba(29,158,117,0.1)',  color: '#1D9E75' },
+  food:      { emoji: '🍴', label: 'Food',      bg: 'rgba(239,159,39,0.1)', color: '#EF9F27' },
+  culture:   { emoji: '🏛️', label: 'Culture',   bg: 'rgba(147,51,234,0.1)', color: '#7c3aed' },
+  adventure: { emoji: '🏕️', label: 'Adventure', bg: 'rgba(216,90,48,0.1)',  color: '#D85A30' },
+  scenic:    { emoji: '🌄', label: 'Scenic',    bg: 'rgba(55,138,221,0.1)', color: '#378ADD' },
+};
+
 type ChatMessage = Message & { id: string };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -454,22 +462,68 @@ function ChatContent() {
               {user && !tripsLoading && savedTrips.length > 0 && (
                 <>
                   <p className="text-sm text-gray-400 mb-4">Pick up where you left off.</p>
-                  <div className="flex flex-col gap-3">
-                    {savedTrips.map((trip) => (
-                      <button
-                        key={trip.id}
-                        onClick={() => router.push(`/saved/${trip.id}`)}
-                        className="text-left bg-white rounded-2xl border border-gray-100 px-4 py-3 hover:border-[#D85A30] hover:shadow-sm transition-all"
-                      >
-                        <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
-                          {trip.start} → {trip.end}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {new Date(trip.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                          {trip.trip_data?.stops ? ` · ${trip.trip_data.stops.length} stops` : ''}
-                        </p>
-                      </button>
-                    ))}
+                  <div className="flex flex-col gap-4">
+                    {savedTrips.map((trip) => {
+                      const completed = !!trip.trip_data.completed;
+                      const vibeCategories = trip.trip_data.stops
+                        .map((s) => s.category)
+                        .filter((cat, idx, arr) => arr.indexOf(cat) === idx);
+                      return (
+                        <div
+                          key={trip.id}
+                          className="rounded-2xl shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-all"
+                          style={{
+                            backgroundColor: completed ? '#f0fce4' : '#ffffff',
+                            border: completed ? '1.5px solid rgba(88,204,2,0.35)' : '1.5px solid #f0f0f0',
+                          }}
+                        >
+                          <div>
+                            <p className="text-xs text-gray-400 mb-1">
+                              {new Date(trip.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </p>
+                            <h3 className="font-extrabold text-sm mb-0.5" style={{ color: '#1B2D45' }}>
+                              {trip.trip_data.routeName}
+                            </h3>
+                            <p className="text-xs text-gray-400 mb-2">
+                              🚗 {trip.start} → 🏁 {trip.end}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}>
+                                📍 {trip.trip_data.stops.length} stop{trip.trip_data.stops.length !== 1 ? 's' : ''}
+                              </span>
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(55,138,221,0.08)', color: '#378ADD' }}>
+                                🛣 {trip.trip_data.totalMiles} mi
+                              </span>
+                              {completed && (
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(88,204,2,0.15)', color: '#46a302' }}>
+                                  ✓ Completed
+                                </span>
+                              )}
+                            </div>
+                            {vibeCategories.length > 0 && (
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {vibeCategories.map((cat) => {
+                                  const meta = CATEGORY_META[cat];
+                                  if (!meta) return null;
+                                  return (
+                                    <span key={cat} className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: meta.bg, color: meta.color }}>
+                                      {meta.emoji} {meta.label}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => router.push(`/saved/${trip.id}`)}
+                            className="w-full py-2 rounded-xl text-sm font-bold transition-all hover:opacity-90"
+                            style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
+                          >
+                            View trip →
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
