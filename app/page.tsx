@@ -109,12 +109,8 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
 
 function HomeContent() {
   const searchParams = useSearchParams();
-  const [flowType, setFlowType] = useState<'plan' | 'suggest'>(() =>
-    searchParams.get('end') ? 'plan' : 'suggest'
-  );
   const [start, setStart] = useState('');
   const [end, setEnd] = useState(() => searchParams.get('end') || '');
-  const [suggestStart, setSuggestStart] = useState('');
   const [mapAnimation, setMapAnimation] = useState<any>(null);
   const [stepAnimations, setStepAnimations] = useState<any[]>([null, null, null]);
   const [howAnimations, setHowAnimations] = useState<any[]>([null, null, null, null]);
@@ -127,13 +123,10 @@ function HomeContent() {
 
   const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
   const [endSuggestions, setEndSuggestions] = useState<string[]>([]);
-  const [suggestSuggestions, setSuggestSuggestions] = useState<string[]>([]);
   const [startOpen, setStartOpen] = useState(false);
   const [endOpen, setEndOpen] = useState(false);
-  const [suggestOpen, setSuggestOpen] = useState(false);
   const startRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const suggestRef = useRef<HTMLDivElement>(null);
   const routesSectionRef = useRef<HTMLElement>(null);
 
   const tripsFade = useFadeIn(0.1);
@@ -155,12 +148,6 @@ function HomeContent() {
     const results = await fetchAddressSuggestions(q);
     setEndSuggestions(results);
     setEndOpen(results.length > 0);
-  }, 300), [debounce]);
-
-  const fetchSuggest = useCallback(debounce(async (q: string) => {
-    const results = await fetchAddressSuggestions(q);
-    setSuggestSuggestions(results);
-    setSuggestOpen(results.length > 0);
   }, 300), [debounce]);
 
   const doFetchRoutes = useCallback(async (location: string) => {
@@ -186,7 +173,6 @@ function HomeContent() {
     const handleClickOutside = (e: MouseEvent) => {
       if (startRef.current && !startRef.current.contains(e.target as Node)) { setStartOpen(false); setShowSaveHome(false); }
       if (endRef.current && !endRef.current.contains(e.target as Node)) setEndOpen(false);
-      if (suggestRef.current && !suggestRef.current.contains(e.target as Node)) setSuggestOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -205,7 +191,7 @@ function HomeContent() {
       const saved = localStorage.getItem('roady_recent_starts');
       if (saved) setRecentStarts(JSON.parse(saved));
       const home = localStorage.getItem('roady_home_address');
-      if (home) { setHomeAddress(home); setStart(home); setSuggestStart(home); }
+      if (home) { setHomeAddress(home); setStart(home); }
     } catch { /* ignore */ }
   }, []);
 
@@ -270,61 +256,33 @@ function HomeContent() {
                 Roady uses AI to plan California road trips the way a local would — with hidden gems, insider tips, and stops you won&apos;t find in any guidebook.
               </p>
 
-              {/* Flow toggle buttons */}
-              <div className="flex gap-2 mb-8 p-1 rounded-xl" style={{ backgroundColor: '#F3F4F2', display: 'inline-flex' }}>
-                <button
-                  type="button"
-                  onClick={() => setFlowType('plan')}
-                  className="flex flex-col items-start px-5 py-2.5 rounded-lg transition-all duration-200"
+              {/* Primary CTA — Chat with Roady */}
+              <button
+                type="button"
+                onClick={() => router.push('/chat')}
+                className="relative overflow-hidden w-full flex items-center justify-center gap-3 px-8 py-5 rounded-2xl font-bold text-lg transition-all duration-200 hover:opacity-90 mb-4"
+                style={{ backgroundColor: '#D85A30', color: '#ffffff', boxShadow: '0 8px 24px rgba(216,90,48,0.3)' }}
+              >
+                <span
+                  className="pointer-events-none absolute inset-0 w-1/3"
                   style={{
-                    backgroundColor: flowType === 'plan' ? '#ffffff' : 'transparent',
-                    color: flowType === 'plan' ? '#1B2D45' : '#6B7280',
-                    boxShadow: flowType === 'plan' ? '0 2px 6px rgba(27,45,69,0.08)' : 'none',
-                    minWidth: 140,
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%)',
+                    animation: 'shineSweep 3.2s cubic-bezier(0.4,0,0.6,1) infinite',
                   }}
-                >
-                  <span className="font-bold text-sm">🗺️ Plan a Trip</span>
-                  <span className="text-xs font-normal mt-0.5" style={{ color: '#9CA3AF' }}>I know where I&apos;m going</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFlowType('suggest')}
-                  className="flex flex-col items-start px-5 py-2.5 rounded-lg transition-all duration-200"
-                  style={{
-                    backgroundColor: flowType === 'suggest' ? '#ffffff' : 'transparent',
-                    color: flowType === 'suggest' ? '#1B2D45' : '#6B7280',
-                    boxShadow: flowType === 'suggest' ? '0 2px 6px rgba(27,45,69,0.08)' : 'none',
-                    minWidth: 140,
-                  }}
-                >
-                  <span className="font-bold text-sm">✨ Get Suggestions</span>
-                  <span className="text-xs font-normal mt-0.5" style={{ color: '#9CA3AF' }}>Roady, surprise me</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push('/chat')}
-                  className="relative overflow-hidden flex flex-col items-start px-5 py-2.5 rounded-lg transition-all duration-200 hover:opacity-90 ml-3"
-                  style={{
-                    backgroundColor: '#D85A30',
-                    color: '#ffffff',
-                    minWidth: 140,
-                  }}
-                >
-                  <span
-                    className="pointer-events-none absolute inset-0 w-1/4"
-                    style={{
-                      background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.28) 50%, transparent 100%)',
-                      animation: 'shineSweep 3.2s cubic-bezier(0.4,0,0.6,1) infinite',
-                    }}
-                  />
-                  <span className="relative font-bold text-sm">Chat with Roady</span>
-                  <span className="relative text-xs font-normal mt-0.5" style={{ color: 'rgba(255,255,255,0.75)' }}>Describe your trip</span>
-                </button>
-              </div>
+                />
+                <svg className="relative w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                <span className="relative">Chat with Roady — Plan my trip</span>
+                <svg className="relative w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                </svg>
+              </button>
+              <p className="text-sm text-gray-400 mb-8">Free to use · No sign-up required</p>
 
-              {/* Plan a Trip flow */}
-              {flowType === 'plan' && (
-                <>
+              {/* Secondary — Plan a Trip form */}
+              <p className="text-sm font-semibold mb-3" style={{ color: '#9CA3AF' }}>Already know your route?</p>
+              <>
                   <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-4">
                     <div className="flex-1 relative" ref={startRef}>
                       <div className={`flex items-center w-full rounded-xl border-2 bg-white transition-all duration-200 ${homeAddress && start === homeAddress ? 'border-[#58CC02] px-3 py-3' : 'border-gray-200 focus-within:border-[#58CC02]'}`}>
@@ -339,7 +297,6 @@ function HomeContent() {
                               onMouseDown={() => {
                                 setHomeAddress('');
                                 setStart('');
-                                setSuggestStart('');
                                 try { localStorage.removeItem('roady_home_address'); } catch { /* ignore */ }
                               }}
                               className="hidden group-hover/home:flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none hover:bg-green-200 transition-colors"
@@ -391,7 +348,6 @@ function HomeContent() {
                                 const addr = start.trim();
                                 setHomeAddress(addr);
                                 setStart(addr);
-                                setSuggestStart(addr);
                                 try { localStorage.setItem('roady_home_address', addr); } catch { /* ignore */ }
                                 setShowSaveHome(false);
                               }}
@@ -477,7 +433,6 @@ function HomeContent() {
                     </button>
                   </form>
 
-                  <p className="text-sm text-gray-400">Free to use. No sign-up required.</p>
                   {recentStarts.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-4">
                       <span className="text-xs font-semibold text-gray-400 self-center">Recent:</span>
@@ -501,10 +456,7 @@ function HomeContent() {
                         <button
                           key={route.name}
                           type="button"
-                          onClick={() => {
-                            setEnd(route.to);
-                            setFlowType('plan');
-                          }}
+                          onClick={() => { setEnd(route.to); }}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:border-[#58CC02] hover:text-[#46a302]"
                           style={{ borderColor: '#E5E7EB', color: '#1B2D45', backgroundColor: '#ffffff' }}
                         >
@@ -515,101 +467,6 @@ function HomeContent() {
                     </div>
                   </div>
                 </>
-              )}
-
-              {/* Get Suggestions flow */}
-              {flowType === 'suggest' && (
-                <>
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      if (!suggestStart.trim()) return;
-                      router.push(`/suggest?start=${encodeURIComponent(suggestStart)}`);
-                    }}
-                    className="flex flex-col sm:flex-row gap-3 mb-4"
-                  >
-                    <div className="flex-1 relative" ref={suggestRef}>
-                      <div className={`flex items-center w-full rounded-xl border-2 bg-white transition-all duration-200 ${homeAddress && suggestStart === homeAddress ? 'border-[#58CC02] px-3 py-3' : 'border-gray-200 focus-within:border-[#58CC02]'}`}>
-                        {homeAddress && (
-                          <div
-                            className="group/home flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap"
-                            style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
-                          >
-                            <span>🏠 Home</span>
-                            <button
-                              type="button"
-                              onMouseDown={() => {
-                                setHomeAddress('');
-                                setSuggestStart('');
-                                setStart('');
-                                try { localStorage.removeItem('roady_home_address'); } catch { /* ignore */ }
-                              }}
-                              className="hidden group-hover/home:flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none hover:bg-green-200 transition-colors"
-                              style={{ color: '#46a302' }}
-                              title="Remove home"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        )}
-                        {!(homeAddress && suggestStart === homeAddress) && (
-                          <input
-                            type="text"
-                            placeholder="Your starting address or city..."
-                            value={suggestStart}
-                            onChange={(e) => { setSuggestStart(e.target.value); fetchSuggest(e.target.value); fetchRoutes(e.target.value); }}
-                            onFocus={() => { if (suggestSuggestions.length > 0) setSuggestOpen(true); }}
-                            className="flex-1 px-5 py-4 bg-transparent outline-none font-medium text-gray-900 placeholder:text-gray-400 min-w-0"
-                            autoComplete="off"
-                          />
-                        )}
-                      </div>
-                      {suggestOpen && suggestSuggestions.length > 0 && (
-                        <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                          {suggestSuggestions.map((s) => (
-                            <li
-                              key={s}
-                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
-                              onMouseDown={() => { setSuggestStart(s); setSuggestOpen(false); doFetchRoutes(s); }}
-                            >
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <button
-                      type="submit"
-                      className="group/btn relative px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden"
-                      style={{
-                        backgroundColor: '#58CC02',
-                        color: '#ffffff',
-                        transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        const btn = e.currentTarget;
-                        btn.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
-                        btn.style.boxShadow = '0 14px 28px rgba(58,173,0,0.35)';
-                        btn.style.backgroundColor = '#3aad00';
-                        btn.style.color = '#ffffff';
-                      }}
-                      onMouseLeave={(e) => {
-                        const btn = e.currentTarget;
-                        btn.style.transform = '';
-                        btn.style.boxShadow = '';
-                        btn.style.backgroundColor = '#58CC02';
-                        btn.style.color = '#ffffff';
-                      }}
-                    >
-                      <span className="relative z-10 flex items-center gap-2">
-                        Get Suggestions
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                      </span>
-                    </button>
-                  </form>
-                  <p className="text-sm text-gray-400">Free to use. No sign-up required.</p>
-                </>
-              )}
             </div>
 
             {/* Right — Lottie animation */}
@@ -682,7 +539,6 @@ function HomeContent() {
                 <button
                   onClick={() => {
                     setEnd(route.to);
-                    setFlowType('plan');
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                   className="w-full py-2.5 rounded-xl text-sm font-bold transition-all duration-200 hover:opacity-90"
