@@ -117,17 +117,16 @@ function buildPreferenceContext(body: Record<string, string>): string {
 
   // Distance preference
   if (body.distance) {
-    const distanceLabels: Record<string, string> = {
-      'under-50':  'a short day trip (under 50 miles from start)',
-      '50-100':    'a weekend escape (50–100 miles from start)',
-      '150-plus':  'a full road trip (150+ miles from start)',
-      // legacy keys from wizard flow
-      '50-100 miles': 'a weekend escape (50–100 miles from start)',
-      '100-150 miles': 'a one-tank road trip (100–150 miles from start)',
-      '200+ miles': 'a full road trip (200+ miles from start, multi-day)',
+    const distanceConstraintMap: Record<string, string> = {
+      'under-50':      'The destination must be under 50 miles from the start.',
+      '50-100':        'The destination must be AT LEAST 50 miles and NO MORE THAN 100 miles from the start. Do NOT pick a destination closer than 50 miles.',
+      '150-plus':      'The destination must be at least 150 miles from the start.',
+      '50-100 miles':  'The destination must be AT LEAST 50 miles and NO MORE THAN 100 miles from the start.',
+      '100-150 miles': 'The destination must be between 100 and 150 miles from the start.',
+      '200+ miles':    'The destination must be at least 200 miles from the start.',
     };
-    if (distanceLabels[body.distance]) {
-      parts.push(`IMPORTANT: The destination MUST be ${distanceLabels[body.distance]}. Do not suggest destinations farther than this range.`);
+    if (distanceConstraintMap[body.distance]) {
+      parts.push(`IMPORTANT DISTANCE RULE: ${distanceConstraintMap[body.distance]}`);
     }
   }
 
@@ -235,10 +234,10 @@ export async function POST(req: Request) {
       ? `  "hotels": [
     {
       "name": "string — a real hotel name",
-      "city": "string — MUST be \"${end}\" exactly (the final destination city only)",
+      "city": "${end}",
       "priceRange": "$" | "$$" | "$$$"
     }
-    // suggest 3 to 5 hotels. EVERY hotel must be physically located inside ${end}. Do NOT suggest hotels in nearby towns, suburbs, or adjacent cities.
+    // suggest 3 to 5 hotels. ABSOLUTE RULE: city MUST be "${end}" for every hotel. Hotels in any other city will be discarded. Do NOT suggest hotels in nearby towns or adjacent cities.
   ],\n`
       : '';
 
@@ -355,9 +354,8 @@ ${hotelJsonField}  "stops": [
                 const hotelParams = new URLSearchParams({
                   query,
                   ...(ll && { ll }),
-                  radius: '20000',
+                  radius: '30000',
                   limit: '1',
-                  categories: '19014,19021,19025,19026,19048,19050',
                   fields: 'fsq_id,rating,website,price,photos,geocodes',
                 });
                 const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
@@ -439,6 +437,16 @@ ${hotelJsonField}  "stops": [
               }
             })
           );
+
+          // Drop hotels that aren't in the destination city (case-insensitive partial match)
+          if (Array.isArray(data.hotels) && end) {
+            const endNorm = end.toLowerCase();
+            data.hotels = data.hotels.filter((h: any) => {
+              if (!h?.city) return false;
+              const cityNorm = h.city.toLowerCase();
+              return cityNorm.includes(endNorm) || endNorm.includes(cityNorm);
+            });
+          }
         }
       }
 

@@ -15,10 +15,16 @@ export async function POST(req: Request) {
     const client = getClient();
     const distanceLabels: Record<string, string> = {
       'under-50':  'under 50 miles',
-      '50-100':    '50–100 miles',
-      '150-plus':  '150+ miles',
+      '50-100':    'between 50 and 100 miles',
+      '150-plus':  'more than 150 miles',
+    };
+    const distanceConstraints: Record<string, string> = {
+      'under-50':  'Destinations must be less than 50 miles from start.',
+      '50-100':    'Destinations must be AT LEAST 50 miles and NO MORE THAN 100 miles from start. Do NOT pick nearby towns under 50 miles away.',
+      '150-plus':  'Destinations must be at least 150 miles from start.',
     };
     const distanceLabel = distanceLabels[distance] ?? distance;
+    const distanceConstraint = distanceConstraints[distance] ?? '';
     const prefLines = [
       travelGroup && `Travel group: ${travelGroup}`,
       interests && `Interests: ${interests}`,
@@ -34,7 +40,7 @@ export async function POST(req: Request) {
         content: `Generate 3 distinct California road trip route concepts starting from "${start}".
 Distance preference: ${distanceLabel}
 ${prefLines}
-CRITICAL RULE: Every destination city MUST be within ${distanceLabel} driving distance from "${start}". Do NOT suggest destinations farther than the distance preference. Each concept must have a different theme/vibe AND a different specific destination city within the distance range.
+CRITICAL DISTANCE RULE: ${distanceConstraint} Each concept must have a different theme/vibe AND a different specific destination city. All destinations must be in California.
 Return ONLY this JSON array — no markdown, no extra text:
 [
   { "id": "1", "name": "string — catchy route name", "tagline": "string — one sentence vibe", "via": "string — 2-3 key waypoints or highlights", "destination": "string — specific city name only, e.g. Santa Barbara", "icon": "string — single relevant emoji for this route theme, e.g. 🌊 🌲 🍷 🏔️ 🌮" },
