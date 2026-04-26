@@ -21,7 +21,7 @@ type FlowStep =
   | 'asking_route_choice'
   | 'generating' | 'done';
 
-type RouteOption = { id: string; name: string; tagline: string; via: string; destination: string };
+type RouteOption = { id: string; name: string; tagline: string; via: string; destination: string; icon: string };
 
 const STEP_MESSAGES: Record<FlowStep, string> = {
   asking_start:     "Hey! I'm Roady 🗺️ Let's plan your California road trip. Where are you starting from?",
@@ -516,24 +516,40 @@ function ChatContent() {
 
         {/* Route option cards */}
         {flowStep === 'asking_route_choice' && routeOptions && (
-          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex flex-col gap-2">
-            {routeOptions.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => {
-                  appendMessage('user', opt.name);
-                  const prefsWithEnd = { ...tripPrefs, end: opt.destination };
-                  setTripPrefs(prefsWithEnd);
-                  generateTrip(prefsWithEnd, opt.name);
-                }}
-                className="w-full text-left px-4 py-3 rounded-xl border-2 transition-all hover:border-[#D85A30] hover:bg-[rgba(216,90,48,0.04)]"
-                style={{ borderColor: '#e5e7eb', backgroundColor: 'white' }}
-              >
-                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{opt.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{opt.tagline}</p>
-                <p className="text-[11px] font-medium mt-1" style={{ color: '#D85A30' }}>📍 {opt.destination} · via {opt.via}</p>
-              </button>
-            ))}
+          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100">
+            <div className="flex gap-3 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+              {routeOptions.map((opt, idx) => {
+                const cardColors = [
+                  { bg: '#D85A30', light: 'rgba(216,90,48,0.12)' },
+                  { bg: '#378ADD', light: 'rgba(55,138,221,0.12)' },
+                  { bg: '#1D9E75', light: 'rgba(29,158,117,0.12)' },
+                ];
+                const color = cardColors[idx % cardColors.length];
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => {
+                      appendMessage('user', opt.name);
+                      const prefsWithEnd = { ...tripPrefs, end: opt.destination };
+                      setTripPrefs(prefsWithEnd);
+                      generateTrip(prefsWithEnd, opt.name);
+                    }}
+                    className="flex-shrink-0 flex flex-col items-center text-center rounded-2xl p-3 transition-all hover:scale-105 hover:shadow-md"
+                    style={{ width: 120, minHeight: 120, backgroundColor: color.light, border: `2px solid ${color.bg}20` }}
+                  >
+                    <span className="text-3xl mb-2">{opt.icon || '🗺️'}</span>
+                    <p className="text-xs font-extrabold leading-tight mb-1" style={{ color: '#1B2D45' }}>{opt.name}</p>
+                    <p className="text-[10px] font-semibold" style={{ color: color.bg }}>📍 {opt.destination}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => generateRouteOptions(tripPrefs)}
+              className="mt-2 w-full py-1.5 rounded-xl text-xs font-semibold border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-all"
+            >
+              Suggest new destinations ↻
+            </button>
           </div>
         )}
 

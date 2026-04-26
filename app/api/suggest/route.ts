@@ -238,7 +238,7 @@ export async function POST(req: Request) {
 
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      max_tokens: 3072,
       system: ROADY_SYSTEM_PROMPT,
       messages: [
         {
@@ -258,6 +258,9 @@ Return this exact JSON structure:
   "routeName": "string — a catchy name for this route",
   "tagline": "string — one sentence describing the vibe",
   "totalMiles": number,
+  "destinationDescription": "string — 2-3 engaging sentences about the destination city and what makes it special for a road trip",
+  "funFacts": ["string — interesting or surprising fact about the destination or route", "string", "string"],
+  "tripChecklist": ["string — item to pack or prepare for this specific trip", "string", "string", "string", "string"],
 ${hotelJsonField}  "stops": [
     {
       "name": "string — place name",

@@ -38,6 +38,9 @@ export interface TripData {
   stops: Stop[];
   hotels?: HotelSuggestion[];
   completed?: boolean;
+  destinationDescription?: string;
+  funFacts?: string[];
+  tripChecklist?: string[];
 }
 
 export interface TripPreferences {

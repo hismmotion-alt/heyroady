@@ -37,9 +37,9 @@ ${prefLines}
 Each concept must have a different theme/vibe AND a different specific destination city within the distance range.
 Return ONLY this JSON array — no markdown, no extra text:
 [
-  { "id": "1", "name": "string — catchy route name", "tagline": "string — one sentence vibe", "via": "string — 2-3 key waypoints or highlights", "destination": "string — specific city name only, e.g. Santa Barbara" },
-  { "id": "2", "name": "...", "tagline": "...", "via": "...", "destination": "..." },
-  { "id": "3", "name": "...", "tagline": "...", "via": "...", "destination": "..." }
+  { "id": "1", "name": "string — catchy route name", "tagline": "string — one sentence vibe", "via": "string — 2-3 key waypoints or highlights", "destination": "string — specific city name only, e.g. Santa Barbara", "icon": "string — single relevant emoji for this route theme, e.g. 🌊 🌲 🍷 🏔️ 🌮" },
+  { "id": "2", "name": "...", "tagline": "...", "via": "...", "destination": "...", "icon": "..." },
+  { "id": "3", "name": "...", "tagline": "...", "via": "...", "destination": "...", "icon": "..." }
 ]`,
       }],
     });
