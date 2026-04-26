@@ -33,7 +33,9 @@ export default function StopCard({
   dragHandleProps, isDragging,
 }: StopCardProps) {
   const cat = CATEGORIES.find((c) => c.key === stop.category) ?? CATEGORIES[4];
-  const [open, setOpen] = useState(isActive);
+  const isEnRoute = stop.stopType === 'en-route';
+  const accentColor = isEnRoute ? '#D85A30' : '#378ADD';
+  const [open, setOpen] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   useEffect(() => {
@@ -43,8 +45,8 @@ export default function StopCard({
   return (
     <div
       className={`rounded-2xl mb-3 transition-all duration-200 border-l-4 overflow-hidden
-        ${isDragging ? 'shadow-2xl scale-[1.02] opacity-90 border-[#D85A30]' : isActive ? 'border-[#D85A30] bg-white shadow-lg scale-[1.01]' : 'border-transparent bg-white hover:border-[#D85A30]/50 hover:shadow-md'}`}
-      style={{ backgroundColor: '#ffffff' }}
+        ${isDragging ? 'shadow-2xl scale-[1.02] opacity-90' : isActive ? 'bg-white shadow-lg scale-[1.01]' : 'bg-white hover:shadow-md'}`}
+      style={{ backgroundColor: '#ffffff', borderLeftColor: (isDragging || isActive) ? accentColor : 'transparent' }}
     >
       {/* Header */}
       <div className="flex items-center gap-3 p-4 pb-2 cursor-pointer" onClick={onClick}>
@@ -64,12 +66,28 @@ export default function StopCard({
           ))}
         </div>
 
-        <div className="w-7 h-7 rounded-full bg-[#D85A30] text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
+        <div
+          className="w-7 h-7 rounded-full text-white flex items-center justify-center font-bold text-xs flex-shrink-0"
+          style={{ backgroundColor: accentColor }}
+        >
           {number}
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-gray-900 text-sm leading-tight">{stop.name}</h3>
-          <p className="text-xs text-gray-500">{stop.city}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <p className="text-xs text-gray-500">{stop.city}</p>
+            {stop.stopType && (
+              <span
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                style={{
+                  backgroundColor: isEnRoute ? 'rgba(216,90,48,0.1)' : 'rgba(55,138,221,0.1)',
+                  color: accentColor,
+                }}
+              >
+                {isEnRoute ? 'Stop' : 'Spot'}
+              </span>
+            )}
+          </div>
         </div>
         {/* Category badge — click to open picker */}
         <button

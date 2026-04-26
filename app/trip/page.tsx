@@ -101,7 +101,7 @@ function TripContent() {
   const [trip, setTrip] = useState<TripData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeStop, setActiveStop] = useState(0);
+  const [activeStop, setActiveStop] = useState(-1);
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
   const [user, setUser] = useState<User | null>(null);
