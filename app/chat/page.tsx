@@ -14,17 +14,17 @@ const TripPanel = dynamic(() => import('@/components/TripPanel'), { ssr: false }
 // ─── Flow types ───────────────────────────────────────────────────────────────
 
 type FlowStep =
-  | 'asking_start' | 'asking_end'
+  | 'asking_start'
   | 'asking_group' | 'asking_interests' | 'asking_enroute'
   | 'asking_spots' | 'asking_hotel' | 'asking_nights' | 'asking_date'
+  | 'asking_distance'
   | 'asking_route_choice'
   | 'generating' | 'done';
 
-type RouteOption = { id: string; name: string; tagline: string; via: string };
+type RouteOption = { id: string; name: string; tagline: string; via: string; destination: string };
 
 const STEP_MESSAGES: Record<FlowStep, string> = {
   asking_start:     "Hey! I'm Roady 🗺️ Let's plan your California road trip. Where are you starting from?",
-  asking_end:       "Last one — where are you headed? 🏁",
   asking_group:     "Who's coming along?",
   asking_interests: "What are you into? Pick as many as you like:",
   asking_enroute:   "Any stops along the drive?",
@@ -32,6 +32,7 @@ const STEP_MESSAGES: Record<FlowStep, string> = {
   asking_hotel:        "Want hotel suggestions?",
   asking_nights:       "How many nights are you staying?",
   asking_date:         "When are you heading out? 📅",
+  asking_distance:     "How far are you willing to drive? 🚗",
   asking_route_choice: "Here are 3 routes I can build for you — which vibe are you feeling?",
   generating:          "Building your perfect trip... 🚗✨",
   done:             "Here's your trip! I've mapped it all out on the right. Want to change anything?",
@@ -77,11 +78,10 @@ const FLOW_CHIPS: Partial<Record<FlowStep, { id: string; label: string }[]>> = {
     { id: '3', label: '3 nights' },
     { id: '4+', label: '4+ nights' },
   ],
-  asking_date: [
-    { id: 'this-weekend', label: 'This weekend 🗓️' },
-    { id: 'next-week',    label: 'Next week' },
-    { id: 'next-month',   label: 'Next month' },
-    { id: 'in-2-months',  label: 'In 1–2 months' },
+  asking_distance: [
+    { id: 'under-50',  label: '< 50 miles 🏙️' },
+    { id: '50-100',    label: '50–100 miles 🚗' },
+    { id: '150-plus',  label: '150+ miles 🛣️' },
   ],
 };
 
@@ -162,8 +162,10 @@ function ChatContent() {
     hotelPreference: '',
     hotelNights: '',
     travelDate: '',
+    distance: '',
   });
   const [routeOptions, setRouteOptions] = useState<RouteOption[] | null>(null);
+  const [datePickerValue, setDatePickerValue] = useState('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [generatedTrip, setGeneratedTrip] = useState<TripData | null>(null);
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
@@ -232,7 +234,7 @@ function ChatContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           start: prefs.start,
-          end: prefs.end,
+          distance: prefs.distance,
           travelGroup: prefs.travelGroup,
           interests: prefs.interests.join(','),
           numberOfEnrouteStops: prefs.numberOfEnrouteStops,
@@ -303,16 +305,17 @@ function ChatContent() {
     } else if (step === 'asking_hotel') {
       setTripPrefs((p) => ({ ...p, hotelPreference: id }));
       if (id === '') {
-        advanceTo('asking_end');
+        advanceTo('asking_distance');
       } else {
         advanceTo('asking_nights');
       }
     } else if (step === 'asking_nights') {
       setTripPrefs((p) => ({ ...p, hotelNights: id }));
       advanceTo('asking_date');
-    } else if (step === 'asking_date') {
-      setTripPrefs((p) => ({ ...p, travelDate: id }));
-      advanceTo('asking_end');
+    } else if (step === 'asking_distance') {
+      const finalPrefs = { ...tripPrefs, distance: id };
+      setTripPrefs(finalPrefs);
+      generateRouteOptions(finalPrefs);
     }
   }
 
@@ -349,11 +352,27 @@ function ChatContent() {
       advanceTo('asking_date');
     } else if (step === 'asking_date') {
       setTripPrefs((p) => ({ ...p, travelDate: text }));
-      advanceTo('asking_end');
+      advanceTo('asking_distance');
+    } else if (step === 'asking_distance') {
+      const finalPrefs = { ...tripPrefs, distance: text };
+      setTripPrefs(finalPrefs);
+      generateRouteOptions(finalPrefs);
     }
   }
 
-  // ── Text input (start, end, custom chip override, and post-generation free chat) ──
+  // ── Date picker confirm ──
+  function handleDateConfirm() {
+    if (!datePickerValue) return;
+    const display = new Date(datePickerValue + 'T00:00:00').toLocaleDateString('en-US', {
+      month: 'long', day: 'numeric', year: 'numeric',
+    });
+    appendMessage('user', display);
+    setTripPrefs((p) => ({ ...p, travelDate: datePickerValue }));
+    setDatePickerValue('');
+    advanceTo('asking_distance');
+  }
+
+  // ── Text input (start, custom chip override, and post-generation free chat) ──
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || loading) return;
@@ -371,10 +390,6 @@ function ChatContent() {
     if (flowStep === 'asking_start') {
       setTripPrefs((p) => ({ ...p, start: trimmed }));
       advanceTo('asking_group');
-    } else if (flowStep === 'asking_end') {
-      const finalPrefs = { ...tripPrefs, end: trimmed };
-      setTripPrefs(finalPrefs);
-      generateRouteOptions(finalPrefs);
     } else if (flowStep === 'done') {
       const newMsgs: ChatMessage[] = [...messages, { id: crypto.randomUUID(), role: 'user', content: trimmed }];
       sendToRoady(newMsgs);
@@ -404,7 +419,7 @@ function ChatContent() {
   // Rendering helpers
   const chips = FLOW_CHIPS[flowStep] ?? null;
   const isInterestStep = flowStep === 'asking_interests';
-  const showTextInput = flowStep === 'asking_start' || flowStep === 'asking_end' || flowStep === 'done' || customInputStep !== null;
+  const showTextInput = flowStep === 'asking_start' || flowStep === 'done' || customInputStep !== null;
 
   return (
     <div
@@ -507,21 +522,45 @@ function ChatContent() {
                 key={opt.id}
                 onClick={() => {
                   appendMessage('user', opt.name);
-                  generateTrip(tripPrefs, opt.name);
+                  const prefsWithEnd = { ...tripPrefs, end: opt.destination };
+                  setTripPrefs(prefsWithEnd);
+                  generateTrip(prefsWithEnd, opt.name);
                 }}
                 className="w-full text-left px-4 py-3 rounded-xl border-2 transition-all hover:border-[#D85A30] hover:bg-[rgba(216,90,48,0.04)]"
                 style={{ borderColor: '#e5e7eb', backgroundColor: 'white' }}
               >
                 <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{opt.name}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{opt.tagline}</p>
-                <p className="text-[11px] font-medium mt-1" style={{ color: '#D85A30' }}>via {opt.via}</p>
+                <p className="text-[11px] font-medium mt-1" style={{ color: '#D85A30' }}>📍 {opt.destination} · via {opt.via}</p>
               </button>
             ))}
           </div>
         )}
 
-        {/* Chips — single-select (group, enroute, spots, hotel, nights, date) */}
-        {chips && !isInterestStep && !customInputStep && flowStep !== 'asking_route_choice' && (
+        {/* Calendar date picker for asking_date */}
+        {flowStep === 'asking_date' && !customInputStep && (
+          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100">
+            <input
+              type="date"
+              value={datePickerValue}
+              onChange={(e) => setDatePickerValue(e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full px-4 py-2.5 rounded-xl border-2 text-sm font-medium text-gray-800 mb-3 focus:outline-none"
+              style={{ borderColor: datePickerValue ? '#D85A30' : '#e5e7eb' }}
+            />
+            <button
+              onClick={handleDateConfirm}
+              disabled={!datePickerValue}
+              className="w-full py-2 rounded-xl font-bold text-sm text-white transition-opacity disabled:opacity-40"
+              style={{ backgroundColor: '#D85A30' }}
+            >
+              Set date →
+            </button>
+          </div>
+        )}
+
+        {/* Chips — single-select (group, enroute, spots, hotel, nights, distance) */}
+        {chips && !isInterestStep && !customInputStep && flowStep !== 'asking_route_choice' && flowStep !== 'asking_date' && (
           <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex flex-wrap gap-2">
             {chips.map((chip) => (
               <button
@@ -598,7 +637,6 @@ function ChatContent() {
                 placeholder={
                   customInputStep ? 'Type your answer…' :
                   flowStep === 'asking_start' ? 'e.g. San Francisco…' :
-                  flowStep === 'asking_end' ? 'e.g. Los Angeles…' :
                   'Ask Roady anything about your trip…'
                 }
                 className="flex-1 bg-transparent resize-none text-sm outline-none placeholder-gray-400 text-gray-800 leading-relaxed disabled:opacity-50"
@@ -639,12 +677,13 @@ function ChatContent() {
                 onClick={() => {
                   setMessages([{ id: crypto.randomUUID(), role: 'assistant', content: STEP_MESSAGES.asking_start }]);
                   setFlowStep('asking_start');
-                  setTripPrefs({ start: '', end: '', travelGroup: '', interests: [], numberOfEnrouteStops: '0', numberOfStops: '', hotelPreference: '', hotelNights: '', travelDate: '' });
+                  setTripPrefs({ start: '', end: '', travelGroup: '', interests: [], numberOfEnrouteStops: '0', numberOfStops: '', hotelPreference: '', hotelNights: '', travelDate: '', distance: '' });
                   setSelectedInterests([]);
                   setGeneratedTrip(null);
                   setStartCoords(null);
                   setEndCoords(null);
                   setRouteOptions(null);
+                  setDatePickerValue('');
                   setInput('');
                 }}
                 className="text-xs font-bold px-3 py-1.5 rounded-full transition-all border-2 border-coral text-coral bg-transparent hover:bg-coral hover:text-white"
