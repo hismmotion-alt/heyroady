@@ -348,7 +348,37 @@ ${hotelJsonField}  "stops": [
           data.hotels.map(async (hotel: any) => {
             if (!hotel?.name) return;
 
-            // ── 1. Foursquare: metadata + photo via dedicated /photos endpoint ──
+            // ── 1. Booking.com search page: extract og:image or cf.bstatic.com CDN photo ──
+            try {
+              const bQuery = encodeURIComponent(`${hotel.name} ${hotel.city || ''}`);
+              const bUrl = `https://www.booking.com/searchresults.html?ss=${bQuery}&dest_type=hotel&is_hotel=1&lang=en-us`;
+              const bCtrl = new AbortController();
+              const bTimeout = setTimeout(() => bCtrl.abort(), 6000);
+              const bRes = await fetch(bUrl, {
+                signal: bCtrl.signal,
+                headers: {
+                  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                  'Accept-Language': 'en-US,en;q=0.9',
+                },
+              });
+              clearTimeout(bTimeout);
+              if (bRes.ok) {
+                const html = await bRes.text();
+                // Try og:image first (most reliable — Booking.com sets this to the first hotel's main photo)
+                const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                  ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+                if (ogMatch?.[1]?.startsWith('http') && !ogMatch[1].includes('logo') && !ogMatch[1].includes('favicon')) {
+                  hotel.fsqPhoto = ogMatch[1];
+                } else {
+                  // Fallback: extract first cf.bstatic.com hotel CDN image
+                  const cdnMatch = html.match(/https:\/\/cf\.bstatic\.com\/xdata\/images\/hotel\/[^"'\s,\\]+\.jpg/);
+                  if (cdnMatch?.[0]) hotel.fsqPhoto = cdnMatch[0];
+                }
+              }
+            } catch { /* silently skip */ }
+
+            // ── 2. Foursquare: metadata + photo via dedicated /photos endpoint (enriches even if Booking got photo) ──
             if (fsqKey) {
               try {
                 const query = hotel.city ? `${hotel.name} ${hotel.city}` : hotel.name;
@@ -399,7 +429,7 @@ ${hotelJsonField}  "stops": [
               } catch { /* silently skip */ }
             }
 
-            // ── 2. Hotel website og:image (uses website URL found by Foursquare) ──
+            // ── 3. Hotel website og:image (uses website URL found by Foursquare) ──
             if (!hotel.fsqPhoto && hotel.fsqWebsite) {
               try {
                 const controller = new AbortController();
@@ -418,7 +448,7 @@ ${hotelJsonField}  "stops": [
               } catch { /* silently skip */ }
             }
 
-            // ── 3. Google Places photo ──
+            // ── 4. Google Places photo ──
             if (!hotel.fsqPhoto) {
               const googleKey = process.env.GOOGLE_PLACES_API_KEY;
               if (googleKey) {
@@ -460,7 +490,7 @@ ${hotelJsonField}  "stops": [
               }
             }
 
-            // ── 4. Mapbox satellite — always-available visual fallback ──
+            // ── 5. Mapbox satellite — always-available visual fallback ──
             if (!hotel.fsqPhoto) {
               const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
               if (mapboxToken) {
