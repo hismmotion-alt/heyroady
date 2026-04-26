@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
-import Link from 'next/link';
 import type { TripData, Stop } from '@/lib/types';
 
 const RouteMap = dynamic(() => import('@/components/RouteMap'), {
@@ -16,9 +15,11 @@ interface TripPanelProps {
   end: string;
   startCoords: [number, number];
   endCoords: [number, number];
+  isSaved?: boolean;
+  onSave?: () => void;
 }
 
-export default function TripPanel({ tripData, start, end, startCoords, endCoords }: TripPanelProps) {
+export default function TripPanel({ tripData, start, end, startCoords, endCoords, isSaved, onSave }: TripPanelProps) {
   const [localStops, setLocalStops] = useState<Stop[]>([...tripData.stops]);
   const [activeStop, setActiveStop] = useState(-1);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -37,7 +38,7 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
-  const tripUrl = `/trip?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`;
+  const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}`;
 
   function startEdit(i: number) {
     setEditingIndex(i);
@@ -103,13 +104,32 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
             </span>
           </div>
         </div>
-        <Link
-          href={tripUrl}
-          className="flex-shrink-0 text-xs font-bold px-3 py-1.5 rounded-full text-white transition-opacity hover:opacity-90 ml-3"
-          style={{ backgroundColor: '#D85A30' }}
-        >
-          Full trip →
-        </Link>
+        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+          <button
+            onClick={onSave}
+            disabled={isSaved || !onSave}
+            className="w-8 h-8 rounded-full flex items-center justify-center border transition-all"
+            style={{
+              borderColor: isSaved ? '#ef4444' : '#e5e7eb',
+              color: isSaved ? '#ef4444' : '#9ca3af',
+              backgroundColor: isSaved ? 'rgba(239,68,68,0.06)' : 'white',
+            }}
+            title={!onSave ? 'Sign in to save' : isSaved ? 'Saved' : 'Save trip'}
+          >
+            <svg className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-bold px-3 py-1.5 rounded-full text-white transition-opacity hover:opacity-90 whitespace-nowrap"
+            style={{ backgroundColor: '#378ADD' }}
+          >
+            Open in Maps
+          </a>
+        </div>
       </div>
 
       {/* Scrollable content */}

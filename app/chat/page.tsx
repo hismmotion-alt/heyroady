@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import type { User } from '@supabase/supabase-js';
-import type { Message, TripData } from '@/lib/types';
+import type { Message, TripData, HotelSuggestion } from '@/lib/types';
 
 const TripPanel = dynamic(() => import('@/components/TripPanel'), { ssr: false });
 
@@ -171,6 +171,9 @@ function ChatContent() {
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
   const [customInputStep, setCustomInputStep] = useState<FlowStep | null>(null);
+  const [selectedHotel, setSelectedHotel] = useState<HotelSuggestion | null>(null);
+  const [tripSaved, setTripSaved] = useState(false);
+  const [tripSaving, setTripSaving] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -416,6 +419,34 @@ function ChatContent() {
     router.push('/');
   }
 
+  // ── Hotel selection ──
+  async function handleHotelSelect(hotel: HotelSuggestion) {
+    setSelectedHotel(hotel);
+    if (hotel.lat && hotel.lng) {
+      setEndCoords([hotel.lat, hotel.lng]);
+    } else {
+      const coords = await geocode(`${hotel.name}, ${hotel.city}`);
+      if (coords) setEndCoords(coords);
+    }
+    setTripPrefs((p) => ({ ...p, end: `${hotel.name}, ${hotel.city}` }));
+  }
+
+  // ── Save trip ──
+  async function handleSaveTrip() {
+    if (!user || !generatedTrip || tripSaving) return;
+    setTripSaving(true);
+    try {
+      const res = await fetch('/api/save-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start: tripPrefs.start, end: tripPrefs.end, trip_data: generatedTrip }),
+      });
+      if (res.ok) setTripSaved(true);
+    } finally {
+      setTripSaving(false);
+    }
+  }
+
   // Rendering helpers
   const chips = FLOW_CHIPS[flowStep] ?? null;
   const isInterestStep = flowStep === 'asking_interests';
@@ -483,10 +514,16 @@ function ChatContent() {
               );
             }
             return (
-              <div key={msg.id} className="flex justify-start">
+              <div key={msg.id} className="flex justify-start items-end gap-2">
                 <div
-                  className="max-w-[80%] px-4 py-2.5 text-sm text-gray-800 bg-white shadow-sm"
-                  style={{ borderRadius: '18px 18px 18px 4px' }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-extrabold flex-shrink-0"
+                  style={{ backgroundColor: '#D85A30' }}
+                >
+                  R
+                </div>
+                <div
+                  className="max-w-[75%] px-4 py-2.5 text-sm text-gray-800"
+                  style={{ backgroundColor: '#E9E9EB', borderRadius: '18px 18px 18px 4px' }}
                 >
                   {msg.content}
                 </div>
@@ -701,6 +738,8 @@ function ChatContent() {
                   setRouteOptions(null);
                   setDatePickerValue('');
                   setInput('');
+                  setSelectedHotel(null);
+                  setTripSaved(false);
                 }}
                 className="text-xs font-bold px-3 py-1.5 rounded-full transition-all border-2 border-coral text-coral bg-transparent hover:bg-coral hover:text-white"
               >
@@ -822,14 +861,61 @@ function ChatContent() {
 
         {/* Generated trip panel */}
         {generatedTrip && startCoords && endCoords && (
-          <div className="flex-1 min-h-0 px-4 pb-4 pt-0">
-            <TripPanel
-              tripData={generatedTrip}
-              start={tripPrefs.start}
-              end={tripPrefs.end}
-              startCoords={startCoords}
-              endCoords={endCoords}
-            />
+          <div className="flex-1 min-h-0 px-4 pb-4 pt-0 flex gap-3">
+            {/* Trip card */}
+            <div className="flex-1 min-h-0 min-w-0">
+              <TripPanel
+                tripData={generatedTrip}
+                start={tripPrefs.start}
+                end={tripPrefs.end}
+                startCoords={startCoords}
+                endCoords={endCoords}
+                isSaved={tripSaved}
+                onSave={user ? handleSaveTrip : undefined}
+              />
+            </div>
+
+            {/* Hotels panel */}
+            {generatedTrip.hotels && generatedTrip.hotels.length > 0 && (
+              <div className="w-52 flex-shrink-0 flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden">
+                <div className="px-3 py-2.5 border-b border-gray-100 flex-shrink-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: '#993C1D' }}>Hotel options</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Tap to update destination</p>
+                </div>
+                <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2">
+                  {generatedTrip.hotels.map((hotel, i) => {
+                    const isSelected = selectedHotel?.name === hotel.name;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => handleHotelSelect(hotel)}
+                        className="w-full text-left rounded-lg p-2.5 border-2 transition-all hover:border-[#D85A30]"
+                        style={{
+                          borderColor: isSelected ? '#D85A30' : '#f0f0f0',
+                          backgroundColor: isSelected ? 'rgba(216,90,48,0.04)' : 'white',
+                        }}
+                      >
+                        {hotel.fsqPhoto && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={hotel.fsqPhoto} alt={hotel.name} className="w-full h-20 object-cover rounded-md mb-2" />
+                        )}
+                        <p className="text-xs font-bold leading-tight" style={{ color: '#1B2D45' }}>{hotel.name}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">{hotel.city}</p>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-[10px] font-semibold" style={{ color: '#D85A30' }}>{hotel.priceRange}</span>
+                          {hotel.fsqRating && (
+                            <span className="text-[10px] text-gray-400">⭐ {hotel.fsqRating.toFixed(1)}</span>
+                          )}
+                        </div>
+                        {isSelected && (
+                          <p className="text-[9px] font-bold mt-1" style={{ color: '#D85A30' }}>✓ Destination updated</p>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
