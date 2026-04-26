@@ -184,10 +184,39 @@ function ChatContent() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Initial greeting
+  // Save state to localStorage then navigate to sign-in
+  function saveStateAndGoSignIn() {
+    try {
+      const state = {
+        messages, flowStep, tripPrefs,
+        generatedTrip, startCoords, endCoords,
+        routeOptions, selectedInterests,
+      };
+      localStorage.setItem('roady_chat_state', JSON.stringify(state));
+    } catch { /* ignore */ }
+    router.push('/login?next=/chat');
+  }
+
+  // Initial greeting — restore from localStorage if returning after sign-in
   useEffect(() => {
     if (initialized.current) return;
     initialized.current = true;
+    try {
+      const saved = localStorage.getItem('roady_chat_state');
+      if (saved) {
+        const s = JSON.parse(saved);
+        localStorage.removeItem('roady_chat_state');
+        if (s.messages?.length)      setMessages(s.messages);
+        if (s.flowStep)              setFlowStep(s.flowStep);
+        if (s.tripPrefs)             setTripPrefs(s.tripPrefs);
+        if (s.generatedTrip)         setGeneratedTrip(s.generatedTrip);
+        if (s.startCoords)           setStartCoords(s.startCoords);
+        if (s.endCoords)             setEndCoords(s.endCoords);
+        if (s.routeOptions)          setRouteOptions(s.routeOptions);
+        if (s.selectedInterests)     setSelectedInterests(s.selectedInterests);
+        return;
+      }
+    } catch { /* ignore */ }
     setMessages([{ id: crypto.randomUUID(), role: 'assistant', content: STEP_MESSAGES.asking_start }]);
   }, []);
 
@@ -395,7 +424,7 @@ function ChatContent() {
       advanceTo('asking_group');
     } else if (flowStep === 'done') {
       const newMsgs: ChatMessage[] = [...messages, { id: crypto.randomUUID(), role: 'user', content: trimmed }];
-      sendToRoady(newMsgs);
+      sendToRoadyOrModify(newMsgs, trimmed);
     }
   }
 
@@ -417,6 +446,50 @@ function ChatContent() {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/');
+  }
+
+  // ── Dynamic trip modification + free-form chat ──
+  async function sendToRoadyOrModify(msgs: ChatMessage[], userMessage: string) {
+    setLoading(true);
+    try {
+      if (generatedTrip) {
+        const res = await fetch('/api/modify-trip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userMessage,
+            tripData: generatedTrip,
+            start: tripPrefs.start,
+            end: tripPrefs.end,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.action === 'modify' && data.tripData) {
+            setGeneratedTrip(data.tripData);
+            appendMessage('assistant', "Done! I've updated your trip. Take a look at the changes on the right. 🗺️");
+            return;
+          }
+          if (data.action === 'respond' && data.message) {
+            appendMessage('assistant', data.message);
+            return;
+          }
+        }
+      }
+      // Fallback to general chat
+      const chatRes = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: msgs }),
+      });
+      if (!chatRes.ok) throw new Error('chat failed');
+      const chatData = await chatRes.json();
+      appendMessage('assistant', chatData.content || 'Sorry, something went wrong.');
+    } catch {
+      appendMessage('assistant', 'Sorry, I had trouble connecting. Try again?');
+    } finally {
+      setLoading(false);
+    }
   }
 
   // ── Hotel selection ──
@@ -487,12 +560,12 @@ function ChatContent() {
                   </button>
                 </>
               ) : (
-                <Link
-                  href="/login?next=/chat"
+                <button
+                  onClick={saveStateAndGoSignIn}
                   className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-green"
                 >
                   Sign In
-                </Link>
+                </button>
               )}
             </div>
           )}
@@ -503,7 +576,7 @@ function ChatContent() {
           {messages.map((msg) => {
             if (msg.role === 'user') {
               return (
-                <div key={msg.id} className="flex justify-end">
+                <div key={msg.id} className="flex justify-end message-in">
                   <div
                     className="max-w-[80%] px-4 py-2.5 text-sm font-medium text-white"
                     style={{ backgroundColor: '#58CC02', borderRadius: '18px 18px 4px 18px' }}
@@ -514,7 +587,7 @@ function ChatContent() {
               );
             }
             return (
-              <div key={msg.id} className="flex justify-start items-end gap-2">
+              <div key={msg.id} className="flex justify-start items-end gap-2 message-in">
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-extrabold flex-shrink-0"
                   style={{ backgroundColor: '#D85A30' }}
@@ -872,12 +945,13 @@ function ChatContent() {
                 endCoords={endCoords}
                 isSaved={tripSaved}
                 onSave={user ? handleSaveTrip : undefined}
+                onSignIn={!user ? saveStateAndGoSignIn : undefined}
               />
             </div>
 
             {/* Hotels panel */}
             {generatedTrip.hotels && generatedTrip.hotels.length > 0 && (
-              <div className="w-52 flex-shrink-0 flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <div className="flex-1 flex-shrink-0 flex flex-col rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <div className="px-3 py-2.5 border-b border-gray-100 flex-shrink-0">
                   <p className="text-[10px] font-bold uppercase tracking-wide" style={{ color: '#993C1D' }}>Hotel options</p>
                   <p className="text-xs text-gray-400 mt-0.5">Tap to update destination</p>

@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { TripData, Stop } from '@/lib/types';
 
 const RouteMap = dynamic(() => import('@/components/RouteMap'), {
@@ -17,9 +17,10 @@ interface TripPanelProps {
   endCoords: [number, number];
   isSaved?: boolean;
   onSave?: () => void;
+  onSignIn?: () => void;
 }
 
-export default function TripPanel({ tripData, start, end, startCoords, endCoords, isSaved, onSave }: TripPanelProps) {
+export default function TripPanel({ tripData, start, end, startCoords, endCoords, isSaved, onSave, onSignIn }: TripPanelProps) {
   const [localStops, setLocalStops] = useState<Stop[]>([...tripData.stops]);
   const [activeStop, setActiveStop] = useState(-1);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -31,6 +32,24 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
   const [newStopName, setNewStopName] = useState('');
   const [newStopCity, setNewStopCity] = useState('');
   const [newStopDuration, setNewStopDuration] = useState('1–2 hours');
+  const [showMapsMenu, setShowMapsMenu] = useState(false);
+  const [showSignInPopover, setShowSignInPopover] = useState(false);
+  const mapsMenuRef = useRef<HTMLDivElement>(null);
+  const heartRef = useRef<HTMLDivElement>(null);
+
+  // Close menus on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (mapsMenuRef.current && !mapsMenuRef.current.contains(e.target as Node)) {
+        setShowMapsMenu(false);
+      }
+      if (heartRef.current && !heartRef.current.contains(e.target as Node)) {
+        setShowSignInPopover(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const formatDuration = (miles: number) => {
     const h = Math.floor(miles / 50);
@@ -38,7 +57,8 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
     return h > 0 ? `${h}h ${m}m` : `${m}m`;
   };
 
-  const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}`;
+  const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(start)}&destination=${encodeURIComponent(end)}`;
+  const appleMapsUrl  = `https://maps.apple.com/?saddr=${encodeURIComponent(start)}&daddr=${encodeURIComponent(end)}`;
 
   function startEdit(i: number) {
     setEditingIndex(i);
@@ -104,31 +124,77 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
             </span>
           </div>
         </div>
+
         <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-          <button
-            onClick={onSave}
-            disabled={isSaved || !onSave}
-            className="w-8 h-8 rounded-full flex items-center justify-center border transition-all"
-            style={{
-              borderColor: isSaved ? '#ef4444' : '#e5e7eb',
-              color: isSaved ? '#ef4444' : '#9ca3af',
-              backgroundColor: isSaved ? 'rgba(239,68,68,0.06)' : 'white',
-            }}
-            title={!onSave ? 'Sign in to save' : isSaved ? 'Saved' : 'Save trip'}
-          >
-            <svg className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
-          <a
-            href={mapsUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-bold px-3 py-1.5 rounded-full text-white transition-opacity hover:opacity-90 whitespace-nowrap"
-            style={{ backgroundColor: '#378ADD' }}
-          >
-            Open in Maps
-          </a>
+          {/* Heart / save */}
+          <div className="relative" ref={heartRef}>
+            <button
+              onClick={() => {
+                if (onSave) { onSave(); }
+                else { setShowSignInPopover((v) => !v); }
+              }}
+              disabled={isSaved}
+              className="w-8 h-8 rounded-full flex items-center justify-center border transition-all"
+              style={{
+                borderColor: isSaved ? '#ef4444' : '#e5e7eb',
+                color: isSaved ? '#ef4444' : '#9ca3af',
+                backgroundColor: isSaved ? 'rgba(239,68,68,0.06)' : 'white',
+              }}
+              title={isSaved ? 'Saved' : 'Save trip'}
+            >
+              <svg className="w-4 h-4" fill={isSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+            </button>
+            {showSignInPopover && !onSave && (
+              <div className="absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-lg border border-gray-100 p-3 w-52 z-20">
+                <p className="text-xs font-semibold text-gray-700 mb-2">Sign in to save your trip</p>
+                <button
+                  onClick={() => { setShowSignInPopover(false); onSignIn?.(); }}
+                  className="w-full py-1.5 rounded-lg text-xs font-bold text-white transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: '#D85A30' }}
+                >
+                  Sign In →
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Open in Maps dropdown */}
+          <div className="relative" ref={mapsMenuRef}>
+            <button
+              onClick={() => setShowMapsMenu((v) => !v)}
+              className="text-xs font-bold px-3 py-1.5 rounded-full text-white transition-opacity hover:opacity-90 whitespace-nowrap flex items-center gap-1"
+              style={{ backgroundColor: '#378ADD' }}
+            >
+              Open in Maps
+              <svg className="w-3 h-3 opacity-70" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </button>
+            {showMapsMenu && (
+              <div className="absolute bottom-full right-0 mb-2 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-20 w-44">
+                <a
+                  href={googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setShowMapsMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  🗺️ Google Maps
+                </a>
+                <a
+                  href={appleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setShowMapsMenu(false)}
+                  className="flex items-center gap-2 px-3 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-100"
+                >
+                  🍎 Apple Maps
+                </a>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
