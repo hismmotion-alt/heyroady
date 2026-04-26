@@ -394,7 +394,7 @@ ${hotelJsonField}  "stops": [
                 }
               } catch { /* silently skip */ }
 
-              // ── Google Places: photo fallback (always runs if still no photo) ──
+              // ── Google Places: photo fallback ──
               if (!hotel.fsqPhoto) {
                 const googleKey = process.env.GOOGLE_PLACES_API_KEY;
                 if (googleKey) {
@@ -433,6 +433,23 @@ ${hotelJsonField}  "stops": [
                       }
                     }
                   } catch { /* silently skip */ }
+                }
+              }
+
+              // ── Mapbox satellite: always-available visual fallback ──
+              if (!hotel.fsqPhoto) {
+                const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+                if (mapboxToken) {
+                  // Ensure we have coordinates (geocode if needed)
+                  let lat = hotel.lat;
+                  let lng = hotel.lng;
+                  if (!lat || !lng) {
+                    const coords = await geocodePlace(`${hotel.name}, ${hotel.city}`);
+                    if (coords) { lat = coords[0]; lng = coords[1]; hotel.lat = lat; hotel.lng = lng; }
+                  }
+                  if (lat && lng) {
+                    hotel.fsqPhoto = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng},${lat},15,0/400x200@2x?access_token=${mapboxToken}`;
+                  }
                 }
               }
             })
