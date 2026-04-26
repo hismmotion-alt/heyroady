@@ -21,6 +21,7 @@ export interface Stop {
   lat: number;
   lng: number;
   category: 'nature' | 'food' | 'culture' | 'adventure' | 'scenic';
+  stopType?: 'en-route' | 'destination';
   // Foursquare enrichment (optional — present when a match is found)
   fsqRating?: number;
   fsqReviewCount?: number;

@@ -114,7 +114,7 @@ function TripContent() {
   const [endInputValue, setEndInputValue] = useState(end);
   const [isEditingEnd, setIsEditingEnd] = useState(false);
   const [geocodingEnd, setGeocodingEnd] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'stops' | 'stays' | 'map' | 'tips'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'itinerary' | 'stays' | 'map' | 'tips'>('overview');
   const [stopFilter, setStopFilter] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set<string>());
   const [overviewHotelIdx, setOverviewHotelIdx] = useState(0);
@@ -562,7 +562,7 @@ function TripContent() {
 
           {/* Tabs */}
           <div className="flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' } as React.CSSProperties}>
-            {(['overview', 'stops', 'stays', 'map', 'tips'] as const).map((tab) => (
+            {(['overview', 'itinerary', 'stays', 'map', 'tips'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -574,9 +574,9 @@ function TripContent() {
                 }}
               >
                 {tab === 'overview' && 'Overview'}
-                {tab === 'stops' && (
+                {tab === 'itinerary' && (
                   <>
-                    Spots{' '}
+                    Itinerary{' '}
                     <span
                       className="ml-1 inline-flex items-center justify-center text-[10px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{ backgroundColor: '#D85A30', color: 'white' }}
@@ -700,7 +700,7 @@ function TripContent() {
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-lg" style={{ color: '#1B2D45' }}>Your spots</h3>
                 <button
-                  onClick={() => setActiveTab('stops')}
+                  onClick={() => setActiveTab('itinerary')}
                   className="text-sm font-semibold transition-opacity hover:opacity-70"
                   style={{ color: '#D85A30' }}
                 >
@@ -716,7 +716,7 @@ function TripContent() {
                   return (
                     <button
                       key={i}
-                      onClick={() => { setActiveTab('stops'); setActiveStop(i); }}
+                      onClick={() => { setActiveTab('itinerary'); setActiveStop(i); }}
                       className="min-w-[190px] bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm flex-shrink-0 text-left transition-all hover:border-[#D85A30] hover:shadow-md"
                     >
                       <div
@@ -910,7 +910,7 @@ function TripContent() {
         )}
 
         {/* ════ STOPS ════ */}
-        {activeTab === 'stops' && (
+        {activeTab === 'itinerary' && (
           <div>
             <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
               <h2 className="text-2xl font-extrabold" style={{ color: '#1B2D45' }}>Explore {end}</h2>

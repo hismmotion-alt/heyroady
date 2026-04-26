@@ -86,12 +86,14 @@ export default function RouteMap({ stops, start, end, activeStop, onStopClick }:
       // End marker (navy)
       new mapboxgl.Marker({ color: '#1B2D45' }).setLngLat(end).setPopup(new mapboxgl.Popup().setText('End')).addTo(map.current!);
 
-      // Stop markers (coral with numbers)
+      // Stop markers — coral for en-route stops, blue for destination spots
       stops.forEach((stop, index) => {
+        const isEnRoute = stop.stopType === 'en-route';
+        const color = isEnRoute ? '#D85A30' : '#378ADD';
         const el = document.createElement('div');
         el.style.cssText = `
           width: 32px; height: 32px; border-radius: 50%;
-          background: #D85A30; color: white;
+          background: ${color}; color: white;
           display: flex; align-items: center; justify-content: center;
           font-weight: 800; font-size: 13px; cursor: pointer;
           border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.25);

@@ -258,7 +258,8 @@ ${hotelJsonField}  "stops": [
       "duration": "string — e.g. '1-2 hours'",
       "lat": number — accurate latitude,
       "lng": number — accurate longitude,
-      "category": "nature" | "food" | "culture" | "adventure" | "scenic"
+      "category": "nature" | "food" | "culture" | "adventure" | "scenic",
+      "stopType": "en-route" | "destination"
     }
   ]
 }`,
