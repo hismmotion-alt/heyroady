@@ -337,18 +337,19 @@ ${hotelJsonField}  "stops": [
             } catch {
               // silently skip — stop renders without enrichment
             }
-
           })
         );
+      }
 
-        // Enrich each hotel in the hotels array with Foursquare + Google Places data
-        if (wantsHotel && Array.isArray(data.hotels) && data.hotels.length > 0) {
-          const ll = endCoords ? `${endCoords[0]},${endCoords[1]}` : '';
-          await Promise.allSettled(
-            data.hotels.map(async (hotel: any) => {
-              if (!hotel?.name) return;
+      // ── Hotel enrichment (runs regardless of fsqKey — always produces a photo) ──
+      if (wantsHotel && Array.isArray(data.hotels) && data.hotels.length > 0) {
+        const ll = endCoords ? `${endCoords[0]},${endCoords[1]}` : '';
+        await Promise.allSettled(
+          data.hotels.map(async (hotel: any) => {
+            if (!hotel?.name) return;
 
-              // ── Foursquare: rating, price, coords, maybe photo ──
+            // ── 1. Foursquare: metadata + photo via dedicated /photos endpoint ──
+            if (fsqKey) {
               try {
                 const query = hotel.city ? `${hotel.name} ${hotel.city}` : hotel.name;
                 const hotelParams = new URLSearchParams({
@@ -356,7 +357,7 @@ ${hotelJsonField}  "stops": [
                   ...(ll && { ll }),
                   radius: '30000',
                   limit: '1',
-                  fields: 'fsq_id,rating,website,price,photos,geocodes',
+                  fields: 'fsq_id,rating,website,price,geocodes',
                 });
                 const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
                   headers: { Authorization: fsqKey, Accept: 'application/json' },
@@ -369,20 +370,6 @@ ${hotelJsonField}  "stops": [
                     if (hotelPlace.price != null) hotel.fsqPrice = hotelPlace.price;
                     if (hotelPlace.website) hotel.fsqWebsite = hotelPlace.website;
 
-                    let hotelPhoto = hotelPlace.photos?.[0];
-                    if (!hotelPhoto && hotelPlace.fsq_id) {
-                      try {
-                        const photoRes = await fetch(
-                          `https://api.foursquare.com/v3/places/${hotelPlace.fsq_id}/photos?limit=1`,
-                          { headers: { Authorization: fsqKey, Accept: 'application/json' } }
-                        );
-                        if (photoRes.ok) hotelPhoto = (await photoRes.json())?.[0];
-                      } catch { /* skip */ }
-                    }
-                    if (hotelPhoto?.prefix && hotelPhoto?.suffix) {
-                      hotel.fsqPhoto = `${hotelPhoto.prefix}400x300${hotelPhoto.suffix}`;
-                    }
-
                     const geo = hotelPlace.geocodes?.main;
                     if (geo?.latitude && geo?.longitude) {
                       const tooFar = endCoords
@@ -390,80 +377,115 @@ ${hotelJsonField}  "stops": [
                         : false;
                       if (!tooFar) { hotel.lat = geo.latitude; hotel.lng = geo.longitude; }
                     }
+
+                    // Always call the dedicated /photos endpoint — search response rarely has photos
+                    if (hotelPlace.fsq_id) {
+                      try {
+                        const photoRes = await fetch(
+                          `https://api.foursquare.com/v3/places/${hotelPlace.fsq_id}/photos?limit=1`,
+                          { headers: { Authorization: fsqKey, Accept: 'application/json' } }
+                        );
+                        if (photoRes.ok) {
+                          const photos = await photoRes.json();
+                          const photo = Array.isArray(photos) ? photos[0] : photos?.items?.[0];
+                          if (photo?.prefix && photo?.suffix) {
+                            hotel.fsqPhoto = `${photo.prefix}400x300${photo.suffix}`;
+                          }
+                        }
+                      } catch { /* skip */ }
+                    }
                   }
                 }
               } catch { /* silently skip */ }
+            }
 
-              // ── Google Places: photo fallback ──
-              if (!hotel.fsqPhoto) {
-                const googleKey = process.env.GOOGLE_PLACES_API_KEY;
-                if (googleKey) {
-                  try {
-                    const gpRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'X-Goog-Api-Key': googleKey,
-                        'X-Goog-FieldMask': 'places.photos',
-                      },
-                      body: JSON.stringify({
-                        textQuery: `${hotel.name} hotel ${hotel.city || ''}`.trim(),
-                        maxResultCount: 1,
-                        ...(endCoords && {
-                          locationBias: {
-                            circle: {
-                              center: { latitude: endCoords[0], longitude: endCoords[1] },
-                              radius: 30000,
-                            },
+            // ── 2. Hotel website og:image (uses website URL found by Foursquare) ──
+            if (!hotel.fsqPhoto && hotel.fsqWebsite) {
+              try {
+                const controller = new AbortController();
+                const t = setTimeout(() => controller.abort(), 4000);
+                const pageRes = await fetch(hotel.fsqWebsite, {
+                  signal: controller.signal,
+                  headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' },
+                });
+                clearTimeout(t);
+                if (pageRes.ok) {
+                  const html = await pageRes.text();
+                  const m = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+                    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+                  if (m?.[1]?.startsWith('http')) hotel.fsqPhoto = m[1];
+                }
+              } catch { /* silently skip */ }
+            }
+
+            // ── 3. Google Places photo ──
+            if (!hotel.fsqPhoto) {
+              const googleKey = process.env.GOOGLE_PLACES_API_KEY;
+              if (googleKey) {
+                try {
+                  const gpRes = await fetch('https://places.googleapis.com/v1/places:searchText', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'X-Goog-Api-Key': googleKey,
+                      'X-Goog-FieldMask': 'places.photos',
+                    },
+                    body: JSON.stringify({
+                      textQuery: `${hotel.name} hotel ${hotel.city || ''}`.trim(),
+                      maxResultCount: 1,
+                      ...(endCoords && {
+                        locationBias: {
+                          circle: {
+                            center: { latitude: endCoords[0], longitude: endCoords[1] },
+                            radius: 30000,
                           },
-                        }),
+                        },
                       }),
-                    });
-                    if (gpRes.ok) {
-                      const gpData = await gpRes.json();
-                      const photoName = gpData.places?.[0]?.photos?.[0]?.name;
-                      if (photoName) {
-                        const mediaRes = await fetch(
-                          `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=400&key=${googleKey}&skipHttpRedirect=true`
-                        );
-                        if (mediaRes.ok) {
-                          const mediaData = await mediaRes.json();
-                          if (mediaData.photoUri) hotel.fsqPhoto = mediaData.photoUri;
-                        }
+                    }),
+                  });
+                  if (gpRes.ok) {
+                    const gpData = await gpRes.json();
+                    const photoName = gpData.places?.[0]?.photos?.[0]?.name;
+                    if (photoName) {
+                      const mediaRes = await fetch(
+                        `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=400&key=${googleKey}&skipHttpRedirect=true`
+                      );
+                      if (mediaRes.ok) {
+                        const mediaData = await mediaRes.json();
+                        if (mediaData.photoUri) hotel.fsqPhoto = mediaData.photoUri;
                       }
                     }
-                  } catch { /* silently skip */ }
+                  }
+                } catch { /* silently skip */ }
+              }
+            }
+
+            // ── 4. Mapbox satellite — always-available visual fallback ──
+            if (!hotel.fsqPhoto) {
+              const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+              if (mapboxToken) {
+                let lat = hotel.lat;
+                let lng = hotel.lng;
+                if (!lat || !lng) {
+                  const coords = await geocodePlace(`${hotel.name}, ${hotel.city}`);
+                  if (coords) { lat = coords[0]; lng = coords[1]; hotel.lat = lat; hotel.lng = lng; }
+                }
+                if (lat && lng) {
+                  hotel.fsqPhoto = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/${lng},${lat},16,0/400x200@2x?access_token=${mapboxToken}`;
                 }
               }
+            }
+          })
+        );
 
-              // ── Mapbox satellite: always-available visual fallback ──
-              if (!hotel.fsqPhoto) {
-                const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-                if (mapboxToken) {
-                  // Ensure we have coordinates (geocode if needed)
-                  let lat = hotel.lat;
-                  let lng = hotel.lng;
-                  if (!lat || !lng) {
-                    const coords = await geocodePlace(`${hotel.name}, ${hotel.city}`);
-                    if (coords) { lat = coords[0]; lng = coords[1]; hotel.lat = lat; hotel.lng = lng; }
-                  }
-                  if (lat && lng) {
-                    hotel.fsqPhoto = `https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/${lng},${lat},15,0/400x200@2x?access_token=${mapboxToken}`;
-                  }
-                }
-              }
-            })
-          );
-
-          // Drop hotels that aren't in the destination city (case-insensitive partial match)
-          if (Array.isArray(data.hotels) && end) {
-            const endNorm = end.toLowerCase();
-            data.hotels = data.hotels.filter((h: any) => {
-              if (!h?.city) return false;
-              const cityNorm = h.city.toLowerCase();
-              return cityNorm.includes(endNorm) || endNorm.includes(cityNorm);
-            });
-          }
+        // Drop hotels that aren't in the destination city (case-insensitive partial match)
+        if (Array.isArray(data.hotels) && end) {
+          const endNorm = end.toLowerCase();
+          data.hotels = data.hotels.filter((h: any) => {
+            if (!h?.city) return false;
+            const cityNorm = h.city.toLowerCase();
+            return cityNorm.includes(endNorm) || endNorm.includes(cityNorm);
+          });
         }
       }
 
