@@ -43,6 +43,7 @@ export interface TripPreferences {
   travelGroup: string;
   kidsAges?: string[];
   stopTypes: string[];
+  numberOfEnrouteStops: string;
   numberOfStops: string;
   stopDuration: string;
   hotelPreference?: string;

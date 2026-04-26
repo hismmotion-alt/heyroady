@@ -85,6 +85,7 @@ function TripContent() {
   const end = searchParams.get('end') || '';
   const travelGroup = searchParams.get('travelGroup') || '';
   const stopTypes = searchParams.get('stopTypes') || '';
+  const numberOfEnrouteStops = searchParams.get('numberOfEnrouteStops') || '0';
   const numberOfStops = searchParams.get('numberOfStops') || '';
   const stopDuration = searchParams.get('stopDuration') || '';
   const kidsAges = searchParams.get('kidsAges') || '';
@@ -245,7 +246,7 @@ function TripContent() {
           fetch('/api/suggest', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests }),
+            body: JSON.stringify({ start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests }),
           }),
         ]);
         setStartCoords(startCoord);
@@ -264,7 +265,7 @@ function TripContent() {
     }
 
     fetchTrip();
-  }, [start, end, travelGroup, stopTypes, numberOfStops, stopDuration, kidsAges, router]);
+  }, [start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, router]);
 
   useEffect(() => {
     const supabase = createClient();

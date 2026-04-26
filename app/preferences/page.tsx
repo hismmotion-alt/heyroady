@@ -68,6 +68,7 @@ function PreferencesContent() {
       end,
       travelGroup: prefs.travelGroup,
       stopTypes: prefs.stopTypes.join(','),
+      numberOfEnrouteStops: prefs.numberOfEnrouteStops,
       numberOfStops: prefs.numberOfStops,
       stopDuration: prefs.stopDuration,
     });

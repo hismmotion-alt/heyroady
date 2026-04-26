@@ -70,13 +70,20 @@ const INTERESTS = [
   },
 ];
 
+const ENROUTE_COUNTS = [
+  { id: '0', label: 'None',    desc: 'Drive straight through',  emoji: '⚡' },
+  { id: '1', label: '1 stop',  desc: 'One quick break',         emoji: '1️⃣' },
+  { id: '2', label: '2 stops', desc: 'A couple of breaks',      emoji: '2️⃣' },
+  { id: '3', label: '3 stops', desc: 'A few along the way',     emoji: '3️⃣' },
+];
+
 const STOP_COUNTS = [
-  { id: '1',    label: '1 spot',        desc: 'Quick and focused',             emoji: '1️⃣' },
-  { id: '2',    label: '2 spots',       desc: 'A couple of highlights',        emoji: '2️⃣' },
-  { id: '3',    label: '3 spots',       desc: 'A nice balance',                emoji: '3️⃣' },
-  { id: '4',    label: '4 spots',       desc: 'Plenty to explore',             emoji: '4️⃣' },
-  { id: '5',    label: '5 spots',       desc: 'The full experience',           emoji: '5️⃣' },
-  { id: 'auto', label: 'Choose for me', desc: "Let Roady decide the best number", emoji: '✨' },
+  { id: '1',    label: '1 spot',        desc: 'Quick and focused',                emoji: '1️⃣' },
+  { id: '2',    label: '2 spots',       desc: 'A couple of highlights',           emoji: '2️⃣' },
+  { id: '3',    label: '3 spots',       desc: 'A nice balance',                   emoji: '3️⃣' },
+  { id: '4',    label: '4 spots',       desc: 'Plenty to explore',                emoji: '4️⃣' },
+  { id: '5',    label: '5 spots',       desc: 'The full experience',              emoji: '5️⃣' },
+  { id: 'auto', label: 'Choose for me', desc: 'Let Roady decide the best number', emoji: '✨' },
 ];
 
 const HOTEL_BUDGETS = [
@@ -87,30 +94,33 @@ const HOTEL_BUDGETS = [
 ];
 
 const STEP_LABELS: Record<string, string> = {
-  group:        "WHO'S COMING",
-  kids:         'KIDS AGES',
-  stopTypes:    'INTERESTS',
-  hotelBudget:  'HOTEL',
-  hotelDetails: 'HOTEL DETAILS',
-  numberOfStops:'STOPS',
+  group:               "WHO'S COMING",
+  kids:                'KIDS AGES',
+  stopTypes:           'INTERESTS',
+  hotelBudget:         'HOTEL',
+  hotelDetails:        'HOTEL DETAILS',
+  numberOfEnrouteStops:'EN ROUTE',
+  numberOfStops:       'DESTINATION',
 };
 
 const STEP_TITLES: Record<string, string> = {
-  group:        "Who's coming along?",
-  kids:         'How old are the kids?',
-  stopTypes:    'Pick a few things you love.',
-  hotelBudget:  "What's your hotel budget?",
-  hotelDetails: 'Hotel details',
-  numberOfStops:'How many spots?',
+  group:               "Who's coming along?",
+  kids:                'How old are the kids?',
+  stopTypes:           'Pick a few things you love.',
+  hotelBudget:         "What's your hotel budget?",
+  hotelDetails:        'Hotel details',
+  numberOfEnrouteStops:'Stops on the drive?',
+  numberOfStops:       'Spots at your destination?',
 };
 
 const STEP_DESCRIPTIONS: Record<string, string> = {
-  group:        "This helps Roady find the right kind of spots for your crew.",
-  kids:         "Select all that apply so we find age-appropriate spots.",
-  stopTypes:    "Tap as many as you want — Roady will find spots that match your vibe. You can change these anytime.",
-  hotelBudget:  "Roady will suggest a hotel at your destination to match.",
-  hotelDetails: "Roady will pre-fill your search on Booking.com so you see real availability.",
-  numberOfStops:"More spots means more to explore — fewer means more time at each.",
+  group:               "This helps Roady find the right kind of spots for your crew.",
+  kids:                "Select all that apply so we find age-appropriate spots.",
+  stopTypes:           "Tap as many as you want — Roady will find spots that match your vibe. You can change these anytime.",
+  hotelBudget:         "Roady will suggest a hotel at your destination to match.",
+  hotelDetails:        "Roady will pre-fill your search on Booking.com so you see real availability.",
+  numberOfEnrouteStops:"How many times do you want to pull over on the way there?",
+  numberOfStops:       "How many places do you want to explore once you arrive?",
 };
 
 const STEP_TIPS: Record<string, string> = {
@@ -123,8 +133,9 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   const [step, setStep] = useState(0);
   const [travelGroup, setTravelGroup]     = useState(prefilledGroup || '');
   const [kidsAges, setKidsAges]           = useState<string[]>([]);
-  const [stopTypes, setStopTypes]         = useState<string[]>(prefilledStopTypes || []);
-  const [numberOfStops, setNumberOfStops] = useState('');
+  const [stopTypes, setStopTypes]                     = useState<string[]>(prefilledStopTypes || []);
+  const [numberOfEnrouteStops, setNumberOfEnrouteStops] = useState('');
+  const [numberOfStops, setNumberOfStops]               = useState('');
   const [hotelPreference, setHotelPreference] = useState('');
   const [hotelGuests, setHotelGuests]     = useState('');
   const [hotelCheckin, setHotelCheckin]   = useState('');
@@ -141,6 +152,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   if (!skipStopTypes) steps.push('stopTypes');
   steps.push('hotelBudget');
   if (hotelPreference !== 'none') steps.push('hotelDetails');
+  steps.push('numberOfEnrouteStops');
   steps.push('numberOfStops');
 
   const totalSteps   = steps.length;
@@ -152,8 +164,9 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
       case 'kids':         return kidsOptional || kidsAges.length > 0;
       case 'stopTypes':    return stopTypes.length > 0;
       case 'hotelBudget':  return !!hotelPreference;
-      case 'hotelDetails': return !!hotelGuests && !!hotelCheckin && !!hotelNights;
-      case 'numberOfStops':return !!numberOfStops;
+      case 'hotelDetails':        return !!hotelGuests && !!hotelCheckin && !!hotelNights;
+      case 'numberOfEnrouteStops':return !!numberOfEnrouteStops;
+      case 'numberOfStops':       return !!numberOfStops;
       default: return false;
     }
   }
@@ -165,6 +178,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
       travelGroup: effectiveGroup,
       ...(effectiveGroup === 'family-kids' && kidsAges.length > 0 && { kidsAges }),
       stopTypes: effectiveStopTypes,
+      numberOfEnrouteStops,
       numberOfStops,
       stopDuration: '',
       ...(hotelPreference && { hotelPreference }),
@@ -489,7 +503,21 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
           </div>
         )}
 
-        {/* ── Number of Stops ── */}
+        {/* ── En-route Stops ── */}
+        {currentStepId === 'numberOfEnrouteStops' && (
+          <div className="max-w-lg flex flex-col gap-3">
+            {ENROUTE_COUNTS.map((c) => (
+              <OptionCard
+                key={c.id}
+                item={c}
+                selected={numberOfEnrouteStops === c.id}
+                onClick={() => setNumberOfEnrouteStops(c.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ── Number of Destination Spots ── */}
         {currentStepId === 'numberOfStops' && (
           <div className="max-w-lg flex flex-col gap-3">
             {STOP_COUNTS.map((c) => (

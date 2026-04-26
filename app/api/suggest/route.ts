@@ -125,7 +125,13 @@ function buildPreferenceContext(body: Record<string, string>): string {
     if (distanceLabels[body.distance]) parts.push(`They prefer ${distanceLabels[body.distance]}.`);
   }
 
-  // Number of spots
+  // En-route stops
+  if (body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0') {
+    const n = body.numberOfEnrouteStops;
+    parts.push(`They want ${n} stop${n === '1' ? '' : 's'} along the drive en-route to the destination.`);
+  }
+
+  // Number of spots at destination
   if (body.numberOfStops) {
     if (body.numberOfStops === 'auto') {
       parts.push('Choose the best number of spots to explore (between 3 and 6).');
@@ -229,10 +235,14 @@ export async function POST(req: Request) {
         {
           role: 'user',
           content: `Plan a California road trip from "${start}" to "${end}".${startCoords && endCoords ? ` The route starts near (lat ${startCoords[0].toFixed(4)}, lng ${startCoords[1].toFixed(4)}) and ends near (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}).` : ''}${preferenceContext}${waypointsContext}${curatedStopsContext}
-${endCoords ? `
-STRICT COORDINATE BOUNDS: Every spot must be within 40km of "${end}" (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}). Spots outside this radius will be discarded.` : ''}
+${body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0'
+  ? `STRICT COORDINATE BOUNDS: En-route stops must fall within the geographic corridor between "${start}" and "${end}". Destination spots must be within 40km of "${end}"${endCoords ? ` (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)})` : ''}.
 
-Suggest exactly ${spotsInstruction} interesting spots to explore in "${end}". These are things to do and see at the destination — not stops along the drive. Order them in a logical exploration sequence.
+Suggest ${body.numberOfEnrouteStops} stop${body.numberOfEnrouteStops === '1' ? '' : 's'} along the drive from "${start}" to "${end}" (en-route, ordered geographically from start to end), then ${spotsInstruction} spot${spotsInstruction === '1' ? '' : 's'} to explore in "${end}" (things to do and see at the destination). Return all of them in a single stops array: en-route stops first, destination spots last.`
+  : `${endCoords ? `STRICT COORDINATE BOUNDS: Every spot must be within 40km of "${end}" (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}). Spots outside this radius will be discarded.` : ''}
+
+Suggest exactly ${spotsInstruction} interesting spots to explore in "${end}". These are things to do and see at the destination — not stops along the drive. Order them in a logical exploration sequence.`
+}
 
 Return this exact JSON structure:
 {
@@ -263,8 +273,9 @@ ${hotelJsonField}  "stops": [
     try {
       const data = JSON.parse(cleaned);
 
-      // Filter out any spots Claude placed outside the destination radius
-      if (Array.isArray(data.stops) && endCoords) {
+      // Apply destination-radius filter only when no en-route stops are requested
+      const hasEnroute = body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0';
+      if (Array.isArray(data.stops) && endCoords && !hasEnroute) {
         data.stops = filterSpotsAtDestination(data.stops, endCoords[0], endCoords[1]);
       }
 
