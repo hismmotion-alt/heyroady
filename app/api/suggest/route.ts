@@ -155,6 +155,11 @@ function buildPreferenceContext(body: Record<string, string>): string {
     }
   }
 
+  // Travel date
+  if (body.travelDate) {
+    parts.push(`They are planning to travel: ${body.travelDate}.`);
+  }
+
   // Duration
   if (body.stopDuration) {
     const durationLabels: Record<string, string> = {
@@ -189,6 +194,10 @@ export async function POST(req: Request) {
     ]);
 
     const preferenceContext = buildPreferenceContext(body);
+
+    const routeHintContext = body.routeHint
+      ? `\n\nThe traveler chose this route concept: "${body.routeHint}". Build the trip around this theme.`
+      : '';
 
     const curatedStopsContext = endCoords
       ? buildCuratedStopsContext(getCuratedSpotsForDestination(endCoords[0], endCoords[1]))
@@ -234,7 +243,7 @@ export async function POST(req: Request) {
       messages: [
         {
           role: 'user',
-          content: `Plan a California road trip from "${start}" to "${end}".${startCoords && endCoords ? ` The route starts near (lat ${startCoords[0].toFixed(4)}, lng ${startCoords[1].toFixed(4)}) and ends near (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}).` : ''}${preferenceContext}${waypointsContext}${curatedStopsContext}
+          content: `Plan a California road trip from "${start}" to "${end}".${startCoords && endCoords ? ` The route starts near (lat ${startCoords[0].toFixed(4)}, lng ${startCoords[1].toFixed(4)}) and ends near (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}).` : ''}${preferenceContext}${waypointsContext}${routeHintContext}${curatedStopsContext}
 ${body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0'
   ? `STRICT COORDINATE BOUNDS: En-route stops must fall within the geographic corridor between "${start}" and "${end}". Destination spots must be within 40km of "${end}"${endCoords ? ` (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)})` : ''}.
 

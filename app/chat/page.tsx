@@ -16,8 +16,11 @@ const TripPanel = dynamic(() => import('@/components/TripPanel'), { ssr: false }
 type FlowStep =
   | 'asking_start' | 'asking_end'
   | 'asking_group' | 'asking_interests' | 'asking_enroute'
-  | 'asking_spots' | 'asking_hotel' | 'asking_nights'
+  | 'asking_spots' | 'asking_hotel' | 'asking_nights' | 'asking_date'
+  | 'asking_route_choice'
   | 'generating' | 'done';
+
+type RouteOption = { id: string; name: string; tagline: string; via: string };
 
 const STEP_MESSAGES: Record<FlowStep, string> = {
   asking_start:     "Hey! I'm Roady 🗺️ Let's plan your California road trip. Where are you starting from?",
@@ -26,9 +29,11 @@ const STEP_MESSAGES: Record<FlowStep, string> = {
   asking_interests: "What are you into? Pick as many as you like:",
   asking_enroute:   "Any stops along the drive?",
   asking_spots:     "How many spots do you want to explore at the destination?",
-  asking_hotel:     "Want hotel suggestions?",
-  asking_nights:    "How many nights are you staying?",
-  generating:       "Building your perfect trip... 🚗✨",
+  asking_hotel:        "Want hotel suggestions?",
+  asking_nights:       "How many nights are you staying?",
+  asking_date:         "When are you heading out? 📅",
+  asking_route_choice: "Here are 3 routes I can build for you — which vibe are you feeling?",
+  generating:          "Building your perfect trip... 🚗✨",
   done:             "Here's your trip! I've mapped it all out on the right. Want to change anything?",
 };
 
@@ -71,6 +76,12 @@ const FLOW_CHIPS: Partial<Record<FlowStep, { id: string; label: string }[]>> = {
     { id: '2', label: '2 nights' },
     { id: '3', label: '3 nights' },
     { id: '4+', label: '4+ nights' },
+  ],
+  asking_date: [
+    { id: 'this-weekend', label: 'This weekend 🗓️' },
+    { id: 'next-week',    label: 'Next week' },
+    { id: 'next-month',   label: 'Next month' },
+    { id: 'in-2-months',  label: 'In 1–2 months' },
   ],
 };
 
@@ -150,7 +161,9 @@ function ChatContent() {
     numberOfStops: '',
     hotelPreference: '',
     hotelNights: '',
+    travelDate: '',
   });
+  const [routeOptions, setRouteOptions] = useState<RouteOption[] | null>(null);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [generatedTrip, setGeneratedTrip] = useState<TripData | null>(null);
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
@@ -209,8 +222,35 @@ function ChatContent() {
     }
   }, []);
 
-  // ── Trip generation ──
-  async function generateTrip(prefs: typeof tripPrefs) {
+  // ── Route options (step before full generation) ──
+  async function generateRouteOptions(prefs: typeof tripPrefs) {
+    setFlowStep('generating');
+    appendMessage('assistant', "Let me think up some great routes for you... 🗺️");
+    try {
+      const res = await fetch('/api/suggest-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: prefs.start,
+          end: prefs.end,
+          travelGroup: prefs.travelGroup,
+          interests: prefs.interests.join(','),
+          numberOfEnrouteStops: prefs.numberOfEnrouteStops,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to fetch options');
+      const options: RouteOption[] = await res.json();
+      setRouteOptions(options);
+      setFlowStep('asking_route_choice');
+      appendMessage('assistant', STEP_MESSAGES.asking_route_choice);
+    } catch {
+      appendMessage('assistant', "Hmm, something went wrong. Want to try again?");
+      setFlowStep('asking_start');
+    }
+  }
+
+  // ── Full trip generation ──
+  async function generateTrip(prefs: typeof tripPrefs, routeHint: string) {
     setFlowStep('generating');
     appendMessage('assistant', STEP_MESSAGES.generating);
     try {
@@ -229,6 +269,8 @@ function ChatContent() {
           numberOfStops: prefs.numberOfStops,
           hotelPreference: prefs.hotelPreference,
           hotelNights: prefs.hotelNights,
+          travelDate: prefs.travelDate,
+          routeHint,
         }),
       });
       if (!res.ok) throw new Error('Failed to generate trip');
@@ -267,6 +309,9 @@ function ChatContent() {
       }
     } else if (step === 'asking_nights') {
       setTripPrefs((p) => ({ ...p, hotelNights: id }));
+      advanceTo('asking_date');
+    } else if (step === 'asking_date') {
+      setTripPrefs((p) => ({ ...p, travelDate: id }));
       advanceTo('asking_end');
     }
   }
@@ -301,6 +346,9 @@ function ChatContent() {
       advanceTo('asking_nights');
     } else if (step === 'asking_nights') {
       setTripPrefs((p) => ({ ...p, hotelNights: text }));
+      advanceTo('asking_date');
+    } else if (step === 'asking_date') {
+      setTripPrefs((p) => ({ ...p, travelDate: text }));
       advanceTo('asking_end');
     }
   }
@@ -326,7 +374,7 @@ function ChatContent() {
     } else if (flowStep === 'asking_end') {
       const finalPrefs = { ...tripPrefs, end: trimmed };
       setTripPrefs(finalPrefs);
-      generateTrip(finalPrefs);
+      generateRouteOptions(finalPrefs);
     } else if (flowStep === 'done') {
       const newMsgs: ChatMessage[] = [...messages, { id: crypto.randomUUID(), role: 'user', content: trimmed }];
       sendToRoady(newMsgs);
@@ -451,8 +499,29 @@ function ChatContent() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Chips — single-select (group, enroute, spots, hotel, nights) */}
-        {chips && !isInterestStep && !customInputStep && (
+        {/* Route option cards */}
+        {flowStep === 'asking_route_choice' && routeOptions && (
+          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex flex-col gap-2">
+            {routeOptions.map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => {
+                  appendMessage('user', opt.name);
+                  generateTrip(tripPrefs, opt.name);
+                }}
+                className="w-full text-left px-4 py-3 rounded-xl border-2 transition-all hover:border-[#D85A30] hover:bg-[rgba(216,90,48,0.04)]"
+                style={{ borderColor: '#e5e7eb', backgroundColor: 'white' }}
+              >
+                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>{opt.name}</p>
+                <p className="text-xs text-gray-500 mt-0.5">{opt.tagline}</p>
+                <p className="text-[11px] font-medium mt-1" style={{ color: '#D85A30' }}>via {opt.via}</p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Chips — single-select (group, enroute, spots, hotel, nights, date) */}
+        {chips && !isInterestStep && !customInputStep && flowStep !== 'asking_route_choice' && (
           <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex flex-wrap gap-2">
             {chips.map((chip) => (
               <button
@@ -570,11 +639,12 @@ function ChatContent() {
                 onClick={() => {
                   setMessages([{ id: crypto.randomUUID(), role: 'assistant', content: STEP_MESSAGES.asking_start }]);
                   setFlowStep('asking_start');
-                  setTripPrefs({ start: '', end: '', travelGroup: '', interests: [], numberOfEnrouteStops: '0', numberOfStops: '', hotelPreference: '', hotelNights: '' });
+                  setTripPrefs({ start: '', end: '', travelGroup: '', interests: [], numberOfEnrouteStops: '0', numberOfStops: '', hotelPreference: '', hotelNights: '', travelDate: '' });
                   setSelectedInterests([]);
                   setGeneratedTrip(null);
                   setStartCoords(null);
                   setEndCoords(null);
+                  setRouteOptions(null);
                   setInput('');
                 }}
                 className="text-xs font-bold px-3 py-1.5 rounded-full transition-all border-2 border-coral text-coral bg-transparent hover:bg-coral hover:text-white"
