@@ -445,8 +445,33 @@ function ChatContent() {
     }
 
     if (flowStep === 'asking_start') {
-      setTripPrefs((p) => ({ ...p, start: trimmed }));
-      advanceTo('asking_group');
+      setLoading(true);
+      fetch('/api/roady-assist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ step: 'asking_start', message: trimmed, prefs: tripPrefs }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.action === 'proceed' && data.start) {
+            setTripPrefs((p) => ({ ...p, start: data.start }));
+            advanceTo('asking_group');
+          } else if (data.action === 'proceed_both' && data.start && data.end) {
+            setTripPrefs((p) => ({ ...p, start: data.start, end: data.end }));
+            advanceTo('asking_group');
+          } else if (data.action === 'respond' && data.message) {
+            appendMessage('assistant', data.message);
+          } else {
+            // fallback: treat as plain location
+            setTripPrefs((p) => ({ ...p, start: trimmed }));
+            advanceTo('asking_group');
+          }
+        })
+        .catch(() => {
+          setTripPrefs((p) => ({ ...p, start: trimmed }));
+          advanceTo('asking_group');
+        })
+        .finally(() => setLoading(false));
     } else if (flowStep === 'done') {
       const newMsgs: ChatMessage[] = [...messages, { id: crypto.randomUUID(), role: 'user', content: trimmed }];
       sendToRoadyOrModify(newMsgs, trimmed);
