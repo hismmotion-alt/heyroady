@@ -274,10 +274,17 @@ ${hotelJsonField}  "stops": [
     try {
       const data = JSON.parse(cleaned);
 
-      // Apply destination-radius filter only when no en-route stops are requested
-      const hasEnroute = body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0';
-      if (Array.isArray(data.stops) && endCoords && !hasEnroute) {
-        data.stops = filterSpotsAtDestination(data.stops, endCoords[0], endCoords[1]);
+      // Always filter destination spots to within 40km of the destination.
+      // En-route stops are exempt from this filter.
+      if (Array.isArray(data.stops) && endCoords) {
+        const hasEnroute = body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0';
+        if (hasEnroute) {
+          data.stops = data.stops.filter((s: { lat: number; lng: number; stopType?: string }) =>
+            s.stopType === 'en-route' || haversineKm(endCoords[0], endCoords[1], s.lat, s.lng) <= 40
+          );
+        } else {
+          data.stops = filterSpotsAtDestination(data.stops, endCoords[0], endCoords[1]);
+        }
       }
 
       // Enrich stops with Foursquare data in parallel (best-effort, never blocks)

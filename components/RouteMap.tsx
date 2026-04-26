@@ -90,23 +90,40 @@ export default function RouteMap({ stops, start, end, activeStop, onStopClick }:
       stops.forEach((stop, index) => {
         const isEnRoute = stop.stopType === 'en-route';
         const color = isEnRoute ? '#D85A30' : '#378ADD';
+
+        // Outer wrapper: Mapbox positions this via its own transform — never touch el.style.transform
         const el = document.createElement('div');
-        el.style.cssText = `
-          width: 32px; height: 32px; border-radius: 50%;
-          background: ${color}; color: white;
-          display: flex; align-items: center; justify-content: center;
-          font-weight: 800; font-size: 13px; cursor: pointer;
-          border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-          transition: transform 0.2s;
+        el.style.cssText = 'width:32px;height:32px;cursor:pointer;';
+
+        // Inner circle: safe to scale on hover
+        const inner = document.createElement('div');
+        inner.style.cssText = `
+          width:32px;height:32px;border-radius:50%;
+          background:${color};color:white;
+          display:flex;align-items:center;justify-content:center;
+          font-weight:800;font-size:13px;
+          border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.25);
+          transition:transform 0.15s;
         `;
-        el.innerHTML = `<span>${index + 1}</span>`;
-        el.addEventListener('mouseenter', () => (el.style.transform = 'scale(1.2)'));
-        el.addEventListener('mouseleave', () => (el.style.transform = 'scale(1)'));
+        inner.innerHTML = `<span>${index + 1}</span>`;
+        el.appendChild(inner);
+
+        // Hover tooltip (no click needed)
+        const popup = new mapboxgl.Popup({ offset: 28, closeButton: false, closeOnClick: false })
+          .setHTML(`<strong style="font-size:13px;color:#1B2D45">${stop.name}</strong><br/><span style="font-size:11px;color:#6b7280">${stop.city}</span>`);
+
+        el.addEventListener('mouseenter', () => {
+          inner.style.transform = 'scale(1.15)';
+          popup.setLngLat([stop.lng, stop.lat]).addTo(map.current!);
+        });
+        el.addEventListener('mouseleave', () => {
+          inner.style.transform = 'scale(1)';
+          popup.remove();
+        });
         el.addEventListener('click', () => onStopClick?.(index));
 
         const marker = new mapboxgl.Marker(el)
           .setLngLat([stop.lng, stop.lat])
-          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`<strong>${stop.name}</strong><br/>${stop.city}`))
           .addTo(map.current!);
 
         markersRef.current.push(marker);
