@@ -16,19 +16,41 @@ export async function POST(req: Request) {
       system: ROADY_SYSTEM_PROMPT,
       messages: [{
         role: 'user',
-        content: `You are Roady helping modify an existing road trip plan.
+        content: `You are Roady helping a traveler modify their existing road trip plan.
 
-Current trip from "${start}" to "${end}":
+Current trip from "${start}" to "${end}" (${tripData.stops.length} stops):
 ${JSON.stringify(tripData, null, 2)}
 
 The traveler says: "${message}"
 
-If they want to modify the trip (add/remove/reorder stops, change names, durations, update miles, etc.):
-Return ONLY this JSON — no markdown, no extra text:
-{ "action": "modify", "tripData": { "routeName": "...", "tagline": "...", "totalMiles": number, "stops": [ { "name": "...", "city": "...", "description": "...", "tip": "...", "duration": "...", "lat": number, "lng": number, "category": "nature"|"food"|"culture"|"adventure"|"scenic", "stopType": "en-route"|"destination" } ] } }
+RULES:
+- If the traveler wants to change the trip in any way (add/remove/reorder stops, change names, durations, miles, etc.) → return action "modify" with the COMPLETE updated trip. You MUST include ALL stops (existing + new/changed). Never drop existing stops unless the traveler asked you to remove them.
+- If the traveler is asking a question or making conversation (not requesting a trip change) → return action "respond".
 
-If they are asking a question or want advice (not requesting a structural change to the trip):
-Return ONLY this JSON — no markdown, no extra text:
+For "modify" — return ONLY this JSON, no markdown, no extra text:
+{
+  "action": "modify",
+  "tripData": {
+    "routeName": "string",
+    "tagline": "string",
+    "totalMiles": number,
+    "stops": [
+      {
+        "name": "string",
+        "city": "string",
+        "description": "string — 1-2 sentences",
+        "tip": "string — insider tip",
+        "duration": "string — e.g. 1-2 hours",
+        "lat": number,
+        "lng": number,
+        "category": "nature" | "food" | "culture" | "adventure" | "scenic",
+        "stopType": "en-route" | "destination"
+      }
+    ]
+  }
+}
+
+For "respond" — return ONLY this JSON, no markdown, no extra text:
 { "action": "respond", "message": "your helpful conversational response" }`,
       }],
     });

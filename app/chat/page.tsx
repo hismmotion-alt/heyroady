@@ -178,6 +178,11 @@ function ChatContent() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const initialized = useRef(false);
+  // Always holds the latest state so saveStateAndGoSignIn never captures a stale closure
+  const chatStateRef = useRef({ messages, flowStep, tripPrefs, generatedTrip, startCoords, endCoords, routeOptions, selectedInterests });
+  useEffect(() => {
+    chatStateRef.current = { messages, flowStep, tripPrefs, generatedTrip, startCoords, endCoords, routeOptions, selectedInterests };
+  });
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -187,12 +192,7 @@ function ChatContent() {
   // Save state to localStorage then navigate to sign-in
   function saveStateAndGoSignIn() {
     try {
-      const state = {
-        messages, flowStep, tripPrefs,
-        generatedTrip, startCoords, endCoords,
-        routeOptions, selectedInterests,
-      };
-      localStorage.setItem('roady_chat_state', JSON.stringify(state));
+      localStorage.setItem('roady_chat_state', JSON.stringify(chatStateRef.current));
     } catch { /* ignore */ }
     router.push('/login?next=/chat');
   }

@@ -22,6 +22,17 @@ interface TripPanelProps {
 
 export default function TripPanel({ tripData, start, end, startCoords, endCoords, isSaved, onSave, onSignIn }: TripPanelProps) {
   const [localStops, setLocalStops] = useState<Stop[]>([...tripData.stops]);
+
+  // Sync stops when parent updates tripData (e.g. after AI modification)
+  const prevStopsRef = useRef(tripData.stops);
+  useEffect(() => {
+    if (tripData.stops !== prevStopsRef.current) {
+      prevStopsRef.current = tripData.stops;
+      setLocalStops([...tripData.stops]);
+      setEditingIndex(null);
+      setActiveStop(-1);
+    }
+  }, [tripData.stops]);
   const [activeStop, setActiveStop] = useState(-1);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
@@ -107,7 +118,7 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden rounded-xl border border-gray-200 bg-white">
+    <div className="flex flex-col h-full rounded-xl border border-gray-200 bg-white">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
         <div className="min-w-0 flex-1">
@@ -201,7 +212,7 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         {/* Map */}
-        <div className="flex-shrink-0" style={{ height: 140 }}>
+        <div className="flex-shrink-0 overflow-hidden" style={{ height: 140 }}>
           <RouteMap
             stops={localStops}
             start={startCoords}
