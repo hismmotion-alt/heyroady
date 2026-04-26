@@ -1,11 +1,82 @@
 'use client';
 
 import { useState, useEffect, useRef, Suspense, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase';
+import { geocode } from '@/lib/geocode';
 import type { User } from '@supabase/supabase-js';
 import type { Message, TripData } from '@/lib/types';
+
+const TripPanel = dynamic(() => import('@/components/TripPanel'), { ssr: false });
+
+// ─── Flow types ───────────────────────────────────────────────────────────────
+
+type FlowStep =
+  | 'asking_start' | 'asking_end'
+  | 'asking_group' | 'asking_interests' | 'asking_enroute'
+  | 'asking_spots' | 'asking_hotel' | 'asking_nights'
+  | 'generating' | 'done';
+
+const STEP_MESSAGES: Record<FlowStep, string> = {
+  asking_start:     "Hey! I'm Roady 🗺️ Let's plan your California road trip. Where are you starting from?",
+  asking_end:       "Nice! And where are you headed?",
+  asking_group:     "Who's coming along?",
+  asking_interests: "What are you into? Pick as many as you like:",
+  asking_enroute:   "Any stops on the drive before you arrive?",
+  asking_spots:     "How many spots do you want to explore at your destination?",
+  asking_hotel:     "Want hotel suggestions?",
+  asking_nights:    "How many nights are you staying?",
+  generating:       "Building your perfect trip... 🚗✨",
+  done:             "Here's your trip! I've mapped it all out on the right. Want to change anything?",
+};
+
+const FLOW_CHIPS: Partial<Record<FlowStep, { id: string; label: string }[]>> = {
+  asking_group: [
+    { id: 'solo', label: 'Solo 🎒' },
+    { id: 'couple', label: 'Couple 💑' },
+    { id: 'family', label: 'Family 👨‍👩‍👧' },
+    { id: 'friends', label: 'Friends 👯' },
+  ],
+  asking_interests: [
+    { id: 'nature', label: '🌿 Nature' },
+    { id: 'food', label: '🍴 Food' },
+    { id: 'culture', label: '🏛️ Culture' },
+    { id: 'adventure', label: '🏕️ Adventure' },
+    { id: 'scenic', label: '🌄 Scenic' },
+  ],
+  asking_enroute: [
+    { id: '0', label: 'Drive straight ⚡' },
+    { id: '1', label: '1 stop' },
+    { id: '2', label: '2 stops' },
+    { id: '3', label: '3 stops' },
+  ],
+  asking_spots: [
+    { id: '1', label: '1 spot' },
+    { id: '2', label: '2 spots' },
+    { id: '3', label: '3 spots' },
+    { id: '4', label: '4 spots' },
+    { id: '5', label: '5 spots' },
+    { id: 'auto', label: 'Roady decides ✨' },
+  ],
+  asking_hotel: [
+    { id: '', label: 'No thanks' },
+    { id: 'budget', label: 'Budget 💰' },
+    { id: 'mid-range', label: 'Mid-range 💰💰' },
+    { id: 'luxury', label: 'Luxury 💰💰💰' },
+  ],
+  asking_nights: [
+    { id: '1', label: '1 night' },
+    { id: '2', label: '2 nights' },
+    { id: '3', label: '3 nights' },
+    { id: '4+', label: '4+ nights' },
+  ],
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+type ChatMessage = Message & { id: string };
 
 type SavedTrip = {
   id: string;
@@ -23,54 +94,21 @@ const CATEGORY_META: Record<string, { emoji: string; label: string; bg: string; 
   scenic:    { emoji: '🌄', label: 'Scenic',    bg: 'rgba(55,138,221,0.1)', color: '#378ADD' },
 };
 
-type ChatMessage = Message & { id: string };
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function truncateEmail(email: string): string {
   return email.length > 22 ? email.slice(0, 19) + '…' : email;
-}
-
-function extractGenerateParams(content: string): Record<string, string> | null {
-  const idx = content.indexOf('GENERATE_TRIP:');
-  if (idx === -1) return null;
-  try {
-    return JSON.parse(content.slice(idx + 'GENERATE_TRIP:'.length));
-  } catch {
-    return null;
-  }
-}
-
-function getDisplayContent(content: string): string {
-  const idx = content.indexOf('GENERATE_TRIP:');
-  return idx === -1 ? content : content.slice(0, idx).trim();
 }
 
 // ─── Chat content ─────────────────────────────────────────────────────────────
 
 function ChatContent() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const initialMessage = searchParams.get('message') || '';
 
-  const loadId = searchParams.get('load') || '';
-
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [generatingTrip, setGeneratingTrip] = useState(false);
-  const [conversationId, setConversationId] = useState<string | null>(null);
-
+  // ── Auth ──
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [savedTrips, setSavedTrips] = useState<SavedTrip[]>([]);
   const [tripsLoading, setTripsLoading] = useState(false);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const initialized = useRef(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // ── Auth ──
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user: u } }) => {
@@ -83,7 +121,6 @@ function ChatContent() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch saved trips when user logs in
   useEffect(() => {
     if (!user) { setSavedTrips([]); return; }
     setTripsLoading(true);
@@ -99,11 +136,52 @@ function ChatContent() {
       });
   }, [user]);
 
-  // Scroll to bottom when messages or loading state changes
+  // ── Chat / flow state ──
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const [flowStep, setFlowStep] = useState<FlowStep>('asking_start');
+  const [tripPrefs, setTripPrefs] = useState({
+    start: '', end: '',
+    travelGroup: '',
+    interests: [] as string[],
+    numberOfEnrouteStops: '0',
+    numberOfStops: '',
+    hotelPreference: '',
+    hotelNights: '',
+  });
+  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [generatedTrip, setGeneratedTrip] = useState<TripData | null>(null);
+  const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
+  const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
+
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialized = useRef(false);
+
+  // Scroll to bottom on new messages
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Initial greeting
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+    setMessages([{ id: crypto.randomUUID(), role: 'assistant', content: STEP_MESSAGES.asking_start }]);
+  }, []);
+
+  function appendMessage(role: 'user' | 'assistant', content: string) {
+    setMessages((prev) => [...prev, { id: crypto.randomUUID(), role, content }]);
+  }
+
+  function advanceTo(next: FlowStep) {
+    setFlowStep(next);
+    appendMessage('assistant', STEP_MESSAGES[next]);
+  }
+
+  // ── Free-form chat (used after trip is generated) ──
   const sendToRoady = useCallback(async (msgs: ChatMessage[]) => {
     setLoading(true);
     try {
@@ -114,12 +192,11 @@ function ChatContent() {
       });
       if (!res.ok) throw new Error(`Chat API error: ${res.status}`);
       const data = await res.json();
-      const assistantMsg: ChatMessage = {
+      setMessages([...msgs, {
         id: crypto.randomUUID(),
         role: 'assistant',
         content: data.content || 'Sorry, something went wrong.',
-      };
-      setMessages([...msgs, assistantMsg]);
+      }]);
     } catch {
       setMessages([...msgs, {
         id: crypto.randomUUID(),
@@ -131,40 +208,95 @@ function ChatContent() {
     }
   }, []);
 
-  // Auto-send first message from URL param (once on mount)
-  useEffect(() => {
-    if (initialized.current || !initialMessage) return;
-    initialized.current = true;
-    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: initialMessage };
-    setMessages([userMsg]);
-    sendToRoady([userMsg]);
-  }, []); // intentionally empty deps — run once on mount
-
-  // Load conversation from /chat/[id] redirect
-  useEffect(() => {
-    if (!loadId || initialized.current) return;
+  // ── Trip generation ──
+  async function generateTrip(prefs: typeof tripPrefs) {
+    setFlowStep('generating');
+    appendMessage('assistant', STEP_MESSAGES.generating);
     try {
-      const stored = sessionStorage.getItem(`roady_conv_${loadId}`);
-      if (!stored) return;
-      const msgs = JSON.parse(stored) as Message[];
-      setMessages(msgs.map((m) => ({ ...m, id: crypto.randomUUID() })));
-      setConversationId(loadId);
-      initialized.current = true;
-      sessionStorage.removeItem(`roady_conv_${loadId}`);
-    } catch { /* ignore */ }
-  }, [loadId]);
+      const [sc, ec] = await Promise.all([geocode(prefs.start), geocode(prefs.end)]);
+      setStartCoords(sc);
+      setEndCoords(ec);
+      const res = await fetch('/api/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: prefs.start,
+          end: prefs.end,
+          travelGroup: prefs.travelGroup,
+          stopTypes: prefs.interests.join(','),
+          numberOfEnrouteStops: prefs.numberOfEnrouteStops,
+          numberOfStops: prefs.numberOfStops,
+          hotelPreference: prefs.hotelPreference,
+          hotelNights: prefs.hotelNights,
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to generate trip');
+      const tripData: TripData = await res.json();
+      setGeneratedTrip(tripData);
+      setFlowStep('done');
+      appendMessage('assistant', STEP_MESSAGES.done);
+    } catch {
+      appendMessage('assistant', "Hmm, something went wrong. Want to try again?");
+      setFlowStep('asking_start');
+    }
+  }
 
+  // ── Chip selection ──
+  function handleChipSelect(step: FlowStep, id: string, label: string) {
+    appendMessage('user', label);
+    if (step === 'asking_group') {
+      setTripPrefs((p) => ({ ...p, travelGroup: id }));
+      advanceTo('asking_interests');
+    } else if (step === 'asking_enroute') {
+      setTripPrefs((p) => ({ ...p, numberOfEnrouteStops: id }));
+      advanceTo('asking_spots');
+    } else if (step === 'asking_spots') {
+      setTripPrefs((p) => ({ ...p, numberOfStops: id }));
+      advanceTo('asking_hotel');
+    } else if (step === 'asking_hotel') {
+      if (id === '') {
+        const finalPrefs = { ...tripPrefs, hotelPreference: '' };
+        setTripPrefs(finalPrefs);
+        generateTrip(finalPrefs);
+      } else {
+        setTripPrefs((p) => ({ ...p, hotelPreference: id }));
+        advanceTo('asking_nights');
+      }
+    } else if (step === 'asking_nights') {
+      const finalPrefs = { ...tripPrefs, hotelNights: id };
+      setTripPrefs(finalPrefs);
+      generateTrip(finalPrefs);
+    }
+  }
+
+  function handleInterestConfirm() {
+    const labels = selectedInterests
+      .map((id) => FLOW_CHIPS.asking_interests!.find((c) => c.id === id)?.label ?? id)
+      .join(', ');
+    appendMessage('user', labels || 'Any vibe');
+    setTripPrefs((p) => ({ ...p, interests: selectedInterests }));
+    setSelectedInterests([]);
+    advanceTo('asking_enroute');
+  }
+
+  // ── Text input (start, end, and post-generation free chat) ──
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || loading) return;
-    const userMsg: ChatMessage = { id: crypto.randomUUID(), role: 'user', content: trimmed };
-    const newMessages = [...messages, userMsg];
-    setMessages(newMessages);
+    appendMessage('user', trimmed);
     setInput('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
+
+    if (flowStep === 'asking_start') {
+      setTripPrefs((p) => ({ ...p, start: trimmed }));
+      advanceTo('asking_end');
+    } else if (flowStep === 'asking_end') {
+      setTripPrefs((p) => ({ ...p, end: trimmed }));
+      advanceTo('asking_group');
+    } else if (flowStep === 'done') {
+      const newMsgs: ChatMessage[] = [...messages, { id: crypto.randomUUID(), role: 'user', content: trimmed }];
+      sendToRoady(newMsgs);
     }
-    sendToRoady(newMessages);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -176,51 +308,9 @@ function ChatContent() {
 
   function handleTextareaChange(e: React.ChangeEvent<HTMLTextAreaElement>) {
     setInput(e.target.value);
-    // Auto-resize textarea up to max-height
     const el = e.target;
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-  }
-
-  function handleNewChat() {
-    setMessages([]);
-    setInput('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
-  }
-
-  async function handleGenerateClick(params: Record<string, string>) {
-    const start = params.start || '';
-    const end = params.end || '';
-    if (!start || !end) return;
-
-    setGeneratingTrip(true);
-    try {
-      const res = await fetch('/api/suggest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          start,
-          end,
-          travelStyle: params.travelStyle || '',
-          interests: params.interests || '',
-          vibe: params.vibe || '',
-          distance: params.distance || '',
-        }),
-      });
-      if (!res.ok) throw new Error('Failed to generate trip');
-      const tripData: TripData = await res.json();
-      sessionStorage.setItem('roady_trip_data', JSON.stringify(tripData));
-      const qs = new URLSearchParams({ start, end });
-      router.push(`/trip?${qs.toString()}`);
-    } catch {
-      // fall back to navigating to /trip which will fetch on its own
-      const qs = new URLSearchParams({ start, end });
-      router.push(`/trip?${qs.toString()}`);
-    } finally {
-      setGeneratingTrip(false);
-    }
   }
 
   async function handleSignOut() {
@@ -228,6 +318,11 @@ function ChatContent() {
     await supabase.auth.signOut();
     router.push('/');
   }
+
+  // Rendering helpers
+  const chips = FLOW_CHIPS[flowStep] ?? null;
+  const isInterestStep = flowStep === 'asking_interests';
+  const showTextInput = flowStep === 'asking_start' || flowStep === 'asking_end' || flowStep === 'done';
 
   return (
     <div
@@ -239,7 +334,6 @@ function ChatContent() {
 
         {/* Header */}
         <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-4 flex-shrink-0 border-b border-gray-100">
-          {/* Left: logo + title */}
           <div className="flex items-center gap-3 min-w-0">
             <Link href="/" className="flex-shrink-0" title="Go home">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -250,8 +344,6 @@ function ChatContent() {
               Chat with Roady
             </h1>
           </div>
-
-          {/* Right: auth nav */}
           {!authLoading && (
             <div className="flex items-center gap-2 flex-shrink-0">
               {user ? (
@@ -278,258 +370,294 @@ function ChatContent() {
           )}
         </div>
 
-        {/* Chat thread — scrollable, flex-1 */}
+        {/* Chat thread */}
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-          {messages.length === 0 && !loading ? (
-            /* Empty state */
-            <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
-              <div className="text-5xl mb-4">🗺️</div>
-              <h2 className="text-xl font-extrabold mb-2" style={{ color: '#1B2D45' }}>
-                Hey, I&apos;m Roady
-              </h2>
-              <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
-                Tell me where you want to go and I&apos;ll help plan your perfect California road trip.
-                You can ask about routes, destinations, or let me build a custom itinerary.
-              </p>
-            </div>
-          ) : (
-            <>
-              {messages.map((msg) => {
-                if (msg.role === 'user') {
-                  return (
-                    <div key={msg.id} className="flex justify-end">
-                      <div
-                        className="max-w-[80%] px-4 py-2.5 text-sm font-medium text-white"
-                        style={{
-                          backgroundColor: '#58CC02',
-                          borderRadius: '18px 18px 4px 18px',
-                        }}
-                      >
-                        {msg.content}
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Assistant message
-                const displayText = getDisplayContent(msg.content);
-                const generateParams = extractGenerateParams(msg.content);
-
-                return (
-                  <div key={msg.id} className="flex justify-start">
-                    <div className="max-w-[80%] flex flex-col gap-2">
-                      <div
-                        className="px-4 py-2.5 text-sm text-gray-800 bg-white shadow-sm"
-                        style={{ borderRadius: '18px 18px 18px 4px' }}
-                      >
-                        {displayText}
-                      </div>
-                      {generateParams && (
-                        <button
-                          onClick={() => handleGenerateClick(generateParams)}
-                          disabled={generatingTrip}
-                          className="self-start px-4 py-2 rounded-full text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60 flex items-center gap-2"
-                          style={{ backgroundColor: '#D85A30' }}
-                        >
-                          {generatingTrip ? (
-                            <>
-                              <span
-                                className="w-3.5 h-3.5 border-2 rounded-full animate-spin flex-shrink-0"
-                                style={{ borderColor: 'rgba(255,255,255,0.4)', borderTopColor: 'white' }}
-                              />
-                              Building your trip…
-                            </>
-                          ) : (
-                            'Generate my trip →'
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Loading indicator — three bouncing coral dots */}
-              {loading && (
-                <div className="flex justify-start">
+          {messages.map((msg) => {
+            if (msg.role === 'user') {
+              return (
+                <div key={msg.id} className="flex justify-end">
                   <div
-                    className="px-4 py-3 bg-white shadow-sm flex items-center gap-1.5"
-                    style={{ borderRadius: '18px 18px 18px 4px' }}
+                    className="max-w-[80%] px-4 py-2.5 text-sm font-medium text-white"
+                    style={{ backgroundColor: '#58CC02', borderRadius: '18px 18px 4px 18px' }}
                   >
-                    {[0, 150, 300].map((delay) => (
-                      <span
-                        key={delay}
-                        className="w-2 h-2 rounded-full animate-bounce"
-                        style={{
-                          backgroundColor: '#D85A30',
-                          animationDelay: `${delay}ms`,
-                        }}
-                      />
-                    ))}
+                    {msg.content}
                   </div>
                 </div>
-              )}
-            </>
+              );
+            }
+            return (
+              <div key={msg.id} className="flex justify-start">
+                <div
+                  className="max-w-[80%] px-4 py-2.5 text-sm text-gray-800 bg-white shadow-sm"
+                  style={{ borderRadius: '18px 18px 18px 4px' }}
+                >
+                  {msg.content}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Loading dots */}
+          {loading && (
+            <div className="flex justify-start">
+              <div
+                className="px-4 py-3 bg-white shadow-sm flex items-center gap-1.5"
+                style={{ borderRadius: '18px 18px 18px 4px' }}
+              >
+                {[0, 150, 300].map((delay) => (
+                  <span
+                    key={delay}
+                    className="w-2 h-2 rounded-full animate-bounce"
+                    style={{ backgroundColor: '#D85A30', animationDelay: `${delay}ms` }}
+                  />
+                ))}
+              </div>
+            </div>
           )}
           <div ref={bottomRef} />
         </div>
 
-        {/* Input — pinned to bottom */}
-        <div className="flex-shrink-0 px-4 py-4 border-t border-gray-100">
-          <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200">
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={input}
-              onChange={handleTextareaChange}
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-              placeholder="Ask Roady anything about your trip…"
-              className="flex-1 bg-transparent resize-none text-sm outline-none placeholder-gray-400 text-gray-800 leading-relaxed disabled:opacity-50"
-              style={{ maxHeight: 120 }}
-            />
+        {/* Chips — single-select (group, enroute, spots, hotel, nights) */}
+        {chips && !isInterestStep && (
+          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex flex-wrap gap-2">
+            {chips.map((chip) => (
+              <button
+                key={chip.id}
+                onClick={() => handleChipSelect(flowStep, chip.id, chip.label)}
+                className="px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all hover:border-[#D85A30] hover:text-[#D85A30] hover:bg-[rgba(216,90,48,0.05)]"
+                style={{ borderColor: '#e5e7eb', color: '#374151', backgroundColor: 'white' }}
+              >
+                {chip.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Chips — multi-select interests */}
+        {isInterestStep && (
+          <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100">
+            <div className="flex flex-wrap gap-2 mb-3">
+              {FLOW_CHIPS.asking_interests!.map((chip) => {
+                const selected = selectedInterests.includes(chip.id);
+                return (
+                  <button
+                    key={chip.id}
+                    onClick={() => setSelectedInterests((prev) =>
+                      selected ? prev.filter((i) => i !== chip.id) : [...prev, chip.id]
+                    )}
+                    className="px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all"
+                    style={{
+                      borderColor: selected ? '#D85A30' : '#e5e7eb',
+                      backgroundColor: selected ? 'rgba(216,90,48,0.08)' : 'white',
+                      color: selected ? '#D85A30' : '#374151',
+                    }}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+            </div>
             <button
-              onClick={handleSend}
-              disabled={loading || !input.trim()}
-              className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white transition-opacity disabled:opacity-40"
-              style={{ backgroundColor: '#D85A30' }}
-              aria-label="Send message"
+              onClick={handleInterestConfirm}
+              className="w-full py-2 rounded-xl font-bold text-sm text-white transition-opacity"
+              style={{ backgroundColor: '#D85A30', opacity: selectedInterests.length === 0 ? 0.5 : 1 }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path d="M5 12h14" />
-                <path d="m12 5 7 7-7 7" />
-              </svg>
+              Continue →
             </button>
           </div>
-          <p className="text-[11px] text-gray-400 mt-2 text-center">
-            Enter to send · Shift+Enter for new line
-          </p>
-        </div>
+        )}
+
+        {/* Text input */}
+        {showTextInput && (
+          <div className="flex-shrink-0 px-4 py-4 border-t border-gray-100">
+            <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200">
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                value={input}
+                onChange={handleTextareaChange}
+                onKeyDown={handleKeyDown}
+                disabled={loading}
+                placeholder={
+                  flowStep === 'asking_start' ? 'e.g. San Francisco…' :
+                  flowStep === 'asking_end' ? 'e.g. Los Angeles…' :
+                  'Ask Roady anything about your trip…'
+                }
+                className="flex-1 bg-transparent resize-none text-sm outline-none placeholder-gray-400 text-gray-800 leading-relaxed disabled:opacity-50"
+                style={{ maxHeight: 120 }}
+              />
+              <button
+                onClick={handleSend}
+                disabled={loading || !input.trim()}
+                className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-white transition-opacity disabled:opacity-40"
+                style={{ backgroundColor: '#D85A30' }}
+                aria-label="Send"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+            {flowStep === 'done' && (
+              <p className="text-[11px] text-gray-400 mt-2 text-center">Enter to send · Shift+Enter for new line</p>
+            )}
+          </div>
+        )}
       </aside>
 
-      {/* ── RIGHT PANEL — Saved Trips ── */}
-      <main className="flex-1 lg:h-full lg:overflow-y-auto px-6 lg:px-10 py-8">
-        <div className="max-w-md">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-lg font-extrabold" style={{ color: '#1B2D45' }}>Your saved trips</h2>
-            <button
-              onClick={handleNewChat}
-              className="text-xs font-bold px-3 py-1.5 rounded-full transition-all border-2 border-coral text-coral bg-transparent hover:bg-coral hover:text-white"
-            >
-              + New chat
-            </button>
-          </div>
+      {/* ── RIGHT PANEL — Saved Trips + Generated Trip ── */}
+      <main className="flex-1 flex flex-col lg:h-screen lg:overflow-hidden">
 
-          {!authLoading && (
-            <>
-              {!user && (
-                <>
-                  <p className="text-sm text-gray-400 mb-6">Sign in to save trips Roady suggests.</p>
-                  <div className="rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center">
-                    <p className="text-2xl mb-2">🗺️</p>
-                    <p className="text-sm font-semibold text-gray-500 mb-1">Sign in to save trips</p>
-                    <p className="text-xs text-gray-400 mb-4">Trips you generate will appear here</p>
-                    <Link
-                      href="/login?next=/chat"
-                      className="inline-block px-4 py-2 rounded-full text-sm font-bold text-white transition-opacity hover:opacity-90"
-                      style={{ backgroundColor: '#D85A30' }}
-                    >
-                      Sign In
-                    </Link>
+        {/* Saved trips section */}
+        <div
+          className="overflow-y-auto px-6 py-6 flex-shrink-0"
+          style={{ maxHeight: generatedTrip ? '40%' : undefined, flex: generatedTrip ? undefined : '1' }}
+        >
+          <div className="max-w-md">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-lg font-extrabold" style={{ color: '#1B2D45' }}>Your saved trips</h2>
+              <button
+                onClick={() => {
+                  setMessages([{ id: crypto.randomUUID(), role: 'assistant', content: STEP_MESSAGES.asking_start }]);
+                  setFlowStep('asking_start');
+                  setTripPrefs({ start: '', end: '', travelGroup: '', interests: [], numberOfEnrouteStops: '0', numberOfStops: '', hotelPreference: '', hotelNights: '' });
+                  setSelectedInterests([]);
+                  setGeneratedTrip(null);
+                  setStartCoords(null);
+                  setEndCoords(null);
+                  setInput('');
+                }}
+                className="text-xs font-bold px-3 py-1.5 rounded-full transition-all border-2 border-coral text-coral bg-transparent hover:bg-coral hover:text-white"
+              >
+                + New chat
+              </button>
+            </div>
+
+            {!authLoading && (
+              <>
+                {!user && (
+                  <>
+                    <p className="text-sm text-gray-400 mb-6">Sign in to save trips Roady suggests.</p>
+                    <div className="rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center">
+                      <p className="text-2xl mb-2">🗺️</p>
+                      <p className="text-sm font-semibold text-gray-500 mb-1">Sign in to save trips</p>
+                      <p className="text-xs text-gray-400 mb-4">Trips you generate will appear here</p>
+                      <Link
+                        href="/login?next=/chat"
+                        className="inline-block px-4 py-2 rounded-full text-sm font-bold text-white transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: '#D85A30' }}
+                      >
+                        Sign In
+                      </Link>
+                    </div>
+                  </>
+                )}
+
+                {user && tripsLoading && (
+                  <div className="flex flex-col gap-3 mt-4">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-16 rounded-2xl bg-gray-100 animate-pulse" />
+                    ))}
                   </div>
-                </>
-              )}
+                )}
 
-              {user && tripsLoading && (
-                <div className="flex flex-col gap-3 mt-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-16 rounded-2xl bg-gray-100 animate-pulse" />
-                  ))}
-                </div>
-              )}
+                {user && !tripsLoading && savedTrips.length === 0 && (
+                  <>
+                    <p className="text-sm text-gray-400 mb-6">Trips Roady builds for you will be saved here.</p>
+                    <div className="rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center">
+                      <p className="text-2xl mb-2">🗺️</p>
+                      <p className="text-sm font-semibold text-gray-500">No saved trips yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Ask Roady to build a trip and save it here</p>
+                    </div>
+                  </>
+                )}
 
-              {user && !tripsLoading && savedTrips.length === 0 && (
-                <>
-                  <p className="text-sm text-gray-400 mb-6">Trips Roady builds for you will be saved here.</p>
-                  <div className="rounded-2xl border-2 border-dashed border-gray-200 p-6 text-center">
-                    <p className="text-2xl mb-2">🗺️</p>
-                    <p className="text-sm font-semibold text-gray-500">No saved trips yet</p>
-                    <p className="text-xs text-gray-400 mt-1">Ask Roady to build a trip and save it here</p>
-                  </div>
-                </>
-              )}
-
-              {user && !tripsLoading && savedTrips.length > 0 && (
-                <>
-                  <p className="text-sm text-gray-400 mb-4">Pick up where you left off.</p>
-                  <div className="flex flex-col gap-4">
-                    {savedTrips.map((trip) => {
-                      const completed = !!trip.trip_data.completed;
-                      const vibeCategories = trip.trip_data.stops
-                        .map((s) => s.category)
-                        .filter((cat, idx, arr) => arr.indexOf(cat) === idx);
-                      return (
-                        <div
-                          key={trip.id}
-                          className="rounded-2xl shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-all"
-                          style={{
-                            backgroundColor: completed ? '#f0fce4' : '#ffffff',
-                            border: completed ? '1.5px solid rgba(88,204,2,0.35)' : '1.5px solid #f0f0f0',
-                          }}
-                        >
-                          <div>
-                            <p className="text-xs text-gray-400 mb-1">
-                              {new Date(trip.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            </p>
-                            <h3 className="font-extrabold text-sm mb-0.5" style={{ color: '#1B2D45' }}>
-                              {trip.trip_data.routeName}
-                            </h3>
-                            <p className="text-xs text-gray-400 mb-2">
-                              🚗 {trip.start} → 🏁 {trip.end}
-                            </p>
-                            <div className="flex flex-wrap gap-1.5">
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}>
-                                📍 {trip.trip_data.stops.length} stop{trip.trip_data.stops.length !== 1 ? 's' : ''}
-                              </span>
-                              <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(55,138,221,0.08)', color: '#378ADD' }}>
-                                🛣 {trip.trip_data.totalMiles} mi
-                              </span>
-                              {completed && (
-                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(88,204,2,0.15)', color: '#46a302' }}>
-                                  ✓ Completed
+                {user && !tripsLoading && savedTrips.length > 0 && (
+                  <>
+                    <p className="text-sm text-gray-400 mb-4">Pick up where you left off.</p>
+                    <div className="flex flex-col gap-4">
+                      {savedTrips.map((trip) => {
+                        const completed = !!trip.trip_data.completed;
+                        const vibeCategories = trip.trip_data.stops
+                          .map((s) => s.category)
+                          .filter((cat, idx, arr) => arr.indexOf(cat) === idx);
+                        return (
+                          <div
+                            key={trip.id}
+                            className="rounded-2xl shadow-sm p-4 flex flex-col gap-3 hover:shadow-md transition-all"
+                            style={{
+                              backgroundColor: completed ? '#f0fce4' : '#ffffff',
+                              border: completed ? '1.5px solid rgba(88,204,2,0.35)' : '1.5px solid #f0f0f0',
+                            }}
+                          >
+                            <div>
+                              <p className="text-xs text-gray-400 mb-1">
+                                {new Date(trip.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                              <h3 className="font-extrabold text-sm mb-0.5" style={{ color: '#1B2D45' }}>
+                                {trip.trip_data.routeName}
+                              </h3>
+                              <p className="text-xs text-gray-400 mb-2">
+                                🚗 {trip.start} → 🏁 {trip.end}
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}>
+                                  📍 {trip.trip_data.stops.length} stop{trip.trip_data.stops.length !== 1 ? 's' : ''}
                                 </span>
+                                <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(55,138,221,0.08)', color: '#378ADD' }}>
+                                  🛣 {trip.trip_data.totalMiles} mi
+                                </span>
+                                {completed && (
+                                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(88,204,2,0.15)', color: '#46a302' }}>
+                                    ✓ Completed
+                                  </span>
+                                )}
+                              </div>
+                              {vibeCategories.length > 0 && (
+                                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                  {vibeCategories.map((cat) => {
+                                    const meta = CATEGORY_META[cat];
+                                    if (!meta) return null;
+                                    return (
+                                      <span key={cat} className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: meta.bg, color: meta.color }}>
+                                        {meta.emoji} {meta.label}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
                               )}
                             </div>
-                            {vibeCategories.length > 0 && (
-                              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                {vibeCategories.map((cat) => {
-                                  const meta = CATEGORY_META[cat];
-                                  if (!meta) return null;
-                                  return (
-                                    <span key={cat} className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: meta.bg, color: meta.color }}>
-                                      {meta.emoji} {meta.label}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            )}
+                            <button
+                              onClick={() => router.push(`/saved/${trip.id}`)}
+                              className="w-full py-2 rounded-xl text-sm font-bold transition-all hover:opacity-90"
+                              style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
+                            >
+                              View trip →
+                            </button>
                           </div>
-                          <button
-                            onClick={() => router.push(`/saved/${trip.id}`)}
-                            className="w-full py-2 rounded-xl text-sm font-bold transition-all hover:opacity-90"
-                            style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
-                          >
-                            View trip →
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </>
-          )}
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
+
+        {/* Generated trip panel */}
+        {generatedTrip && startCoords && endCoords && (
+          <div className="flex-1 min-h-0 px-4 pb-4 pt-0">
+            <TripPanel
+              tripData={generatedTrip}
+              start={tripPrefs.start}
+              end={tripPrefs.end}
+              startCoords={startCoords}
+              endCoords={endCoords}
+            />
+          </div>
+        )}
       </main>
     </div>
   );
