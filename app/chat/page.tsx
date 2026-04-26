@@ -21,11 +21,11 @@ type FlowStep =
 
 const STEP_MESSAGES: Record<FlowStep, string> = {
   asking_start:     "Hey! I'm Roady 🗺️ Let's plan your California road trip. Where are you starting from?",
-  asking_end:       "Nice! And where are you headed?",
+  asking_end:       "Last one — where are you headed? 🏁",
   asking_group:     "Who's coming along?",
   asking_interests: "What are you into? Pick as many as you like:",
-  asking_enroute:   "Any stops on the drive before you arrive?",
-  asking_spots:     "How many spots do you want to explore at your destination?",
+  asking_enroute:   "Any stops along the drive?",
+  asking_spots:     "How many spots do you want to explore at the destination?",
   asking_hotel:     "Want hotel suggestions?",
   asking_nights:    "How many nights are you staying?",
   generating:       "Building your perfect trip... 🚗✨",
@@ -155,6 +155,7 @@ function ChatContent() {
   const [generatedTrip, setGeneratedTrip] = useState<TripData | null>(null);
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
+  const [customInputStep, setCustomInputStep] = useState<FlowStep | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -243,6 +244,10 @@ function ChatContent() {
 
   // ── Chip selection ──
   function handleChipSelect(step: FlowStep, id: string, label: string) {
+    if (id === '__custom__') {
+      setCustomInputStep(step);
+      return;
+    }
     appendMessage('user', label);
     if (step === 'asking_group') {
       setTripPrefs((p) => ({ ...p, travelGroup: id }));
@@ -254,18 +259,15 @@ function ChatContent() {
       setTripPrefs((p) => ({ ...p, numberOfStops: id }));
       advanceTo('asking_hotel');
     } else if (step === 'asking_hotel') {
+      setTripPrefs((p) => ({ ...p, hotelPreference: id }));
       if (id === '') {
-        const finalPrefs = { ...tripPrefs, hotelPreference: '' };
-        setTripPrefs(finalPrefs);
-        generateTrip(finalPrefs);
+        advanceTo('asking_end');
       } else {
-        setTripPrefs((p) => ({ ...p, hotelPreference: id }));
         advanceTo('asking_nights');
       }
     } else if (step === 'asking_nights') {
-      const finalPrefs = { ...tripPrefs, hotelNights: id };
-      setTripPrefs(finalPrefs);
-      generateTrip(finalPrefs);
+      setTripPrefs((p) => ({ ...p, hotelNights: id }));
+      advanceTo('asking_end');
     }
   }
 
@@ -279,7 +281,31 @@ function ChatContent() {
     advanceTo('asking_enroute');
   }
 
-  // ── Text input (start, end, and post-generation free chat) ──
+  // ── Custom text input for chip steps ──
+  function handleCustomInput(step: FlowStep, text: string) {
+    if (step === 'asking_group') {
+      setTripPrefs((p) => ({ ...p, travelGroup: text }));
+      advanceTo('asking_interests');
+    } else if (step === 'asking_interests') {
+      setTripPrefs((p) => ({ ...p, interests: [text] }));
+      setSelectedInterests([]);
+      advanceTo('asking_enroute');
+    } else if (step === 'asking_enroute') {
+      setTripPrefs((p) => ({ ...p, numberOfEnrouteStops: text }));
+      advanceTo('asking_spots');
+    } else if (step === 'asking_spots') {
+      setTripPrefs((p) => ({ ...p, numberOfStops: text }));
+      advanceTo('asking_hotel');
+    } else if (step === 'asking_hotel') {
+      setTripPrefs((p) => ({ ...p, hotelPreference: text }));
+      advanceTo('asking_nights');
+    } else if (step === 'asking_nights') {
+      setTripPrefs((p) => ({ ...p, hotelNights: text }));
+      advanceTo('asking_end');
+    }
+  }
+
+  // ── Text input (start, end, custom chip override, and post-generation free chat) ──
   function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || loading) return;
@@ -287,12 +313,20 @@ function ChatContent() {
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
+    if (customInputStep) {
+      const step = customInputStep;
+      setCustomInputStep(null);
+      handleCustomInput(step, trimmed);
+      return;
+    }
+
     if (flowStep === 'asking_start') {
       setTripPrefs((p) => ({ ...p, start: trimmed }));
-      advanceTo('asking_end');
-    } else if (flowStep === 'asking_end') {
-      setTripPrefs((p) => ({ ...p, end: trimmed }));
       advanceTo('asking_group');
+    } else if (flowStep === 'asking_end') {
+      const finalPrefs = { ...tripPrefs, end: trimmed };
+      setTripPrefs(finalPrefs);
+      generateTrip(finalPrefs);
     } else if (flowStep === 'done') {
       const newMsgs: ChatMessage[] = [...messages, { id: crypto.randomUUID(), role: 'user', content: trimmed }];
       sendToRoady(newMsgs);
@@ -322,7 +356,7 @@ function ChatContent() {
   // Rendering helpers
   const chips = FLOW_CHIPS[flowStep] ?? null;
   const isInterestStep = flowStep === 'asking_interests';
-  const showTextInput = flowStep === 'asking_start' || flowStep === 'asking_end' || flowStep === 'done';
+  const showTextInput = flowStep === 'asking_start' || flowStep === 'asking_end' || flowStep === 'done' || customInputStep !== null;
 
   return (
     <div
@@ -418,7 +452,7 @@ function ChatContent() {
         </div>
 
         {/* Chips — single-select (group, enroute, spots, hotel, nights) */}
-        {chips && !isInterestStep && (
+        {chips && !isInterestStep && !customInputStep && (
           <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100 flex flex-wrap gap-2">
             {chips.map((chip) => (
               <button
@@ -430,11 +464,18 @@ function ChatContent() {
                 {chip.label}
               </button>
             ))}
+            <button
+              onClick={() => handleChipSelect(flowStep, '__custom__', '')}
+              className="px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all hover:border-[#378ADD] hover:text-[#378ADD] hover:bg-[rgba(55,138,221,0.05)]"
+              style={{ borderColor: '#e5e7eb', color: '#9ca3af', backgroundColor: 'white' }}
+            >
+              Tell me more ✍️
+            </button>
           </div>
         )}
 
         {/* Chips — multi-select interests */}
-        {isInterestStep && (
+        {isInterestStep && !customInputStep && (
           <div className="flex-shrink-0 px-4 py-3 border-t border-gray-100">
             <div className="flex flex-wrap gap-2 mb-3">
               {FLOW_CHIPS.asking_interests!.map((chip) => {
@@ -456,6 +497,13 @@ function ChatContent() {
                   </button>
                 );
               })}
+              <button
+                onClick={() => setCustomInputStep('asking_interests')}
+                className="px-4 py-2 rounded-full text-sm font-semibold border-2 transition-all hover:border-[#378ADD] hover:text-[#378ADD] hover:bg-[rgba(55,138,221,0.05)]"
+                style={{ borderColor: '#e5e7eb', color: '#9ca3af', backgroundColor: 'white' }}
+              >
+                Tell me more ✍️
+              </button>
             </div>
             <button
               onClick={handleInterestConfirm}
@@ -479,6 +527,7 @@ function ChatContent() {
                 onKeyDown={handleKeyDown}
                 disabled={loading}
                 placeholder={
+                  customInputStep ? 'Type your answer…' :
                   flowStep === 'asking_start' ? 'e.g. San Francisco…' :
                   flowStep === 'asking_end' ? 'e.g. Los Angeles…' :
                   'Ask Roady anything about your trip…'
