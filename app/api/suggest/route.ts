@@ -118,11 +118,17 @@ function buildPreferenceContext(body: Record<string, string>): string {
   // Distance preference
   if (body.distance) {
     const distanceLabels: Record<string, string> = {
-      '50-100 miles': 'a weekend escape range (50–100 miles)',
-      '100-150 miles': 'a one-tank road trip (100–150 miles)',
-      '200+ miles': 'a full road trip (200+ miles, multi-day)',
+      'under-50':  'a short day trip (under 50 miles from start)',
+      '50-100':    'a weekend escape (50–100 miles from start)',
+      '150-plus':  'a full road trip (150+ miles from start)',
+      // legacy keys from wizard flow
+      '50-100 miles': 'a weekend escape (50–100 miles from start)',
+      '100-150 miles': 'a one-tank road trip (100–150 miles from start)',
+      '200+ miles': 'a full road trip (200+ miles from start, multi-day)',
     };
-    if (distanceLabels[body.distance]) parts.push(`They prefer ${distanceLabels[body.distance]}.`);
+    if (distanceLabels[body.distance]) {
+      parts.push(`IMPORTANT: The destination MUST be ${distanceLabels[body.distance]}. Do not suggest destinations farther than this range.`);
+    }
   }
 
   // En-route stops
@@ -213,8 +219,8 @@ export async function POST(req: Request) {
       if (body.vibe === 'relaxed') base = 3;
       else if (body.vibe === 'adventurous') base = 6;
 
-      if (body.distance === '50-100 miles') base = Math.min(base, 3);
-      else if (body.distance === '100-150 miles') base = Math.min(base, 4);
+      if (body.distance === '50-100' || body.distance === '50-100 miles') base = Math.min(base, 3);
+      else if (body.distance === '150-plus' || body.distance === '100-150 miles') base = Math.min(base, 4);
       else if (body.distance === '200+ miles') base = Math.max(base, 4);
 
       spotsInstruction = String(base);

@@ -167,6 +167,7 @@ function ChatContent() {
   const [routeOptions, setRouteOptions] = useState<RouteOption[] | null>(null);
   const [datePickerValue, setDatePickerValue] = useState('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [generatedTrip, setGeneratedTrip] = useState<TripData | null>(null);
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
@@ -402,6 +403,30 @@ function ChatContent() {
     setTripPrefs((p) => ({ ...p, travelDate: datePickerValue }));
     setDatePickerValue('');
     advanceTo('asking_distance');
+  }
+
+  // ── Use current location ──
+  async function handleUseLocation() {
+    if (!navigator.geolocation) return;
+    setLocationLoading(true);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 8000 })
+      );
+      const { latitude, longitude } = pos.coords;
+      const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+      const res = await fetch(
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${longitude},${latitude}.json?types=place,address&limit=1&access_token=${token}`
+      );
+      if (!res.ok) throw new Error('geocode failed');
+      const json = await res.json();
+      const placeName = json.features?.[0]?.place_name ?? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+      setInput(placeName);
+    } catch {
+      // silently ignore — user can type manually
+    } finally {
+      setLocationLoading(false);
+    }
   }
 
   // ── Text input (start, custom chip override, and post-generation free chat) ──
@@ -752,6 +777,28 @@ function ChatContent() {
         {/* Text input */}
         {showTextInput && (
           <div className="flex-shrink-0 px-4 py-4 border-t border-gray-100">
+            {flowStep === 'asking_start' && (
+              <div className="mb-2">
+                <button
+                  onClick={handleUseLocation}
+                  disabled={locationLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 bg-white text-gray-600 hover:border-[#D85A30] hover:text-[#D85A30] transition-colors disabled:opacity-50"
+                >
+                  {locationLoading ? (
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                    </svg>
+                  ) : (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+                    </svg>
+                  )}
+                  {locationLoading ? 'Detecting…' : 'Use my current location'}
+                </button>
+              </div>
+            )}
             <div className="flex items-end gap-2 bg-gray-50 rounded-2xl px-4 py-3 border border-gray-200">
               <textarea
                 ref={textareaRef}
@@ -959,19 +1006,24 @@ function ChatContent() {
                 <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2">
                   {generatedTrip.hotels.map((hotel, i) => {
                     const isSelected = selectedHotel?.name === hotel.name;
+                    const bookingUrl = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(hotel.name + ' ' + hotel.city)}`;
                     return (
-                      <button
+                      <div
                         key={i}
                         onClick={() => handleHotelSelect(hotel)}
-                        className="w-full text-left rounded-lg p-2.5 border-2 transition-all hover:border-[#D85A30]"
+                        className="w-full text-left rounded-lg p-2.5 border-2 transition-all hover:border-[#D85A30] cursor-pointer"
                         style={{
                           borderColor: isSelected ? '#D85A30' : '#f0f0f0',
                           backgroundColor: isSelected ? 'rgba(216,90,48,0.04)' : 'white',
                         }}
                       >
-                        {hotel.fsqPhoto && (
+                        {hotel.fsqPhoto ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={hotel.fsqPhoto} alt={hotel.name} className="w-full h-20 object-cover rounded-md mb-2" />
+                        ) : (
+                          <div className="w-full h-16 rounded-md mb-2 flex items-center justify-center bg-gray-50">
+                            <span className="text-2xl">🏨</span>
+                          </div>
                         )}
                         <p className="text-xs font-bold leading-tight" style={{ color: '#1B2D45' }}>{hotel.name}</p>
                         <p className="text-[10px] text-gray-400 mt-0.5">{hotel.city}</p>
@@ -984,7 +1036,17 @@ function ChatContent() {
                         {isSelected && (
                           <p className="text-[9px] font-bold mt-1" style={{ color: '#D85A30' }}>✓ Destination updated</p>
                         )}
-                      </button>
+                        <a
+                          href={bookingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-2 flex items-center justify-center gap-1 w-full py-1.5 rounded-lg text-[10px] font-bold text-white transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: '#003580' }}
+                        >
+                          Book on Booking.com
+                        </a>
+                      </div>
                     );
                   })}
                 </div>

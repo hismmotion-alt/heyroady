@@ -38,7 +38,6 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
   const [editName, setEditName] = useState('');
   const [editDuration, setEditDuration] = useState('');
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
-  const [factsOpen, setFactsOpen] = useState(false);
   const [addingStop, setAddingStop] = useState(false);
   const [newStopName, setNewStopName] = useState('');
   const [newStopCity, setNewStopCity] = useState('');
@@ -377,35 +376,6 @@ export default function TripPanel({ tripData, start, end, startCoords, endCoords
             </div>
           )}
         </div>
-
-        {/* Fun facts */}
-        {tripData.funFacts && tripData.funFacts.length > 0 && (
-          <div className="border-b border-gray-100">
-            <button
-              onClick={() => setFactsOpen((v) => !v)}
-              className="w-full flex items-center justify-between px-4 py-2.5 text-left hover:bg-gray-50 transition-colors"
-            >
-              <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Fun facts ✨</p>
-              <svg
-                className="w-3.5 h-3.5 text-gray-400 transition-transform"
-                style={{ transform: factsOpen ? 'rotate(180deg)' : undefined }}
-                fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
-            {factsOpen && (
-              <div className="px-4 pb-3 space-y-2">
-                {tripData.funFacts.map((fact, i) => (
-                  <div key={i} className="flex gap-2">
-                    <span className="text-xs flex-shrink-0 mt-0.5" style={{ color: '#378ADD' }}>•</span>
-                    <p className="text-xs text-gray-600 leading-relaxed">{fact}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Trip checklist */}
         {tripData.tripChecklist && tripData.tripChecklist.length > 0 && (

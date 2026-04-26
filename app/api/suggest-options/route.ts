@@ -34,7 +34,7 @@ export async function POST(req: Request) {
         content: `Generate 3 distinct California road trip route concepts starting from "${start}".
 Distance preference: ${distanceLabel}
 ${prefLines}
-Each concept must have a different theme/vibe AND a different specific destination city within the distance range.
+CRITICAL RULE: Every destination city MUST be within ${distanceLabel} driving distance from "${start}". Do NOT suggest destinations farther than the distance preference. Each concept must have a different theme/vibe AND a different specific destination city within the distance range.
 Return ONLY this JSON array — no markdown, no extra text:
 [
   { "id": "1", "name": "string — catchy route name", "tagline": "string — one sentence vibe", "via": "string — 2-3 key waypoints or highlights", "destination": "string — specific city name only, e.g. Santa Barbara", "icon": "string — single relevant emoji for this route theme, e.g. 🌊 🌲 🍷 🏔️ 🌮" },
