@@ -1,99 +1,344 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
+import { geocode } from '@/lib/geocode';
+import type { Stop, TripData } from '@/lib/types';
+import type { User } from '@supabase/supabase-js';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
+  HOME_PREVIEW_STEPS,
+  PLANNER_ROUTE_DEFINITIONS,
+  PLANNER_ROUTE_ORDER,
+  POPULAR_STARTS,
+  type PlannerRouteKey,
+  type PlannerStop,
+  type StartRegion,
+} from '@/components/home/plannerData';
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
+const RouteMap = dynamic(() => import('@/components/RouteMap'), {
+  ssr: false,
+  loading: () => <div className="w-full h-full rounded-[28px] bg-white/70 animate-pulse" />,
+});
 
-/* ── Parallax hook ─────────────────────────────────────── */
-function useParallax() {
-  const [scrollY, setScrollY] = useState(0);
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+const HAS_MAPBOX = Boolean(MAPBOX_TOKEN);
+const PLANNER_STORAGE_KEY = 'roady_planner_state';
 
-  useEffect(() => {
-    let ticking = false;
-    const onScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setScrollY(window.scrollY);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+type PlannerStep =
+  | 'start'
+  | 'group'
+  | 'kids'
+  | 'interests'
+  | 'hotelBudget'
+  | 'hotelDetails'
+  | 'enroute'
+  | 'spots'
+  | 'generating'
+  | 'results'
+  | 'save'
+  | 'saved';
 
-  return scrollY;
+type PlannerPreferences = {
+  travelGroup: string;
+  kidsAges: string[];
+  interests: string[];
+  hotelPreference: string;
+  hotelGuests: string;
+  hotelCheckin: string;
+  hotelNights: string;
+  numberOfEnrouteStops: string;
+  numberOfStops: string;
+};
+
+type SuggestedRouteOption = {
+  id: string;
+  name: string;
+  tagline: string;
+  via: string;
+  destination: string;
+  icon: string;
+  fallbackRouteId?: PlannerRouteKey;
+};
+
+type PersistedPlannerState = {
+  step: PlannerStep;
+  seedRouteId: PlannerRouteKey;
+  startInput: string;
+  startCoords: [number, number] | null;
+  prefs: PlannerPreferences;
+  routeOptions: SuggestedRouteOption[];
+  routeOptionIndex: number;
+  tripData: TripData | null;
+  stops: PlannerStop[];
+  mapEndCoords: [number, number] | null;
+  autoSaveOnRestore?: boolean;
+};
+
+type ChoiceCardItem = {
+  id: string;
+  label: string;
+  desc: string;
+  emoji: string;
+};
+
+const DEFAULT_PREFS: PlannerPreferences = {
+  travelGroup: '',
+  kidsAges: [],
+  interests: [],
+  hotelPreference: '',
+  hotelGuests: '',
+  hotelCheckin: '',
+  hotelNights: '',
+  numberOfEnrouteStops: '',
+  numberOfStops: '',
+};
+
+const TRAVEL_GROUPS: ChoiceCardItem[] = [
+  { id: 'solo', label: 'Solo', desc: 'Just me and the open road', emoji: '🎒' },
+  { id: 'partner', label: 'With my partner', desc: 'A romantic getaway for two', emoji: '💑' },
+  { id: 'family-adults', label: 'Family (adults only)', desc: 'Quality time with the family', emoji: '👨‍👩‍👦' },
+  { id: 'family-kids', label: 'Family with kids', desc: 'Fun for all ages', emoji: '👶' },
+  { id: 'friends', label: 'Friends', desc: 'A crew adventure', emoji: '🎉' },
+];
+
+const KIDS_AGES: ChoiceCardItem[] = [
+  { id: 'baby-toddler', label: 'Baby & toddler', desc: '0-3 years old', emoji: '🍼' },
+  { id: 'little-kids', label: 'Little kids', desc: '4-7 years old', emoji: '🧸' },
+  { id: 'kids', label: 'Kids', desc: '8-12 years old', emoji: '🎮' },
+  { id: 'teens', label: 'Teens', desc: '13-17 years old', emoji: '🎧' },
+];
+
+const INTEREST_GROUPS = [
+  {
+    category: 'OUTDOORS',
+    items: [
+      { id: 'beaches', label: 'Beaches', emoji: '🌊' },
+      { id: 'hiking', label: 'Hiking', emoji: '🥾' },
+      { id: 'camping', label: 'Camping', emoji: '⛺' },
+      { id: 'wildlife', label: 'Wildlife', emoji: '🦅' },
+      { id: 'sunsets', label: 'Sunsets', emoji: '🌅' },
+      { id: 'surf', label: 'Surf', emoji: '🏄' },
+    ],
+  },
+  {
+    category: 'FOOD & DRINK',
+    items: [
+      { id: 'local-food', label: 'Local food', emoji: '🌯' },
+      { id: 'wine', label: 'Wine', emoji: '🍷' },
+      { id: 'coffee', label: 'Coffee', emoji: '☕' },
+      { id: 'breweries', label: 'Breweries', emoji: '🍺' },
+      { id: 'bakeries', label: 'Bakeries', emoji: '🥐' },
+    ],
+  },
+  {
+    category: 'CULTURE',
+    items: [
+      { id: 'history', label: 'History', emoji: '🏛' },
+      { id: 'art', label: 'Art', emoji: '🎨' },
+      { id: 'photography', label: 'Photography', emoji: '📷' },
+      { id: 'boutique-shops', label: 'Boutique shops', emoji: '🛍' },
+      { id: 'museums', label: 'Museums', emoji: '🖼' },
+    ],
+  },
+  {
+    category: 'ADVENTURE',
+    items: [
+      { id: 'adventure', label: 'Thrills', emoji: '⚡' },
+      { id: 'scenic', label: 'Scenic drives', emoji: '🛣' },
+      { id: 'national-parks', label: 'National Parks', emoji: '🌲' },
+      { id: 'road-stops', label: 'Roadside gems', emoji: '💎' },
+    ],
+  },
+];
+
+const HOTEL_BUDGETS: ChoiceCardItem[] = [
+  { id: '$', label: 'Budget', desc: 'Motels, hostels, affordable stays', emoji: '🏨' },
+  { id: '$$', label: 'Mid-range', desc: 'Comfortable hotels', emoji: '🏩' },
+  { id: '$$$', label: 'Luxury', desc: 'Upscale hotels and resorts', emoji: '🏰' },
+  { id: 'none', label: 'No hotel', desc: "I'll sort accommodation separately", emoji: '🚗' },
+];
+
+const ENROUTE_COUNTS: ChoiceCardItem[] = [
+  { id: '0', label: 'None', desc: 'Drive straight through', emoji: '⚡' },
+  { id: '1', label: '1 stop', desc: 'One quick break', emoji: '1️⃣' },
+  { id: '2', label: '2 stops', desc: 'A couple of breaks', emoji: '2️⃣' },
+  { id: '3', label: '3 stops', desc: 'A few along the way', emoji: '3️⃣' },
+];
+
+const DESTINATION_SPOT_COUNTS: ChoiceCardItem[] = [
+  { id: '1', label: '1 spot', desc: 'Quick and focused', emoji: '1️⃣' },
+  { id: '2', label: '2 spots', desc: 'A couple of highlights', emoji: '2️⃣' },
+  { id: '3', label: '3 spots', desc: 'A nice balance', emoji: '3️⃣' },
+  { id: '4', label: '4 spots', desc: 'Plenty to explore', emoji: '4️⃣' },
+  { id: '5', label: '5 spots', desc: 'The full experience', emoji: '5️⃣' },
+  { id: 'auto', label: 'Choose for me', desc: 'Let Roady decide the best number', emoji: '✨' },
+];
+
+const HOTEL_GUEST_OPTIONS = ['1', '2', '3', '4', '5', '6+'];
+const HOTEL_NIGHT_OPTIONS = ['1', '2', '3', '4', '5', '6', '7+'];
+
+const INTEREST_LABELS: Record<string, string> = Object.fromEntries(
+  INTEREST_GROUPS.flatMap((group) => group.items.map((item) => [item.id, item.label]))
+);
+
+const GROUP_LABELS: Record<string, string> = Object.fromEntries(
+  TRAVEL_GROUPS.map((group) => [group.id, group.label])
+);
+
+const HOTEL_LABELS: Record<string, string> = Object.fromEntries(
+  HOTEL_BUDGETS.map((hotel) => [hotel.id, hotel.label])
+);
+
+const ROUTE_ICONS: Record<PlannerRouteKey, string> = {
+  pch: '🌊',
+  parks: '🌲',
+  desert: '🌵',
+  custom: '🛣️',
+};
+
+const PLANNER_META: Record<
+  PlannerStep,
+  { eyebrow: string; title: string; description: string }
+> = {
+  start: {
+    eyebrow: 'Starting point',
+    title: 'Where are you starting from?',
+    description: 'Type an address, pick a popular start, or let Roady detect your current location.',
+  },
+  group: {
+    eyebrow: 'Travel crew',
+    title: "Who's coming along?",
+    description: 'This helps Roady understand the shape of the trip before suggesting a route.',
+  },
+  kids: {
+    eyebrow: 'Kids ages',
+    title: 'How old are the kids?',
+    description: 'Select all that apply so we find age-appropriate spots.',
+  },
+  interests: {
+    eyebrow: 'Trip vibe',
+    title: 'Pick a few things you love.',
+    description: 'Tap as many as you want. Roady will use these to shape the route and stops.',
+  },
+  hotelBudget: {
+    eyebrow: 'Hotel budget',
+    title: "What's your hotel budget?",
+    description: 'Roady will suggest a hotel at your destination to match.',
+  },
+  hotelDetails: {
+    eyebrow: 'Hotel details',
+    title: 'Hotel details',
+    description: 'Roady will pre-fill your search on Booking.com so you see real availability.',
+  },
+  enroute: {
+    eyebrow: 'Drive stops',
+    title: 'Stops on the drive?',
+    description: 'How many times do you want to pull over on the way there?',
+  },
+  spots: {
+    eyebrow: 'Destination spots',
+    title: 'Spots at your destination?',
+    description: 'How many places do you want to explore once you arrive?',
+  },
+  generating: {
+    eyebrow: 'Generating',
+    title: 'Roady is building your trip.',
+    description: 'Pulling together a route, stops, and a destination that fits the way you want to travel.',
+  },
+  results: {
+    eyebrow: 'Roady suggestion',
+    title: 'Roady picked your trip.',
+    description: 'Review the route, see the trip card on the right, or ask Roady to suggest a new one.',
+  },
+  save: {
+    eyebrow: 'Save and export',
+    title: 'Keep it, share it, or open it in Maps.',
+    description: 'Save the trip to your account, send it to your phone, or export a clean summary.',
+  },
+  saved: {
+    eyebrow: 'Trip saved',
+    title: 'Your trip is saved.',
+    description: 'You can reopen it later, edit it whenever you want, and keep building from here.',
+  },
+};
+
+function cloneStops(stops: PlannerStop[]): PlannerStop[] {
+  return stops.map((stop) => ({ ...stop }));
 }
 
-/* ── Fade-in on scroll hook ────────────────────────────── */
-function useFadeIn(threshold = 0.15) {
+function normalizePlannerStops(stops: Stop[]): PlannerStop[] {
+  return stops.map((stop, index) => ({
+    ...stop,
+    id:
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${stop.name}-${index}`,
+    recommended: stop.stopType === 'destination',
+  }));
+}
+
+function useFadeIn(threshold = 0.1) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
       { threshold }
     );
-    obs.observe(el);
-    return () => obs.disconnect();
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [threshold]);
 
   return { ref, visible };
 }
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-
-type Route = {
-  emoji: string;
-  name: string;
-  to: string;
-  distance?: string;
-  desc: string;
-  badges: { label: string; bg: string; color: string }[];
-};
-
-const DEFAULT_ROUTES: Route[] = [
-  { emoji: '🌊', name: 'Pacific Coast Highway', to: 'San Francisco', desc: 'Cliffside ocean views, sea lions, and old-growth redwoods along the most scenic drive in America.', badges: [{ label: 'Scenic Drive', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Coastal', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }] },
-  { emoji: '🏔️', name: 'Yosemite Escape', to: 'Yosemite', desc: 'Granite peaks, valley meadows, and waterfalls that make every curve worth it.', badges: [{ label: 'Nature', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }, { label: 'Hiking', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }] },
-  { emoji: '🍷', name: 'Wine Country Loop', to: 'Sonoma', desc: 'Rolling vineyards, farm-to-table lunches, and world-class wine at every stop.', badges: [{ label: 'Food & Wine', bg: 'rgba(216,90,48,0.1)', color: '#c2540a' }, { label: 'Relaxed', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }] },
-  { emoji: '🌵', name: 'Desert & Stars', to: 'Joshua Tree', desc: 'Otherworldly rock formations, wildflower blooms, and the clearest night skies in Southern California.', badges: [{ label: 'Desert', bg: 'rgba(234,179,8,0.12)', color: '#a16207' }, { label: 'Adventure', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }] },
-  { emoji: '🌲', name: 'Big Sur Coastal', to: 'San Luis Obispo', desc: 'Rugged cliffs meet crashing surf — McWay Falls, Bixby Bridge, and elephant seals along the way.', badges: [{ label: 'Coastal', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Scenic Drive', bg: 'rgba(88,204,2,0.1)', color: '#46a302' }] },
-  { emoji: '❄️', name: 'Sierra High Road', to: 'Mammoth Lakes', desc: 'Alpine lakes, volcanic hot springs, and mountain towns tucked between dramatic peaks.', badges: [{ label: 'Mountain', bg: 'rgba(55,138,221,0.1)', color: '#378ADD' }, { label: 'Adventure', bg: 'rgba(147,51,234,0.1)', color: '#9333ea' }] },
-];
-
-async function fetchAddressSuggestions(query: string): Promise<string[]> {
-  if (!query.trim() || query.length < 2) return [];
-  try {
-    const res = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&country=us&types=address,place,neighborhood,locality,poi&limit=5`
-    );
-    const data = await res.json();
-    return (data.features ?? []).map((f: { place_name: string }) => f.place_name);
-  } catch {
-    return [];
-  }
-}
-
 function FaqItem({ question, answer }: { question: string; answer: string }) {
   const [open, setOpen] = useState(false);
+
   return (
     <div
       className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden cursor-pointer"
-      onClick={() => setOpen((o) => !o)}
+      onClick={() => setOpen((value) => !value)}
     >
       <div className="flex items-center justify-between px-6 py-5 gap-4">
-        <span className="font-bold text-base" style={{ color: '#1B2D45' }}>{question}</span>
+        <span className="font-bold text-base" style={{ color: '#1B2D45' }}>
+          {question}
+        </span>
         <svg
           className="w-5 h-5 flex-shrink-0 transition-transform duration-300"
           style={{ color: '#58CC02', transform: open ? 'rotate(45deg)' : 'rotate(0deg)' }}
-          fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          viewBox="0 0 24 24"
         >
           <path d="M12 5v14M5 12h14" />
         </svg>
@@ -107,556 +352,2348 @@ function FaqItem({ question, answer }: { question: string; answer: string }) {
   );
 }
 
+function SelectionCard({
+  item,
+  selected,
+  onClick,
+  multi = false,
+}: {
+  item: ChoiceCardItem;
+  selected: boolean;
+  onClick: () => void;
+  multi?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="w-full rounded-[24px] border-2 bg-white px-5 py-4 text-left transition-all duration-150"
+      style={{
+        borderColor: selected ? '#58CC02' : '#E5E7EB',
+        backgroundColor: selected ? 'rgba(88,204,2,0.05)' : '#ffffff',
+        boxShadow: selected ? '0 14px 34px rgba(88,204,2,0.08)' : 'none',
+      }}
+    >
+      <div className="flex items-center gap-4">
+        <div className="text-2xl">{item.emoji}</div>
+        <div className="min-w-0 flex-1">
+          <p className="font-bold text-[15px]" style={{ color: '#1B2D45' }}>
+            {item.label}
+          </p>
+          <p className="mt-1 text-sm text-gray-400">{item.desc}</p>
+        </div>
+        <div
+          className="h-6 w-6 flex-shrink-0 border-2 flex items-center justify-center"
+          style={{
+            borderRadius: multi ? '6px' : '50%',
+            borderColor: selected ? '#58CC02' : '#D1D5DB',
+            backgroundColor: selected ? '#58CC02' : 'transparent',
+          }}
+        >
+          {selected && (
+            <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+              <path d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+function InterestChip({
+  emoji,
+  label,
+  selected,
+  onClick,
+}: {
+  emoji: string;
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-2 rounded-full border-2 px-4 py-2.5 text-sm font-semibold transition-all duration-150"
+      style={{
+        backgroundColor: selected ? '#1B2D45' : '#ffffff',
+        borderColor: selected ? '#1B2D45' : '#E5E7EB',
+        color: selected ? '#ffffff' : '#1B2D45',
+      }}
+    >
+      <span>{emoji}</span>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function NumberPill({
+  value,
+  selected,
+  onClick,
+}: {
+  value: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="h-20 w-20 rounded-[24px] border-2 text-2xl font-extrabold transition-all"
+      style={{
+        borderColor: selected ? '#1B2D45' : '#E5E7EB',
+        backgroundColor: selected ? 'rgba(27,45,69,0.06)' : '#ffffff',
+        color: '#1B2D45',
+      }}
+    >
+      {value}
+    </button>
+  );
+}
+
+function SortablePlannerStopCard({
+  stop,
+  number,
+  onRemove,
+  onSelect,
+}: {
+  stop: PlannerStop;
+  number: number;
+  onRemove: () => void;
+  onSelect: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stop.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={onSelect}
+      className="rounded-[24px] border border-white/80 bg-white shadow-sm transition-all cursor-pointer"
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        boxShadow: isDragging ? '0 24px 48px rgba(27,45,69,0.16)' : undefined,
+      }}
+    >
+      <div className="flex items-start gap-3 p-4">
+        <button
+          type="button"
+          onClick={(event) => event.stopPropagation()}
+          {...attributes}
+          {...listeners}
+          className="mt-1 flex flex-col gap-[3px] rounded-xl border border-gray-200 px-2 py-2 text-gray-400 transition-colors hover:text-[#1B2D45] cursor-grab active:cursor-grabbing"
+          aria-label={`Reorder ${stop.name}`}
+        >
+          {[0, 1, 2].map((row) => (
+            <span key={row} className="flex gap-[3px]">
+              <span className="w-[3px] h-[3px] rounded-full bg-current" />
+              <span className="w-[3px] h-[3px] rounded-full bg-current" />
+            </span>
+          ))}
+        </button>
+
+        <div
+          className="mt-0.5 h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-extrabold text-white"
+          style={{ backgroundColor: stop.stopType === 'en-route' ? '#D85A30' : '#378ADD' }}
+        >
+          {number}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                  {stop.name}
+                </p>
+                {stop.recommended && (
+                  <span
+                    className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                    style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
+                  >
+                    Recommended
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-gray-400">
+                {stop.city} · {stop.duration}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRemove();
+              }}
+              className="rounded-full px-2 py-1 text-xs font-bold text-gray-400 transition-colors hover:text-red-500"
+            >
+              Remove
+            </button>
+          </div>
+
+          <p className="mt-3 text-sm leading-relaxed text-gray-500">{stop.description}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getStartRegion(startInput: string, coords: [number, number] | null): StartRegion {
+  const start = startInput.toLowerCase();
+  const northHints = ['san francisco', 'oakland', 'berkeley', 'sacramento', 'napa', 'sonoma', 'san jose', 'palo alto'];
+  const southHints = ['los angeles', 'san diego', 'orange county', 'anaheim', 'palm springs', 'malibu', 'santa monica'];
+
+  if (northHints.some((hint) => start.includes(hint))) return 'north';
+  if (southHints.some((hint) => start.includes(hint))) return 'south';
+
+  if (coords) {
+    return coords[1] >= 36.7 ? 'north' : 'south';
+  }
+
+  return 'south';
+}
+
+function formatMiles(miles: number) {
+  return `${miles.toLocaleString()} miles`;
+}
+
+function haversineMiles(a: [number, number], b: [number, number]) {
+  const lat1 = a[1] * (Math.PI / 180);
+  const lat2 = b[1] * (Math.PI / 180);
+  const dLat = (b[1] - a[1]) * (Math.PI / 180);
+  const dLng = (b[0] - a[0]) * (Math.PI / 180);
+  const aa =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) * Math.sin(dLng / 2);
+  return 3958.8 * 2 * Math.atan2(Math.sqrt(aa), Math.sqrt(1 - aa));
+}
+
+function estimateTripMiles(startCoords: [number, number] | null, stops: PlannerStop[], endCoords: [number, number]) {
+  const points: [number, number][] = [];
+  if (startCoords) points.push(startCoords);
+  stops.forEach((stop) => points.push([stop.lng, stop.lat]));
+  points.push(endCoords);
+
+  if (points.length < 2) return 0;
+
+  let total = 0;
+  for (let index = 1; index < points.length; index += 1) {
+    total += haversineMiles(points[index - 1], points[index]) * 1.18;
+  }
+  return Math.max(60, Math.round(total));
+}
+
+function estimateTripDaysLabel(
+  prefs: PlannerPreferences,
+  stopCount: number,
+  fallbackLabel: string
+) {
+  if (prefs.hotelNights) {
+    if (prefs.hotelNights.endsWith('+')) {
+      const nights = Number.parseInt(prefs.hotelNights, 10);
+      if (!Number.isNaN(nights)) return `${nights + 1}+ days`;
+    }
+
+    const nights = Number.parseInt(prefs.hotelNights, 10);
+    if (!Number.isNaN(nights)) {
+      return `${Math.max(2, nights + 1)} days`;
+    }
+  }
+
+  const enroute = Number.parseInt(prefs.numberOfEnrouteStops || '0', 10);
+  const destinationSpots =
+    prefs.numberOfStops === 'auto'
+      ? Math.max(3, stopCount - enroute)
+      : Number.parseInt(prefs.numberOfStops || '3', 10);
+
+  if (!Number.isNaN(destinationSpots)) {
+    const days = Math.max(2, Math.min(7, Math.ceil((enroute + destinationSpots + 1) / 2)));
+    return `${days} days`;
+  }
+
+  return fallbackLabel;
+}
+
+function buildGoogleMapsUrl(start: string, stops: PlannerStop[], end: string) {
+  const points = [
+    encodeURIComponent(start),
+    ...stops.map((stop) => `${stop.lat},${stop.lng}`),
+    encodeURIComponent(end),
+  ];
+  return `https://www.google.com/maps/dir/${points.join('/')}`;
+}
+
+function buildAppleMapsUrl(start: string, stops: PlannerStop[], end: string) {
+  const destinations = [...stops.map((stop) => `${stop.lat},${stop.lng}`), encodeURIComponent(end)].join('+to:');
+  return `https://maps.apple.com/?saddr=${encodeURIComponent(start)}&daddr=${destinations}`;
+}
+
+async function fetchAddressSuggestions(query: string): Promise<string[]> {
+  if (!query.trim() || query.length < 2 || !MAPBOX_TOKEN) return [];
+
+  try {
+    const response = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+        query
+      )}.json?access_token=${MAPBOX_TOKEN}&autocomplete=true&country=us&types=place,locality,neighborhood,address&limit=5`
+    );
+    const data = await response.json();
+    return (data.features ?? []).map((feature: { place_name: string }) => feature.place_name);
+  } catch {
+    return [];
+  }
+}
+
+async function reverseGeocodeLabel(lng: number, lat: number): Promise<string | null> {
+  if (!MAPBOX_TOKEN) return null;
+
+  try {
+    const response = await fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&types=place,locality&limit=1`
+    );
+    const data = await response.json();
+    return data.features?.[0]?.text ?? data.features?.[0]?.place_name ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function buildQuestionSteps(prefs: PlannerPreferences): PlannerStep[] {
+  const steps: PlannerStep[] = ['start', 'group'];
+  if (prefs.travelGroup === 'family-kids') steps.push('kids');
+  steps.push('interests', 'hotelBudget');
+  if (prefs.hotelPreference && prefs.hotelPreference !== 'none') steps.push('hotelDetails');
+  steps.push('enroute', 'spots');
+  return steps;
+}
+
+function pickSeedRouteId(prefs: PlannerPreferences, currentSeed: PlannerRouteKey): PlannerRouteKey {
+  const interests = new Set(prefs.interests);
+
+  const scores: Record<PlannerRouteKey, number> = {
+    pch: currentSeed === 'pch' ? 1 : 0,
+    parks: currentSeed === 'parks' ? 1 : 0,
+    desert: currentSeed === 'desert' ? 1 : 0,
+    custom: currentSeed === 'custom' ? 1 : 0,
+  };
+
+  if (interests.has('beaches') || interests.has('surf') || interests.has('sunsets') || interests.has('wine') || interests.has('local-food')) {
+    scores.pch += 4;
+  }
+  if (interests.has('hiking') || interests.has('camping') || interests.has('wildlife') || interests.has('national-parks')) {
+    scores.parks += 4;
+  }
+  if (interests.has('adventure') || interests.has('road-stops') || interests.has('photography')) {
+    scores.desert += 3;
+  }
+  if (interests.has('scenic')) {
+    scores.pch += 2;
+    scores.custom += 1;
+  }
+  if (interests.has('coffee') || interests.has('breweries') || interests.has('bakeries') || interests.has('boutique-shops')) {
+    scores.custom += 2;
+  }
+
+  if (prefs.travelGroup === 'family-kids') {
+    scores.parks += 2;
+    scores.custom += 2;
+  }
+  if (prefs.travelGroup === 'partner') {
+    scores.pch += 2;
+    scores.desert += 1;
+  }
+  if (prefs.travelGroup === 'friends') {
+    scores.desert += 2;
+    scores.custom += 1;
+  }
+
+  return (Object.entries(scores).sort((a, b) => b[1] - a[1])[0]?.[0] as PlannerRouteKey) ?? currentSeed;
+}
+
+function buildFallbackRouteOptions(
+  routeRegion: StartRegion,
+  prefs: PlannerPreferences,
+  currentSeed: PlannerRouteKey
+): SuggestedRouteOption[] {
+  const preferredSeed = pickSeedRouteId(prefs, currentSeed);
+
+  return [...PLANNER_ROUTE_ORDER]
+    .sort((a, b) => {
+      const aScore = pickSeedRouteId(prefs, a) === a ? 1 : 0;
+      const bScore = pickSeedRouteId(prefs, b) === b ? 1 : 0;
+      if (a === preferredSeed) return -1;
+      if (b === preferredSeed) return 1;
+      return bScore - aScore;
+    })
+    .slice(0, 3)
+    .map((routeId, index) => {
+      const variant = PLANNER_ROUTE_DEFINITIONS[routeId][routeRegion];
+      return {
+        id: `${routeId}-${index + 1}`,
+        name: variant.routeName,
+        tagline: variant.tagline,
+        via: variant.highlights.join(', '),
+        destination: variant.destination,
+        icon: ROUTE_ICONS[routeId],
+        fallbackRouteId: routeId,
+      };
+    });
+}
+
+function stripPlannerStop(stop: PlannerStop): Stop {
+  const { id, recommended, ...rest } = stop;
+  void id;
+  void recommended;
+  return rest;
+}
+
 function HomeContent() {
-  const searchParams = useSearchParams();
-  const [start, setStart] = useState('');
-  const [end, setEnd] = useState(() => searchParams.get('end') || '');
-  const [mapAnimation, setMapAnimation] = useState<any>(null);
-  const [stepAnimations, setStepAnimations] = useState<any[]>([null, null, null]);
-  const [howAnimations, setHowAnimations] = useState<any[]>([null, null, null, null]);
-  const [routes, setRoutes] = useState<Route[]>(DEFAULT_ROUTES);
-  const [routesLoading, setRoutesLoading] = useState(false);
-  const [routesLocation, setRoutesLocation] = useState('');
-  const [recentStarts, setRecentStarts] = useState<string[]>([]);
-  const [homeAddress, setHomeAddress] = useState('');
-  const [showSaveHome, setShowSaveHome] = useState(false);
+  const router = useRouter();
+  const howFade = useFadeIn(0.08);
+  const routesFade = useFadeIn(0.08);
+  const saveFade = useFadeIn(0.08);
+  const faqFade = useFadeIn(0.08);
 
+  const [mapAnimation, setMapAnimation] = useState<object | null>(null);
+  const [heroStep, setHeroStep] = useState(0);
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  const [plannerVisible, setPlannerVisible] = useState(false);
+  const [plannerStep, setPlannerStep] = useState<PlannerStep>('start');
+  const [seedRouteId, setSeedRouteId] = useState<PlannerRouteKey>('pch');
+  const [startInput, setStartInput] = useState('');
+  const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
-  const [endSuggestions, setEndSuggestions] = useState<string[]>([]);
-  const [startOpen, setStartOpen] = useState(false);
-  const [endOpen, setEndOpen] = useState(false);
-  const startRef = useRef<HTMLDivElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
-  const routesSectionRef = useRef<HTMLElement>(null);
+  const [prefs, setPrefs] = useState<PlannerPreferences>(DEFAULT_PREFS);
+  const [routeOptions, setRouteOptions] = useState<SuggestedRouteOption[]>([]);
+  const [routeOptionIndex, setRouteOptionIndex] = useState(0);
+  const [tripData, setTripData] = useState<TripData | null>(null);
+  const [stops, setStops] = useState<PlannerStop[]>([]);
+  const [mapEndCoords, setMapEndCoords] = useState<[number, number] | null>(null);
+  const [activeStop, setActiveStop] = useState(-1);
+  const [user, setUser] = useState<User | null>(null);
+  const [detectingLocation, setDetectingLocation] = useState(false);
+  const [didTryAutoLocate, setDidTryAutoLocate] = useState(false);
+  const [plannerError, setPlannerError] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [savedTripId, setSavedTripId] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState('');
 
-  const tripsFade = useFadeIn(0.1);
-  const howFade = useFadeIn(0.15);
-  const footerFade = useFadeIn(0.3);
+  const suggestionRef = useRef<HTMLDivElement>(null);
+  const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoSaveOnRestoreRef = useRef(false);
 
-  const debounce = useCallback((fn: (q: string) => void, delay: number) => {
-    let timer: ReturnType<typeof setTimeout>;
-    return (q: string) => { clearTimeout(timer); timer = setTimeout(() => fn(q), delay); };
-  }, []);
+  const routeRegion = getStartRegion(startInput, startCoords);
+  const fallbackRoute = PLANNER_ROUTE_DEFINITIONS[seedRouteId][routeRegion];
+  const activeRouteOption = routeOptions[routeOptionIndex] ?? null;
+  const routeDestination = activeRouteOption?.destination ?? fallbackRoute.destination;
+  const endCoords = mapEndCoords ?? fallbackRoute.destinationCoords;
+  const routeName = tripData?.routeName ?? activeRouteOption?.name ?? fallbackRoute.routeName;
+  const routeTagline = tripData?.tagline ?? activeRouteOption?.tagline ?? fallbackRoute.tagline;
+  const routeSummary = tripData?.destinationDescription ?? fallbackRoute.summary;
+  const routeHighlights = activeRouteOption?.via
+    ? activeRouteOption.via.split(',').map((item) => item.trim()).filter(Boolean)
+    : fallbackRoute.highlights;
+  const tripMiles = tripData?.totalMiles ?? estimateTripMiles(startCoords, stops, endCoords);
+  const tripDaysLabel = estimateTripDaysLabel(prefs, stops.length, fallbackRoute.durationLabel);
+  const googleMapsUrl = startInput ? buildGoogleMapsUrl(startInput, stops, routeDestination) : '#';
+  const appleMapsUrl = startInput ? buildAppleMapsUrl(startInput, stops, routeDestination) : '#';
+  const questionSteps = buildQuestionSteps(prefs);
+  const progressSteps =
+    plannerStep === 'generating' || plannerStep === 'results' || plannerStep === 'save' || plannerStep === 'saved'
+      ? [...questionSteps, 'results', 'save']
+      : questionSteps;
+  const plannerIndex =
+    plannerStep === 'saved'
+      ? progressSteps.length - 1
+      : plannerStep === 'generating'
+        ? Math.max(questionSteps.length - 1, 0)
+        : Math.max(progressSteps.indexOf(plannerStep), 0);
+  const currentPlannerMeta = PLANNER_META[plannerStep];
+  const previewInterests = prefs.interests.slice(0, 4).map((interest) => INTEREST_LABELS[interest] ?? interest);
+  const previewHotel = prefs.hotelPreference ? HOTEL_LABELS[prefs.hotelPreference] : '';
+  const topHotel = tripData?.hotels?.[0];
+  const greenButtonStyle = { backgroundColor: '#58CC02', boxShadow: '0 18px 44px rgba(88,204,2,0.22)' };
 
-  const fetchStart = useCallback(debounce(async (q: string) => {
-    const results = await fetchAddressSuggestions(q);
-    setStartSuggestions(results);
-    setStartOpen(results.length > 0);
-  }, 300), [debounce]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } })
+  );
 
-  const fetchEnd = useCallback(debounce(async (q: string) => {
-    const results = await fetchAddressSuggestions(q);
-    setEndSuggestions(results);
-    setEndOpen(results.length > 0);
-  }, 300), [debounce]);
-
-  const doFetchRoutes = useCallback(async (location: string) => {
-    if (location.length < 5) { setRoutes(DEFAULT_ROUTES); setRoutesLocation(''); return; }
-    setRoutesLoading(true);
-    try {
-      const res = await fetch('/api/routes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: location }) });
-      const data = await res.json();
-      if (data.routes) {
-        setRoutes(data.routes);
-        setRoutesLocation(location);
-        setTimeout(() => {
-          routesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      }
-    } catch { /* keep defaults */ }
-    finally { setRoutesLoading(false); }
-  }, []);
-
-  const fetchRoutes = useCallback(debounce((location: string) => doFetchRoutes(location), 1000), [debounce, doFetchRoutes]);
+  function resetSuggestedTrip(clearMessages = true) {
+    setTripData(null);
+    setRouteOptions([]);
+    setRouteOptionIndex(0);
+    setStops([]);
+    setMapEndCoords(null);
+    setActiveStop(-1);
+    if (clearMessages) {
+      setPlannerError('');
+      setSaveMessage('');
+      setShareMessage('');
+    }
+  }
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (startRef.current && !startRef.current.contains(e.target as Node)) { setStartOpen(false); setShowSaveHome(false); }
-      if (endRef.current && !endRef.current.contains(e.target as Node)) setEndOpen(false);
+    fetch('/map-search.json')
+      .then((response) => response.json())
+      .then((data) => setMapAnimation(data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroStep((value) => (value + 1) % HOME_PREVIEW_STEPS.length);
+    }, 1800);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => authListener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
+        setStartSuggestions([]);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const tripImageHeight = 230;
-  const tripGap = 19;
-  const tripSectionPadTop = 117;
-  const tripSectionPadBottom = 130;
-  const mapSize = 600;
-  const mapOffsetY = -10;
-  const router = useRouter();
+  useEffect(() => {
+    if (!plannerOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [plannerOpen]);
 
   useEffect(() => {
+    const saved = window.localStorage.getItem(PLANNER_STORAGE_KEY);
+    if (!saved) return;
+
     try {
-      const saved = localStorage.getItem('roady_recent_starts');
-      if (saved) setRecentStarts(JSON.parse(saved));
-      const home = localStorage.getItem('roady_home_address');
-      if (home) { setHomeAddress(home); setStart(home); }
-    } catch { /* ignore */ }
+      const parsed = JSON.parse(saved) as PersistedPlannerState;
+      window.localStorage.removeItem(PLANNER_STORAGE_KEY);
+      autoSaveOnRestoreRef.current = Boolean(parsed.autoSaveOnRestore);
+      setPlannerOpen(true);
+      requestAnimationFrame(() => setPlannerVisible(true));
+      setPlannerStep(parsed.step);
+      setSeedRouteId(parsed.seedRouteId);
+      setStartInput(parsed.startInput);
+      setStartCoords(parsed.startCoords);
+      setPrefs(parsed.prefs);
+      setRouteOptions(parsed.routeOptions);
+      setRouteOptionIndex(parsed.routeOptionIndex);
+      setTripData(parsed.tripData);
+      setStops(parsed.stops);
+      setMapEndCoords(parsed.mapEndCoords);
+      setActiveStop(-1);
+    } catch {
+      window.localStorage.removeItem(PLANNER_STORAGE_KEY);
+    }
   }, []);
 
   useEffect(() => {
-    fetch('/map-search.json')
-      .then((res) => res.json())
-      .then((data) => setMapAnimation(data))
-      .catch(() => {});
+    if (!plannerOpen || plannerStep !== 'start' || didTryAutoLocate) return;
+    setDidTryAutoLocate(true);
+    void detectCurrentLocation(false);
+  }, [plannerOpen, plannerStep, didTryAutoLocate]);
 
-    const stepFiles = ['/new-message.json', '/settings.json', '/location-pin.json'];
-    Promise.all(stepFiles.map((f) => fetch(f).then((r) => r.json()).catch(() => null)))
-      .then((data) => setStepAnimations(data));
+  useEffect(() => {
+    if (!user || !autoSaveOnRestoreRef.current) return;
+    autoSaveOnRestoreRef.current = false;
+    void handleSaveTrip(true);
+  }, [user]);
 
-    const howFiles = ['/first.json', '/second.json', '/third.json', '/forth.json'];
-    Promise.all(howFiles.map((f) => fetch(f).then((r) => r.json()).catch(() => null)))
-      .then((data) => setHowAnimations(data));
-  }, []);
+  useEffect(() => {
+    if (plannerStep !== 'start') return;
+    if (suggestionTimerRef.current) clearTimeout(suggestionTimerRef.current);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!start.trim() || !end.trim()) return;
-    const updated = [start.trim(), ...recentStarts.filter(r => r !== start.trim())].slice(0, 5);
-    setRecentStarts(updated);
-    try { localStorage.setItem('roady_recent_starts', JSON.stringify(updated)); } catch { /* ignore */ }
-    router.push(`/preferences?start=${encodeURIComponent(start)}&end=${encodeURIComponent(end)}`);
-  };
+    if (startInput.trim().length < 2) {
+      setStartSuggestions([]);
+      return;
+    }
+
+    suggestionTimerRef.current = setTimeout(async () => {
+      const suggestions = await fetchAddressSuggestions(startInput);
+      setStartSuggestions(suggestions);
+    }, 220);
+
+    return () => {
+      if (suggestionTimerRef.current) clearTimeout(suggestionTimerRef.current);
+    };
+  }, [plannerStep, startInput]);
+
+  async function detectCurrentLocation(autoAdvance: boolean) {
+    if (!navigator.geolocation || detectingLocation) return;
+
+    setDetectingLocation(true);
+    setPlannerError('');
+
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        const locationCoords: [number, number] = [coords.longitude, coords.latitude];
+        const label =
+          (await reverseGeocodeLabel(coords.longitude, coords.latitude)) ?? 'Current location';
+
+        resetSuggestedTrip();
+        setStartInput(label);
+        setStartCoords(locationCoords);
+        setStartSuggestions([]);
+        setDetectingLocation(false);
+
+        if (autoAdvance) {
+          setTimeout(() => setPlannerStep('group'), 220);
+        }
+      },
+      () => {
+        setDetectingLocation(false);
+      },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }
+
+  async function applyStartSelection(value: string, coords?: [number, number] | null, autoAdvance = true) {
+    resetSuggestedTrip();
+    setStartInput(value);
+    setStartSuggestions([]);
+
+    if (coords) {
+      setStartCoords(coords);
+    } else {
+      try {
+        const resolved = await geocode(value);
+        setStartCoords(resolved);
+      } catch {
+        setStartCoords(null);
+      }
+    }
+
+    if (autoAdvance) {
+      setTimeout(() => setPlannerStep('group'), 220);
+    }
+  }
+
+  function openPlanner(routeId: PlannerRouteKey = 'pch') {
+    setSeedRouteId(routeId);
+    setPlannerStep('start');
+    setPlannerOpen(true);
+    setPlannerVisible(false);
+    setStartInput('');
+    setStartCoords(null);
+    setStartSuggestions([]);
+    setPrefs(DEFAULT_PREFS);
+    setTripData(null);
+    setRouteOptions([]);
+    setRouteOptionIndex(0);
+    setStops([]);
+    setMapEndCoords(null);
+    setActiveStop(-1);
+    setPlannerError('');
+    setSaveMessage('');
+    setShareMessage('');
+    setSavedTripId(null);
+    setDidTryAutoLocate(false);
+    requestAnimationFrame(() => setPlannerVisible(true));
+  }
+
+  function closePlanner() {
+    setPlannerVisible(false);
+    setTimeout(() => {
+      setPlannerOpen(false);
+    }, 260);
+  }
+
+  function persistPlannerState(autoSaveOnRestore = false) {
+    const state: PersistedPlannerState = {
+      step: plannerStep === 'saved' ? 'save' : plannerStep,
+      seedRouteId,
+      startInput,
+      startCoords,
+      prefs,
+      routeOptions,
+      routeOptionIndex,
+      tripData,
+      stops,
+      mapEndCoords,
+      autoSaveOnRestore,
+    };
+    window.localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function buildTripData(): TripData {
+    return {
+      routeName,
+      tagline: routeTagline,
+      totalMiles: tripMiles,
+      stops: stops.map(stripPlannerStop),
+      hotels: tripData?.hotels,
+      completed: true,
+      destinationDescription: routeSummary,
+      funFacts: tripData?.funFacts ?? [fallbackRoute.estimateNote],
+      tripChecklist: tripData?.tripChecklist ?? [
+        'Download offline maps before you leave.',
+        'Check weather and closures the night before.',
+        'Book key stays or permits ahead of time.',
+      ],
+    };
+  }
+
+  async function loadTripForRoute(
+    option: SuggestedRouteOption,
+    options = routeOptions,
+    optionIndex = routeOptionIndex
+  ) {
+    setPlannerStep('generating');
+    setPlannerError('');
+    setSaveMessage('');
+    setShareMessage('');
+
+    const fallbackVariant =
+      PLANNER_ROUTE_DEFINITIONS[option.fallbackRouteId ?? seedRouteId][routeRegion];
+
+    let endPoint: [number, number] = fallbackVariant.destinationCoords;
+    try {
+      endPoint = await geocode(option.destination);
+    } catch {
+      endPoint = fallbackVariant.destinationCoords;
+    }
+
+    setMapEndCoords(endPoint);
+
+    try {
+      const response = await fetch('/api/suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: startInput,
+          end: option.destination,
+          routeHint: option.name,
+          travelGroup: prefs.travelGroup,
+          kidsAges: prefs.kidsAges.join(','),
+          interests: prefs.interests.join(','),
+          hotelPreference: prefs.hotelPreference,
+          hotelGuests: prefs.hotelGuests,
+          hotelCheckin: prefs.hotelCheckin,
+          hotelNights: prefs.hotelNights,
+          numberOfEnrouteStops: prefs.numberOfEnrouteStops,
+          numberOfStops: prefs.numberOfStops,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || 'Unable to generate the trip.');
+      }
+
+      const data: TripData = await response.json();
+      setTripData({
+        ...data,
+        routeName: data.routeName || option.name,
+        tagline: data.tagline || option.tagline,
+      });
+      setStops(normalizePlannerStops(data.stops));
+      setRouteOptions(options);
+      setRouteOptionIndex(optionIndex);
+      setActiveStop(-1);
+      setPlannerStep('results');
+      return;
+    } catch {
+      const fallbackStops = cloneStops(fallbackVariant.stops);
+      const fallbackTrip: TripData = {
+        routeName: option.name || fallbackVariant.routeName,
+        tagline: option.tagline || fallbackVariant.tagline,
+        totalMiles: estimateTripMiles(startCoords, fallbackStops, fallbackVariant.destinationCoords),
+        stops: fallbackStops.map(stripPlannerStop),
+        hotels:
+          prefs.hotelPreference && prefs.hotelPreference !== 'none'
+            ? [
+                {
+                  name: `${fallbackVariant.destination} Stay`,
+                  city: fallbackVariant.destination,
+                  priceRange: prefs.hotelPreference as '$' | '$$' | '$$$',
+                },
+              ]
+            : undefined,
+        completed: true,
+        destinationDescription: fallbackVariant.summary,
+        funFacts: [fallbackVariant.estimateNote],
+        tripChecklist: [
+          'Download offline maps before you leave.',
+          'Check weather and closures the night before.',
+          'Keep some flexibility around your longest stop.',
+        ],
+      };
+
+      setTripData(fallbackTrip);
+      setStops(fallbackStops);
+      setRouteOptions(options);
+      setRouteOptionIndex(optionIndex);
+      setActiveStop(-1);
+      setMapEndCoords(fallbackVariant.destinationCoords);
+      setPlannerError('Roady is showing a curated route while live suggestions warm up.');
+      setPlannerStep('results');
+    }
+  }
+
+  async function generateSuggestedTrip(excludeDestinations: string[] = []) {
+    if (!startInput.trim()) {
+      setPlannerStep('start');
+      return;
+    }
+
+    const preferredSeed = pickSeedRouteId(prefs, seedRouteId);
+    setSeedRouteId(preferredSeed);
+    setPlannerStep('generating');
+    setPlannerError('');
+    setSaveMessage('');
+    setShareMessage('');
+
+    let options: SuggestedRouteOption[] = [];
+
+    try {
+      const response = await fetch('/api/suggest-options', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: startInput,
+          travelGroup: prefs.travelGroup,
+          interests: prefs.interests.join(','),
+          numberOfEnrouteStops: prefs.numberOfEnrouteStops,
+          excludeDestinations,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || 'Unable to suggest routes.');
+      }
+
+      const data = (await response.json()) as SuggestedRouteOption[];
+      options = data.map((option) => ({
+        ...option,
+        fallbackRouteId: option.fallbackRouteId ?? preferredSeed,
+      }));
+    } catch {
+      options = buildFallbackRouteOptions(routeRegion, prefs, preferredSeed);
+      setPlannerError('Roady is using curated route ideas for this suggestion.');
+    }
+
+    if (!options.length) {
+      options = buildFallbackRouteOptions(routeRegion, prefs, preferredSeed);
+    }
+
+    setRouteOptions(options);
+    setRouteOptionIndex(0);
+    await loadTripForRoute(options[0], options, 0);
+  }
+
+  async function handleSuggestNewRoute() {
+    setPlannerError('');
+    setSaveMessage('');
+    setShareMessage('');
+
+    if (routeOptions.length > routeOptionIndex + 1) {
+      const nextIndex = routeOptionIndex + 1;
+      await loadTripForRoute(routeOptions[nextIndex], routeOptions, nextIndex);
+      return;
+    }
+
+    await generateSuggestedTrip(routeOptions.map((option) => option.destination));
+  }
+
+  async function handleSaveTrip(autoTriggered = false) {
+    if (!startInput.trim()) {
+      setPlannerStep('start');
+      return;
+    }
+
+    setSaving(true);
+    setSaveMessage('');
+
+    try {
+      const response = await fetch('/api/save-trip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: startInput,
+          end: routeDestination,
+          trip_data: buildTripData(),
+        }),
+      });
+
+      if (response.status === 401) {
+        persistPlannerState(true);
+        router.push('/login?next=/');
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Unable to save trip right now.');
+      }
+
+      const data = await response.json();
+      setSavedTripId(data.id);
+      setPlannerStep('saved');
+      setSaveMessage(autoTriggered ? 'Signed in and saved automatically.' : 'Trip saved.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to save trip right now.';
+      setSaveMessage(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSendToPhone() {
+    if (!startInput.trim()) return;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: 'My Roady trip',
+          text: `${routeName} from ${startInput}`,
+          url: googleMapsUrl,
+        });
+        setShareMessage('Shared to your phone.');
+        return;
+      }
+
+      await navigator.clipboard.writeText(googleMapsUrl);
+      setShareMessage('Trip link copied.');
+    } catch {
+      setShareMessage('Sharing was canceled.');
+    }
+  }
+
+  function handleExportPdf() {
+    if (!startInput.trim()) return;
+
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!printWindow) {
+      setShareMessage('Allow popups to export the trip as a PDF.');
+      return;
+    }
+
+    const stopMarkup = stops
+      .map(
+        (stop, index) =>
+          `<li style="margin-bottom:16px;"><strong>${index + 1}. ${stop.name}</strong><div style="color:#667085;font-size:14px;">${stop.city} · ${stop.duration}</div><div style="margin-top:4px;color:#475467;font-size:14px;line-height:1.6;">${stop.description}</div></li>`
+      )
+      .join('');
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${routeName}</title>
+        </head>
+        <body style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; padding: 40px; color: #1B2D45;">
+          <h1 style="font-size: 32px; margin-bottom: 8px;">${routeName}</h1>
+          <p style="font-size: 18px; color: #667085; margin-top: 0;">${startInput} to ${routeDestination}</p>
+          <div style="display:flex; gap:16px; margin:24px 0;">
+            <div style="padding:16px 20px; border:1px solid #EAECF0; border-radius:16px;">${tripDaysLabel}</div>
+            <div style="padding:16px 20px; border:1px solid #EAECF0; border-radius:16px;">${formatMiles(tripMiles)}</div>
+            <div style="padding:16px 20px; border:1px solid #EAECF0; border-radius:16px;">${stops.length} stops</div>
+          </div>
+          <p style="font-size: 15px; line-height: 1.7; color: #475467; max-width: 760px;">${routeSummary}</p>
+          <h2 style="margin-top: 32px;">Stops</h2>
+          <ol style="padding-left: 20px;">${stopMarkup}</ol>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = stops.findIndex((stop) => stop.id === active.id);
+    const newIndex = stops.findIndex((stop) => stop.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    setStops((currentStops) => arrayMove(currentStops, oldIndex, newIndex));
+    setActiveStop(newIndex);
+  }
+
+  function toggleKidsAge(ageId: string) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => ({
+      ...currentPrefs,
+      kidsAges: currentPrefs.kidsAges.includes(ageId)
+        ? currentPrefs.kidsAges.filter((item) => item !== ageId)
+        : [...currentPrefs.kidsAges, ageId],
+    }));
+  }
+
+  function toggleInterest(interestId: string) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => ({
+      ...currentPrefs,
+      interests: currentPrefs.interests.includes(interestId)
+        ? currentPrefs.interests.filter((item) => item !== interestId)
+        : [...currentPrefs.interests, interestId],
+    }));
+  }
+
+  function setTravelGroup(travelGroup: string) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => ({
+      ...currentPrefs,
+      travelGroup,
+      kidsAges: travelGroup === 'family-kids' ? currentPrefs.kidsAges : [],
+    }));
+  }
+
+  function setHotelPreference(hotelPreference: string) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => ({
+      ...currentPrefs,
+      hotelPreference,
+      hotelGuests: hotelPreference === 'none' ? '' : currentPrefs.hotelGuests,
+      hotelCheckin: hotelPreference === 'none' ? '' : currentPrefs.hotelCheckin,
+      hotelNights: hotelPreference === 'none' ? '' : currentPrefs.hotelNights,
+    }));
+  }
+
+  function setEnrouteStops(numberOfEnrouteStops: string) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => ({ ...currentPrefs, numberOfEnrouteStops }));
+  }
+
+  function setDestinationSpots(numberOfStops: string) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => ({ ...currentPrefs, numberOfStops }));
+  }
+
+  function canProceed(step: PlannerStep) {
+    switch (step) {
+      case 'start':
+        return Boolean(startInput.trim());
+      case 'group':
+        return Boolean(prefs.travelGroup);
+      case 'kids':
+        return prefs.kidsAges.length > 0;
+      case 'interests':
+        return prefs.interests.length > 0;
+      case 'hotelBudget':
+        return Boolean(prefs.hotelPreference);
+      case 'hotelDetails':
+        return Boolean(prefs.hotelGuests && prefs.hotelCheckin && prefs.hotelNights);
+      case 'enroute':
+        return Boolean(prefs.numberOfEnrouteStops);
+      case 'spots':
+        return Boolean(prefs.numberOfStops);
+      case 'results':
+        return Boolean(tripData || stops.length > 0);
+      default:
+        return false;
+    }
+  }
+
+  async function handleContinue() {
+    if (plannerStep === 'spots') {
+      await generateSuggestedTrip();
+      return;
+    }
+
+    if (plannerStep === 'results') {
+      setPlannerStep('save');
+      return;
+    }
+
+    const currentIndex = questionSteps.indexOf(plannerStep);
+    if (currentIndex >= 0 && currentIndex < questionSteps.length - 1) {
+      setPlannerStep(questionSteps[currentIndex + 1]);
+    }
+  }
+
+  function handleBack() {
+    if (plannerStep === 'results') {
+      setPlannerStep('spots');
+      return;
+    }
+
+    if (plannerStep === 'save') {
+      setPlannerStep('results');
+      return;
+    }
+
+    const currentIndex = questionSteps.indexOf(plannerStep);
+    if (currentIndex <= 0) {
+      closePlanner();
+      return;
+    }
+
+    setPlannerStep(questionSteps[currentIndex - 1]);
+  }
+
+  const routeCards = PLANNER_ROUTE_ORDER.map((routeId) => {
+    const definition = PLANNER_ROUTE_DEFINITIONS[routeId][routeRegion];
+    return { routeId, definition };
+  });
+
+  const navLinks = [
+    { label: 'Features', href: '/#features' },
+    { label: 'Destinations', href: '/destinations' },
+    { label: 'How it works', href: '/#how-it-works' },
+    { label: 'Pricing', href: '/#save-share' },
+    { label: 'Blog', href: '/#stories' },
+  ];
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
-      {/* Navbar */}
+    <div
+      className="min-h-screen"
+      style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+    >
       <Navbar
-        logoHeight={80}
-        logoOffsetY={10}
+        logoHeight={44}
+        logoOffsetY={8}
         logoHref="/"
-        extraLinks={
-          <a href="#how-it-works" className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors">
-            How It Works
-          </a>
-        }
+        navLinks={navLinks}
+        onPrimaryAction={() => openPlanner('pch')}
+        primaryLabel="Start planning"
+        signedInPrimaryLabel="Start planning"
+        style={{ backgroundColor: 'rgba(255,255,255,0.92)' }}
       />
 
-      {/* Hero */}
-      <section id="hero" className="relative pt-28 pb-16 sm:pt-36 sm:pb-24" style={{ overflow: 'visible' }}>
+      <section
+        className="relative overflow-hidden pt-28 pb-14 sm:pt-32 lg:pt-36 lg:pb-20"
+        style={{ backgroundColor: '#FAFAF9' }}
+      >
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            inset: 0,
+            background:
+              'radial-gradient(circle at 12% 18%, rgba(216,90,48,0.08) 0%, transparent 32%), radial-gradient(circle at 84% 22%, rgba(55,138,221,0.08) 0%, transparent 34%)',
+          }}
+        />
 
         <div className="relative z-10 max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-            {/* Left content */}
-            <div className="flex-1 text-left max-w-xl">
-
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-8" style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-                <span>☀ local friend · California only</span>
+          <div className="flex flex-col lg:flex-row items-center gap-14 lg:gap-12">
+            <div className="flex-1 max-w-xl">
+              <div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-8"
+                style={{
+                  backgroundColor: 'rgba(216,90,48,0.08)',
+                  color: '#D85A30',
+                  border: '1px solid rgba(216,90,48,0.16)',
+                }}
+              >
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l1.5 4.5H18l-3.75 2.7 1.5 4.5L12 11.25 8.25 13.7l1.5-4.5L6 6.5h4.5z" />
+                </svg>
+                The easiest way to plan epic road trips
               </div>
 
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.08] mb-6 tracking-tight" style={{ color: '#1B2D45' }}>
-                Every great road trip
+              <h1
+                className="font-extrabold leading-[1.02] tracking-tight"
+                style={{ color: '#1B2D45', fontSize: 'clamp(2.9rem, 7vw, 5.1rem)' }}
+              >
+                Plan your trip
                 <br />
-                needs <span style={{ color: '#58CC02' }}>a local friend.</span>
+                right now
+                <br />
+                <span
+                  style={{
+                    color: '#D85A30',
+                    fontStyle: 'italic',
+                    fontWeight: 800,
+                    fontSize: '0.9em',
+                  }}
+                >
+                  in 30 seconds
+                </span>
               </h1>
 
-              <p className="text-lg sm:text-xl leading-relaxed mb-10" style={{ color: '#6B7280' }}>
-                Roady uses AI to plan California road trips the way a local would — with hidden gems, insider tips, and stops you won&apos;t find in any guidebook.
+              <p className="mt-7 max-w-lg text-lg leading-relaxed" style={{ color: '#6B7280' }}>
+                Create the perfect road trip in minutes. Roady asks a few smart questions, then
+                suggests a trip that already feels tailored to you.
               </p>
 
-              {/* Primary CTA — Chat with Roady */}
+              <div className="mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                <button
+                  onClick={() => openPlanner('pch')}
+                  className="inline-flex items-center gap-3 px-8 py-4 rounded-full font-bold text-lg text-white transition-all hover:opacity-90"
+                  style={greenButtonStyle}
+                >
+                  Plan my trip now
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex -space-x-2">
+                    {['#D85A30', '#378ADD', '#58CC02', '#EF9F27'].map((color, index) => (
+                      <div
+                        key={color}
+                        className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-[11px] font-bold text-white"
+                        style={{ backgroundColor: color, zIndex: 4 - index }}
+                      >
+                        {['J', 'M', 'S', 'A'][index]}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm font-semibold" style={{ color: '#6B7280' }}>
+                    Join <span style={{ color: '#1B2D45' }}>20,000+</span> happy road trippers
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="w-full max-w-[760px]">
               <button
                 type="button"
-                onClick={() => router.push('/chat')}
-                className="relative overflow-hidden w-full flex items-center justify-center gap-3 px-8 py-5 rounded-2xl font-bold text-lg transition-all duration-200 hover:opacity-90 mb-4"
-                style={{ backgroundColor: '#D85A30', color: '#ffffff', boxShadow: '0 8px 24px rgba(216,90,48,0.3)' }}
+                onClick={() => openPlanner('pch')}
+                className="group relative w-full overflow-hidden rounded-[32px] border border-white/80 bg-white/90 text-left shadow-[0_28px_80px_rgba(27,45,69,0.16)] transition-transform duration-300 hover:-translate-y-1"
               >
-                <span
-                  className="pointer-events-none absolute inset-0 w-1/3"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%)',
-                    animation: 'shineSweep 3.2s cubic-bezier(0.4,0,0.6,1) infinite',
-                  }}
-                />
-                <svg className="relative w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                </svg>
-                <span className="relative">Chat with Roady — Plan my trip</span>
-                <svg className="relative w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-                </svg>
-              </button>
-              <p className="text-sm text-gray-400 mb-8">Free to use · No sign-up required</p>
-
-              {/* Secondary — Plan a Trip form */}
-              <p className="text-sm font-semibold mb-3" style={{ color: '#9CA3AF' }}>Already know your route?</p>
-              <>
-                  <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <div className="flex-1 relative" ref={startRef}>
-                      <div className={`flex items-center w-full rounded-xl border-2 bg-white transition-all duration-200 ${homeAddress && start === homeAddress ? 'border-[#58CC02] px-3 py-3' : 'border-gray-200 focus-within:border-[#58CC02]'}`}>
-                        {homeAddress && (
+                <div className="grid lg:grid-cols-[260px_minmax(0,1fr)]">
+                  <div className="border-b lg:border-b-0 lg:border-r border-gray-100 p-7 lg:p-8">
+                    <p className="text-sm font-bold uppercase tracking-[0.18em]" style={{ color: '#D85A30' }}>
+                      Your Road Trip
+                    </p>
+                    <p className="mt-2 text-xl font-extrabold" style={{ color: '#1B2D45' }}>
+                      Roady Planner
+                    </p>
+                    <div className="mt-8 flex flex-col gap-5">
+                      {HOME_PREVIEW_STEPS.map((step, index) => {
+                        const isActive = heroStep === index;
+                        return (
                           <div
-                            className="group/home flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold whitespace-nowrap"
-                            style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
+                            key={step.label}
+                            className="flex items-start gap-3 transition-all duration-500"
+                            style={{ opacity: isActive ? 1 : 0.48 }}
                           >
-                            <span>🏠 Home</span>
-                            <button
-                              type="button"
-                              onMouseDown={() => {
-                                setHomeAddress('');
-                                setStart('');
-                                try { localStorage.removeItem('roady_home_address'); } catch { /* ignore */ }
+                            <div
+                              className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold"
+                              style={{
+                                backgroundColor: isActive ? '#D85A30' : 'rgba(216,90,48,0.12)',
+                                color: isActive ? '#ffffff' : '#D85A30',
                               }}
-                              className="hidden group-hover/home:flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold leading-none hover:bg-green-200 transition-colors"
-                              style={{ color: '#46a302' }}
-                              title="Remove home"
                             >
-                              ×
-                            </button>
+                              {index + 1}
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>
+                                {step.label}
+                              </p>
+                              <p className="mt-1 text-xs text-gray-400">{step.sub}</p>
+                            </div>
                           </div>
-                        )}
-                        {!(homeAddress && start === homeAddress) && (
-                          <input
-                            type="text"
-                            placeholder="Starting from..."
-                            value={start}
-                            onChange={(e) => { setStart(e.target.value); fetchStart(e.target.value); fetchRoutes(e.target.value); }}
-                            onFocus={() => { if (startSuggestions.length > 0) setStartOpen(true); }}
-                            onBlur={() => {
-                              if (start.trim() && start.trim() !== homeAddress) {
-                                setTimeout(() => setShowSaveHome(true), 150);
-                              }
-                            }}
-                            className="flex-1 px-5 py-4 bg-transparent outline-none font-medium text-gray-900 placeholder:text-gray-400 min-w-0"
-                            autoComplete="off"
-                            autoFocus={!!searchParams.get('end')}
-                          />
-                        )}
-                      </div>
-                      {startOpen && startSuggestions.length > 0 && (
-                        <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                          {startSuggestions.map((s) => (
-                            <li
-                              key={s}
-                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
-                              onMouseDown={() => { setStart(s); setStartOpen(false); setShowSaveHome(false); doFetchRoutes(s); }}
-                            >
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {showSaveHome && !startOpen && start.trim() && (
-                        <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 px-4 py-3 flex items-center justify-between gap-3">
-                          <span className="text-sm font-medium text-gray-600">🏠 Save as Home?</span>
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onMouseDown={() => {
-                                const addr = start.trim();
-                                setHomeAddress(addr);
-                                setStart(addr);
-                                try { localStorage.setItem('roady_home_address', addr); } catch { /* ignore */ }
-                                setShowSaveHome(false);
-                              }}
-                              className="px-3 py-1 rounded-lg text-xs font-bold text-white"
-                              style={{ backgroundColor: '#58CC02' }}
-                            >
-                              Yes
-                            </button>
-                            <button
-                              type="button"
-                              onMouseDown={() => setShowSaveHome(false)}
-                              className="px-3 py-1 rounded-lg text-xs font-bold text-gray-500 bg-gray-100"
-                            >
-                              No
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })}
                     </div>
-                    <div className="flex-1 relative" ref={endRef}>
-                      <input
-                        type="text"
-                        placeholder="Heading to..."
-                        value={end}
-                        onChange={(e) => { setEnd(e.target.value); fetchEnd(e.target.value); }}
-                        onFocus={() => { if (endSuggestions.length > 0) setEndOpen(true); }}
-                        className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium text-gray-900 placeholder:text-gray-400 outline-none transition-all duration-200 focus:border-[#58CC02]"
-                        required
-                        autoComplete="off"
-                      />
-                      {endOpen && endSuggestions.length > 0 && (
-                        <ul className="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl border border-gray-200 shadow-lg z-50 overflow-hidden">
-                          {endSuggestions.map((s) => (
-                            <li
-                              key={s}
-                              className="px-5 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-[#46a302] cursor-pointer transition-colors"
-                              onMouseDown={() => { setEnd(s); setEndOpen(false); }}
-                            >
-                              {s}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                    <button
-                      type="submit"
-                      className="group/btn relative px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2 whitespace-nowrap overflow-hidden"
-                      style={{
-                        backgroundColor: '#58CC02',
-                        color: '#ffffff',
-                        transformStyle: 'preserve-3d',
-                        transition: 'transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, background-color 0.3s ease, color 0.3s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        const btn = e.currentTarget;
-                        btn.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
-                        btn.style.boxShadow = '0 14px 28px rgba(58,173,0,0.35), 0 6px 10px rgba(58,173,0,0.2), 0 0 20px rgba(239,159,39,0.25)';
-                        btn.style.backgroundColor = '#3aad00';
-                        btn.style.color = '#ffffff';
-                      }}
-                      onMouseLeave={(e) => {
-                        const btn = e.currentTarget;
-                        btn.style.transform = 'perspective(600px) rotateX(0deg) translateY(0px)';
-                        btn.style.boxShadow = '';
-                        btn.style.backgroundColor = '#58CC02';
-                        btn.style.color = '#ffffff';
-                      }}
-                      onMouseDown={(e) => {
-                        e.currentTarget.style.transform = 'perspective(600px) rotateX(2deg) translateY(1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(58,173,0,0.35), 0 2px 4px rgba(58,173,0,0.2)';
-                      }}
-                      onMouseUp={(e) => {
-                        e.currentTarget.style.transform = 'perspective(600px) rotateX(-6deg) translateY(-3px)';
-                        e.currentTarget.style.boxShadow = '0 14px 28px rgba(58,173,0,0.35), 0 6px 10px rgba(58,173,0,0.2), 0 0 20px rgba(58,173,0,0.2)';
-                      }}
-                    >
-                      <span className="absolute left-0 right-0 bottom-0 h-[5px] rounded-b-xl pointer-events-none transition-colors duration-300 bg-[#46a302] group-hover/btn:bg-[#3aad00]" />
-                      <span className="absolute inset-0 -translate-x-full group-hover/btn:translate-x-full transition-transform duration-700 ease-in-out" style={{ background: 'linear-gradient(90deg, transparent, rgba(88,204,2,0.15), transparent)' }} />
-                      <span className="relative z-10 flex items-center gap-2">
-                        Plan My Trip
-                        <svg className="w-5 h-5 transition-all duration-300 group-hover/btn:translate-x-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                      </span>
-                    </button>
-                  </form>
 
-                  {recentStarts.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      <span className="text-xs font-semibold text-gray-400 self-center">Recent:</span>
-                      {recentStarts.map((addr) => (
-                        <button
-                          key={addr}
-                          type="button"
-                          onClick={() => { setStart(addr); doFetchRoutes(addr); }}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:border-[#58CC02] hover:text-[#46a302]"
-                          style={{ borderColor: '#E5E7EB', color: '#1B2D45', backgroundColor: '#ffffff' }}
-                        >
-                          {addr}
-                        </button>
-                      ))}
+                    <div
+                      className="mt-8 w-full rounded-2xl px-5 py-3 text-center text-sm font-bold text-white transition-opacity group-hover:opacity-90"
+                      style={{ backgroundColor: '#58CC02' }}
+                    >
+                      Generate my trip
                     </div>
-                  )}
-                  <div className="mt-3">
-                    <span className="text-xs font-semibold text-gray-400">Routes Worth Driving:</span>
-                    <div className="flex flex-wrap gap-2 mt-1.5">
-                      {DEFAULT_ROUTES.map((route) => (
-                        <button
-                          key={route.name}
-                          type="button"
-                          onClick={() => { setEnd(route.to); }}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all hover:border-[#58CC02] hover:text-[#46a302]"
-                          style={{ borderColor: '#E5E7EB', color: '#1B2D45', backgroundColor: '#ffffff' }}
+                    <p className="mt-3 text-xs text-gray-400">Takes less than 30 seconds</p>
+                  </div>
+
+                  <div className="relative min-h-[380px] overflow-hidden bg-[#F4F7FB]">
+                    {mapAnimation ? (
+                      <Lottie
+                        animationData={mapAnimation}
+                        loop
+                        style={{ width: '100%', height: '100%', transform: 'scale(1.08)' }}
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_18%,rgba(55,138,221,0.14),transparent_24%),radial-gradient(circle_at_70%_70%,rgba(88,204,2,0.14),transparent_26%),linear-gradient(180deg,#ecf6ff_0%,#f7fafc_100%)]" />
+                    )}
+
+                    <div className="absolute right-6 top-6 w-[220px] rounded-[24px] bg-white/96 p-4 shadow-[0_20px_50px_rgba(27,45,69,0.16)]">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
+                        Suggested trip
+                      </p>
+                      <p className="mt-2 text-2xl font-extrabold" style={{ color: '#1B2D45' }}>
+                        4 days
+                      </p>
+                      <div className="mt-3 space-y-2 text-sm text-gray-500">
+                        <p>Starts with your location</p>
+                        <p>Ends with a Roady-picked route</p>
+                      </div>
+                    </div>
+
+                    <div className="absolute right-6 bottom-6 flex flex-col gap-3">
+                      {['Tags', 'Trip card', 'Maps'].map((label) => (
+                        <div
+                          key={label}
+                          className="rounded-2xl bg-white/94 px-4 py-3 text-xs font-bold text-gray-500 shadow-md"
                         >
-                          <span>{route.emoji}</span>
-                          <span>{route.name}</span>
-                        </button>
+                          {label}
+                        </div>
                       ))}
                     </div>
                   </div>
-                </>
+                </div>
+              </button>
             </div>
-
-            {/* Right — Lottie animation */}
-            {mapAnimation && (
-              <div
-                className="hidden lg:flex flex-shrink-0 items-center justify-center"
-                style={{ width: 580, height: 580, marginRight: '-60px' }}
-              >
-                <Lottie animationData={mapAnimation} loop style={{ width: '100%', height: '100%' }} />
-              </div>
-            )}
           </div>
         </div>
       </section>
 
-      {/* Routes Worth Driving */}
-      <section ref={routesSectionRef} className="py-20 px-6" style={{ backgroundColor: '#f9fafb' }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-12 flex items-end justify-between flex-wrap gap-4">
-            <div>
-              <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
-                Routes Worth Driving
-              </h2>
-              {routesLocation ? (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold" style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}>
-                  <span>📍</span>
-                  <span>Personalized for <span style={{ color: '#1B2D45' }}>{routesLocation}</span></span>
-                </div>
-              ) : (
-                <p className="text-gray-500 text-lg">California&apos;s most loved road trips — ready to plan in seconds.</p>
-              )}
-            </div>
-            {routesLoading && (
-              <div className="flex items-center gap-2 text-sm font-medium" style={{ color: '#46a302' }}>
-                <div className="w-4 h-4 border-2 border-[#58CC02] border-t-transparent rounded-full animate-spin" />
-                Finding routes…
-              </div>
-            )}
+      <section id="how-it-works" className="px-6 pb-20" style={{ backgroundColor: '#FAFAF9' }}>
+        <div
+          ref={howFade.ref}
+          className="max-w-7xl mx-auto rounded-[36px] border border-white/80 bg-white px-6 py-10 shadow-[0_20px_60px_rgba(27,45,69,0.08)] transition-all duration-700 md:px-10"
+          style={{
+            opacity: howFade.visible ? 1 : 0,
+            transform: howFade.visible ? 'none' : 'translateY(24px)',
+          }}
+        >
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-extrabold" style={{ color: '#1B2D45' }}>
+              Five simple moves to your perfect road trip
+            </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {routes.map((route) => (
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-5">
+            {[
+              {
+                n: '1',
+                title: 'Choose starting point',
+                desc: 'Use your location or pick a city and watch the planner wake up.',
+              },
+              {
+                n: '2',
+                title: 'Tell Roady who is coming',
+                desc: 'A quick crew question changes the whole shape of the route.',
+              },
+              {
+                n: '3',
+                title: 'Pick your vibe',
+                desc: 'Tap interests, hotel style, and stop counts instead of typing a form.',
+              },
+              {
+                n: '4',
+                title: 'Get a suggested trip',
+                desc: 'Roady suggests a route and shows the full trip card on the right.',
+              },
+              {
+                n: '5',
+                title: 'Save or export',
+                desc: 'Save it, send it to your phone, or open everything in Maps.',
+              },
+            ].map((item) => (
+              <div key={item.n} className="relative flex flex-col gap-4">
+                <p className="text-sm font-bold" style={{ color: '#9CA3AF' }}>
+                  {item.n}
+                </p>
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' }}
+                  >
+                    <span className="text-base font-extrabold">{item.n}</span>
+                  </div>
+                  <h3 className="font-extrabold text-sm leading-tight" style={{ color: '#1B2D45' }}>
+                    {item.title}
+                  </h3>
+                </div>
+                <p className="text-sm leading-relaxed text-gray-500">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="features" className="py-20 px-6" style={{ backgroundColor: '#F8FAFB' }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="rounded-[30px] bg-white p-8 shadow-[0_18px_48px_rgba(27,45,69,0.08)]">
+              <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#D85A30' }}>
+                Planner-first flow
+              </p>
+              <h2 className="mt-3 text-3xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                This feels like entering a tool, not opening a page.
+              </h2>
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-500">
+                The trip planner now opens as a full-screen workspace, asks a short sequence of
+                smart preference questions, and turns those answers into a Roady suggestion.
+              </p>
+
+              <div className="mt-8 grid gap-4 md:grid-cols-2">
+                {[
+                  'Smooth transition into a dedicated planner surface',
+                  'Question-driven flow with tap-to-select answers',
+                  'Route suggestion and trip card generated from preferences',
+                  'Save, export, and phone-friendly sharing at the end',
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl border border-gray-100 bg-[#FAFAF9] px-4 py-4 text-sm font-semibold text-gray-600"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[30px] border border-white/80 p-8 shadow-[0_18px_48px_rgba(27,45,69,0.08)]" style={{ backgroundColor: '#1B2D45' }}>
+              <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#F8C9B8' }}>
+                Quick preview
+              </p>
+              <div className="mt-6 space-y-5">
+                {[
+                  { title: 'Live starting point', body: 'Autofill, current location, and popular launch cities reduce friction instantly.' },
+                  { title: 'Preference-first suggestions', body: 'Roady learns who is coming, what you like, and how you want the trip to feel.' },
+                  { title: 'Trip card on the right', body: 'The suggested route lands visually, with a map, summary, and a simple way to ask for another one.' },
+                ].map((item) => (
+                  <div key={item.title} className="rounded-2xl bg-white/8 px-5 py-5">
+                    <p className="font-extrabold text-base text-white">{item.title}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-white/72">{item.body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="stories" className="py-20 px-6" style={{ backgroundColor: '#F9FAFB' }}>
+        <div
+          ref={routesFade.ref}
+          className="max-w-6xl mx-auto transition-all duration-700"
+          style={{
+            opacity: routesFade.visible ? 1 : 0,
+            transform: routesFade.visible ? 'none' : 'translateY(24px)',
+          }}
+        >
+          <div className="mb-12">
+            <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
+              Pick your road trip vibe
+            </h2>
+            <p className="text-gray-500 text-lg">
+              These route families still seed the planner and help Roady recover gracefully when needed.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {routeCards.map(({ routeId, definition }) => (
               <div
-                key={route.name}
-                className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm flex flex-col gap-4 hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-default"
+                key={routeId}
+                className="overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_14px_40px_rgba(27,45,69,0.08)]"
               >
-                <div className="flex items-start justify-between gap-2">
-                  <span className="text-3xl flex-shrink-0">{route.emoji}</span>
-                  <div className="flex gap-1.5 flex-wrap justify-end">
-                    {route.distance && (
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(27,45,69,0.07)', color: '#1B2D45' }}>
-                        {route.distance}
-                      </span>
-                    )}
-                    {route.badges.map((b) => (
-                      <span key={b.label} className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ backgroundColor: b.bg, color: b.color }}>
-                        {b.label}
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={definition.image}
+                    alt={definition.routeName}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-black/0" />
+                  <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">
+                    {definition.durationLabel}
+                  </div>
+                  <div className="absolute left-4 right-4 bottom-4">
+                    <p className="text-xl font-extrabold text-white">{PLANNER_ROUTE_DEFINITIONS[routeId].label}</p>
+                    <p className="mt-1 text-sm text-white/80">{definition.vibe}</p>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <p className="text-sm leading-relaxed text-gray-500">{definition.tagline}</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {definition.highlights.map((highlight) => (
+                      <span
+                        key={highlight}
+                        className="rounded-full px-3 py-1 text-xs font-semibold"
+                        style={{ backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' }}
+                      >
+                        {highlight}
                       </span>
                     ))}
                   </div>
+
+                  <button
+                    onClick={() => openPlanner(routeId)}
+                    className="mt-5 w-full rounded-2xl px-4 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: '#1B2D45' }}
+                  >
+                    Plan this route
+                  </button>
                 </div>
-
-                <div>
-                  <h3 className="font-extrabold text-base mb-0.5" style={{ color: '#1B2D45' }}>{route.name}</h3>
-                  <p className="text-xs text-gray-400 font-medium">📍 {route.to}</p>
-                </div>
-
-                <p className="text-sm text-gray-500 leading-relaxed flex-1">{route.desc}</p>
-
-                <button
-                  onClick={() => {
-                    setEnd(route.to);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="w-full py-2.5 rounded-xl text-sm font-bold transition-all duration-200 hover:opacity-90"
-                  style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
-                >
-                  Plan this route →
-                </button>
               </div>
             ))}
           </div>
         </div>
       </section>
-      {/* How does it work? */}
-      <section id="how-it-works" className="py-20 px-6" style={{ backgroundColor: '#ffffff' }}>
-        <div className="max-w-4xl mx-auto">
+
+      <section id="save-share" className="py-20 px-6" style={{ backgroundColor: '#ffffff' }}>
+        <div
+          ref={saveFade.ref}
+          className="max-w-6xl mx-auto transition-all duration-700"
+          style={{
+            opacity: saveFade.visible ? 1 : 0,
+            transform: saveFade.visible ? 'none' : 'translateY(24px)',
+          }}
+        >
+          <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
+            <div className="rounded-[30px] p-8 shadow-[0_18px_48px_rgba(27,45,69,0.08)]" style={{ backgroundColor: '#1B2D45' }}>
+              <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#F8C9B8' }}>
+                Save and export
+              </p>
+              <h2 className="mt-3 text-3xl font-extrabold text-white">
+                Save the trip once and keep moving.
+              </h2>
+              <p className="mt-4 text-base leading-relaxed text-white/75">
+                The planner ends where growth happens: save your trip, export a clean version,
+                send it to your phone, or open it directly in Google Maps.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              {[
+                {
+                  title: 'Save your trip',
+                  body: 'One-click Google sign-in keeps the whole itinerary attached to your account.',
+                },
+                {
+                  title: 'Export PDF',
+                  body: 'Print or export a compact route summary when you want something shareable.',
+                },
+                {
+                  title: 'Send to phone',
+                  body: 'Phone-first sharing is built into the planner so the route leaves with you.',
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="rounded-[26px] border border-gray-100 bg-[#FAFAF9] p-6 shadow-sm"
+                >
+                  <p className="font-extrabold text-lg" style={{ color: '#1B2D45' }}>
+                    {item.title}
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-500">{item.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-20 px-6" style={{ backgroundColor: '#ffffff' }} id="faq">
+        <div
+          ref={faqFade.ref}
+          className="max-w-3xl mx-auto transition-all duration-700"
+          style={{
+            opacity: faqFade.visible ? 1 : 0,
+            transform: faqFade.visible ? 'none' : 'translateY(24px)',
+          }}
+        >
           <div className="text-center mb-14">
             <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
-              How does it work?
+              Frequently asked questions
             </h2>
-            <p className="text-gray-500 text-lg">Like texting a friend who knows California inside out.</p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                step: '01',
-                title: 'Tell Roady where you are',
-                desc: 'Drop your city or address and Roady figures out what\'s within reach.',
-              },
-              {
-                step: '02',
-                title: 'Roady gets to know you',
-                desc: 'A few quick questions — like asking a friend what kind of trip you\'re in the mood for.',
-              },
-              {
-                step: '03',
-                title: 'Get a local\'s picks',
-                desc: 'Roady suggests destinations and stops the way a California local would — not the obvious tourist spots.',
-              },
-              {
-                step: '04',
-                title: 'Just drive',
-                desc: 'Your full itinerary opens in Google Maps or Apple Maps. Nothing to print, nothing to plan.',
-              },
-            ].map((item, i) => (
-              <div key={item.step} className="flex flex-col items-center text-center gap-4">
-                <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
-                  {howAnimations[i]
-                    ? <Lottie animationData={howAnimations[i]} loop style={{ width: 80, height: 80 }} />
-                    : <div className="w-16 h-16 rounded-2xl" style={{ backgroundColor: 'rgba(88,204,2,0.1)' }} />
-                  }
-                </div>
-                <div>
-                  <p className="text-xs font-bold mb-1" style={{ color: '#58CC02' }}>STEP {item.step}</p>
-                  <h3 className="font-extrabold text-base mb-2" style={{ color: '#1B2D45' }}>{item.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-      {/* FAQ */}
-      <section className="py-20 px-6" style={{ backgroundColor: '#f9fafb' }}>
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>Frequently asked questions</h2>
             <p className="text-gray-500 text-lg">Everything you need to know before hitting the road.</p>
           </div>
 
           <div className="flex flex-col gap-4">
             {[
               {
-                q: 'Is Roady free to use?',
-                a: 'Yes, completely free. No account, no credit card, no catch. Just enter your starting point and go.',
+                q: 'Does the planner still feel fast?',
+                a: 'Yes. The route now comes after a short preference flow, but every answer is tap-to-select and the suggestion step lands immediately afterward.',
               },
               {
-                q: 'How does Roady pick the stops?',
-                a: 'Roady looks at your travel style, interests, and how far you\'re willing to drive — then suggests stops a California local would actually recommend, not just the obvious tourist spots.',
+                q: 'Can I ask Roady for another route?',
+                a: 'Yes. Once the trip is suggested, you can tap Suggest a new route and Roady will cycle to another destination idea.',
               },
               {
-                q: 'Can I open the trip on my phone\'s maps app?',
-                a: 'Yes. Once your trip is planned, you get a direct link to open the full route in Google Maps or Apple Maps with one tap — no copying, no pasting.',
+                q: 'What happens if I am not signed in?',
+                a: 'Roady saves your in-progress planner state locally, sends you through Google sign-in, and brings you back ready to finish saving the trip.',
               },
               {
-                q: 'Does it work for trips outside California?',
-                a: 'Right now Roady is built specifically for California road trips. We know the state well and wanted to do one thing really well before expanding.',
+                q: 'Can I open the route on my phone?',
+                a: 'Yes. The final step includes send-to-phone and direct Google Maps opening so the route can leave your laptop with you.',
               },
-            ].map((item, i) => (
-              <FaqItem key={i} question={item.q} answer={item.a} />
+            ].map((item) => (
+              <FaqItem key={item.q} question={item.q} answer={item.a} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="py-8 px-6 border-t border-gray-100" style={{ backgroundColor: '#ffffff' }}>
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-400">© {new Date().getFullYear()} Roady. All rights reserved.</p>
           <div className="flex items-center gap-6">
-            <a href="/privacy" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">Privacy Policy</a>
-            <a href="/terms" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">Terms of Service</a>
+            <a href="/privacy" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">
+              Privacy Policy
+            </a>
+            <a href="/terms" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">
+              Terms of Service
+            </a>
           </div>
         </div>
       </footer>
+
+      {plannerOpen && (
+        <div className="fixed inset-0 z-[80]">
+          <button
+            type="button"
+            className={`absolute inset-0 transition-opacity duration-300 ${
+              plannerVisible ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{ backgroundColor: 'rgba(27,45,69,0.28)', backdropFilter: 'blur(6px)' }}
+            onClick={closePlanner}
+            aria-label="Close planner"
+          />
+
+          <div className="relative flex h-full w-full items-end justify-center sm:items-center sm:p-4">
+            <div
+              className={`relative h-full w-full overflow-hidden bg-[#F3F4F2] shadow-[0_36px_120px_rgba(27,45,69,0.24)] transition-all duration-300 sm:max-w-7xl sm:rounded-[34px] ${
+                plannerVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 scale-[0.98] opacity-0'
+              }`}
+            >
+              <div className="flex h-full flex-col lg:flex-row">
+                <aside className="w-full border-b border-gray-200 bg-white lg:h-full lg:w-[430px] lg:flex-shrink-0 lg:border-b-0 lg:border-r">
+                  <div className="flex h-full flex-col">
+                    <div className="flex items-center justify-between px-6 pt-6 pb-4 sm:px-8">
+                      <img src="/roady-logo.png" alt="Roady" style={{ height: 38, width: 'auto' }} />
+                      <button
+                        type="button"
+                        onClick={closePlanner}
+                        className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-500 transition-colors hover:text-[#1B2D45]"
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <div className="px-6 pb-5 sm:px-8">
+                      <div className="flex gap-1.5 mb-3">
+                        {progressSteps.map((step, index) => (
+                          <div
+                            key={`${step}-${index}`}
+                            className="h-1.5 flex-1 rounded-full transition-all duration-300"
+                            style={{
+                              backgroundColor:
+                                plannerStep === 'saved' || index <= plannerIndex ? '#58CC02' : '#E5E7EB',
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs font-bold tracking-[0.14em]" style={{ color: '#58CC02' }}>
+                        {plannerStep === 'saved'
+                          ? 'TRIP SAVED'
+                          : plannerStep === 'generating'
+                            ? 'BUILDING YOUR TRIP'
+                            : `STEP ${plannerIndex + 1} OF ${progressSteps.length} · ${currentPlannerMeta.eyebrow.toUpperCase()}`}
+                      </p>
+                    </div>
+
+                    <div className="px-6 sm:px-8">
+                      <h2 className="text-3xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                        {currentPlannerMeta.title}
+                      </h2>
+                      <p className="mt-3 text-base leading-relaxed text-gray-400">
+                        {currentPlannerMeta.description}
+                      </p>
+                    </div>
+
+                    <div className="mt-8 flex-1 overflow-y-auto px-6 pb-8 sm:px-8">
+                      {plannerStep === 'start' && (
+                        <div ref={suggestionRef}>
+                          <div className="rounded-[26px] border border-gray-200 bg-[#FAFAF9] p-4">
+                            <label
+                              htmlFor="planner-start"
+                              className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400"
+                            >
+                              Starting point
+                            </label>
+                            <input
+                              id="planner-start"
+                              value={startInput}
+                              onChange={(event) => {
+                                resetSuggestedTrip();
+                                setStartInput(event.target.value);
+                              }}
+                              placeholder="Where are you starting from?"
+                              className="mt-3 w-full border-0 bg-transparent px-0 text-2xl font-extrabold text-[#1B2D45] outline-none placeholder:text-gray-300"
+                              autoComplete="off"
+                            />
+                          </div>
+
+                          {startSuggestions.length > 0 && (
+                            <div className="mt-3 overflow-hidden rounded-[22px] border border-gray-200 bg-white shadow-lg">
+                              {startSuggestions.map((suggestion) => (
+                                <button
+                                  key={suggestion}
+                                  type="button"
+                                  onClick={() => void applyStartSelection(suggestion)}
+                                  className="block w-full border-b border-gray-100 px-4 py-3 text-left text-sm font-semibold text-gray-600 transition-colors last:border-b-0 hover:bg-gray-50 hover:text-[#1B2D45]"
+                                >
+                                  {suggestion}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => void detectCurrentLocation(true)}
+                            className="mt-5 flex w-full items-center justify-between rounded-[22px] border border-gray-200 bg-white px-4 py-4 text-left transition-colors hover:border-[#58CC02]"
+                          >
+                            <div>
+                              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>
+                                Use my location
+                              </p>
+                              <p className="mt-1 text-xs text-gray-400">
+                                Autofill your starting point from the device you are on.
+                              </p>
+                            </div>
+                            <span className="text-sm font-bold" style={{ color: '#58CC02' }}>
+                              {detectingLocation ? 'Locating...' : 'Use'}
+                            </span>
+                          </button>
+
+                          <div className="mt-6">
+                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
+                              Popular starts
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-3">
+                              {POPULAR_STARTS.map((start) => (
+                                <button
+                                  key={start}
+                                  type="button"
+                                  onClick={() => void applyStartSelection(start)}
+                                  className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:border-[#1B2D45] hover:text-[#1B2D45]"
+                                >
+                                  {start}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {plannerStep === 'group' && (
+                        <div className="space-y-3">
+                          {TRAVEL_GROUPS.map((group) => (
+                            <SelectionCard
+                              key={group.id}
+                              item={group}
+                              selected={prefs.travelGroup === group.id}
+                              onClick={() => setTravelGroup(group.id)}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {plannerStep === 'kids' && (
+                        <div className="space-y-3">
+                          {KIDS_AGES.map((age) => (
+                            <SelectionCard
+                              key={age.id}
+                              item={age}
+                              selected={prefs.kidsAges.includes(age.id)}
+                              onClick={() => toggleKidsAge(age.id)}
+                              multi
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {plannerStep === 'interests' && (
+                        <div className="space-y-8">
+                          {INTEREST_GROUPS.map((group) => (
+                            <div key={group.category}>
+                              <p className="text-xs font-bold tracking-[0.14em] text-gray-400 mb-3">{group.category}</p>
+                              <div className="flex flex-wrap gap-2.5">
+                                {group.items.map((item) => (
+                                  <InterestChip
+                                    key={item.id}
+                                    emoji={item.emoji}
+                                    label={item.label}
+                                    selected={prefs.interests.includes(item.id)}
+                                    onClick={() => toggleInterest(item.id)}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {plannerStep === 'hotelBudget' && (
+                        <div className="space-y-3">
+                          {HOTEL_BUDGETS.map((hotel) => (
+                            <SelectionCard
+                              key={hotel.id}
+                              item={hotel}
+                              selected={prefs.hotelPreference === hotel.id}
+                              onClick={() => setHotelPreference(hotel.id)}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {plannerStep === 'hotelDetails' && (
+                        <div className="space-y-10">
+                          <div>
+                            <p className="text-[15px] font-bold mb-5" style={{ color: '#1B2D45' }}>
+                              How many guests?
+                            </p>
+                            <div className="flex gap-3 flex-wrap">
+                              {HOTEL_GUEST_OPTIONS.map((value) => (
+                                <NumberPill
+                                  key={value}
+                                  value={value}
+                                  selected={prefs.hotelGuests === value}
+                                  onClick={() => {
+                                    resetSuggestedTrip();
+                                    setPrefs((currentPrefs) => ({ ...currentPrefs, hotelGuests: value }));
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-[15px] font-bold mb-5" style={{ color: '#1B2D45' }}>
+                              Check-in date
+                            </p>
+                            <div className="relative">
+                              <input
+                                type="date"
+                                value={prefs.hotelCheckin}
+                                min={new Date().toISOString().split('T')[0]}
+                                onChange={(event) => {
+                                  resetSuggestedTrip();
+                                  setPrefs((currentPrefs) => ({ ...currentPrefs, hotelCheckin: event.target.value }));
+                                }}
+                                className="w-full rounded-[28px] border-2 bg-white px-8 py-6 text-2xl font-extrabold outline-none transition-all"
+                                style={{
+                                  borderColor: prefs.hotelCheckin ? '#1B2D45' : '#E5E7EB',
+                                  color: '#1B2D45',
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-[15px] font-bold mb-5" style={{ color: '#1B2D45' }}>
+                              How many nights?
+                            </p>
+                            <div className="flex gap-3 flex-wrap">
+                              {HOTEL_NIGHT_OPTIONS.map((value) => (
+                                <NumberPill
+                                  key={value}
+                                  value={value}
+                                  selected={prefs.hotelNights === value}
+                                  onClick={() => {
+                                    resetSuggestedTrip();
+                                    setPrefs((currentPrefs) => ({ ...currentPrefs, hotelNights: value }));
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {plannerStep === 'enroute' && (
+                        <div className="space-y-3">
+                          {ENROUTE_COUNTS.map((count) => (
+                            <SelectionCard
+                              key={count.id}
+                              item={count}
+                              selected={prefs.numberOfEnrouteStops === count.id}
+                              onClick={() => setEnrouteStops(count.id)}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {plannerStep === 'spots' && (
+                        <div className="space-y-3">
+                          {DESTINATION_SPOT_COUNTS.map((count) => (
+                            <SelectionCard
+                              key={count.id}
+                              item={count}
+                              selected={prefs.numberOfStops === count.id}
+                              onClick={() => setDestinationSpots(count.id)}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {plannerStep === 'generating' && (
+                        <div className="space-y-5">
+                          <div className="rounded-[26px] bg-[#FAFAF9] p-5">
+                            <p className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
+                              Roady is thinking
+                            </p>
+                            <div className="mt-4 flex items-center gap-3">
+                              <div className="h-9 w-9 rounded-full border-4 border-[#58CC02] border-t-transparent animate-spin" />
+                              <div>
+                                <p className="font-extrabold text-base" style={{ color: '#1B2D45' }}>
+                                  Building a route from your answers
+                                </p>
+                                <p className="mt-1 text-sm text-gray-400">
+                                  This usually takes a few seconds.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-[26px] border border-gray-200 bg-white p-5">
+                            <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                              What Roady knows so far
+                            </p>
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {prefs.travelGroup && (
+                                <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: 'rgba(27,45,69,0.08)', color: '#1B2D45' }}>
+                                  {GROUP_LABELS[prefs.travelGroup]}
+                                </span>
+                              )}
+                              {previewInterests.map((label) => (
+                                <span key={label} className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}>
+                                  {label}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {plannerStep === 'results' && (
+                        <div className="space-y-5">
+                          <div className="rounded-[26px] bg-[#FAFAF9] p-5">
+                            <p className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
+                              Suggested route
+                            </p>
+                            <p className="mt-2 text-2xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                              {routeName}
+                            </p>
+                            <p className="mt-3 text-sm leading-relaxed text-gray-500">{routeTagline}</p>
+                          </div>
+
+                          <div className="rounded-[26px] border border-gray-200 bg-white p-5">
+                            <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                              Why Roady picked it
+                            </p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {routeHighlights.map((highlight) => (
+                                <span
+                                  key={highlight}
+                                  className="rounded-full px-3 py-1 text-xs font-semibold"
+                                  style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}
+                                >
+                                  {highlight}
+                                </span>
+                              ))}
+                            </div>
+                            <p className="mt-4 text-sm leading-relaxed text-gray-500">{routeSummary}</p>
+                          </div>
+
+                          <div className="flex flex-col gap-3 sm:flex-row">
+                            <button
+                              type="button"
+                              onClick={() => void handleSuggestNewRoute()}
+                              className="flex-1 rounded-[20px] border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
+                            >
+                              Suggest a new route
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPlannerStep('save')}
+                              className="flex-1 rounded-[20px] px-4 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                              style={{ backgroundColor: '#58CC02' }}
+                            >
+                              Save or export
+                            </button>
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400 mb-3">
+                              Stops
+                            </p>
+                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                              <SortableContext items={stops.map((stop) => stop.id)} strategy={verticalListSortingStrategy}>
+                                <div className="space-y-3">
+                                  {stops.map((stop, index) => (
+                                    <SortablePlannerStopCard
+                                    key={stop.id}
+                                    stop={stop}
+                                    number={index + 1}
+                                    onRemove={() => setStops((currentStops) => currentStops.filter((item) => item.id !== stop.id))}
+                                      onSelect={() => setActiveStop(index)}
+                                    />
+                                  ))}
+                                </div>
+                              </SortableContext>
+                            </DndContext>
+                          </div>
+                        </div>
+                      )}
+
+                      {plannerStep === 'save' && (
+                        <div className="space-y-4">
+                          <button
+                            type="button"
+                            onClick={() => void handleSaveTrip(false)}
+                            disabled={saving}
+                            className="w-full rounded-[26px] px-5 py-5 text-left text-white transition-opacity hover:opacity-90 disabled:opacity-70"
+                            style={{ backgroundColor: '#58CC02' }}
+                          >
+                            <p className="text-sm font-bold uppercase tracking-[0.14em] text-white/70">
+                              Save your trip
+                            </p>
+                            <p className="mt-2 text-xl font-extrabold">
+                              {saving ? 'Saving...' : user ? 'Save to my account' : 'Continue with Google'}
+                            </p>
+                            <p className="mt-2 text-sm leading-relaxed text-white/70">
+                              {user
+                                ? 'Keep this trip in Roady so you can reopen and edit it later.'
+                                : 'One-click sign-in keeps the planner state intact and brings you right back here.'}
+                            </p>
+                          </button>
+
+                          <div className="grid gap-3 sm:grid-cols-3">
+                            <button
+                              type="button"
+                              onClick={handleExportPdf}
+                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
+                            >
+                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                                Export PDF
+                              </p>
+                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                                Print a compact version of the route.
+                              </p>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleSendToPhone()}
+                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
+                            >
+                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                                Send to phone
+                              </p>
+                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                                Share the route with the device you are taking on the road.
+                              </p>
+                            </button>
+                            <a
+                              href={googleMapsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
+                            >
+                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                                Open in Google Maps
+                              </p>
+                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                                Leave Roady with the route already stitched together.
+                              </p>
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {plannerStep === 'saved' && (
+                        <div className="space-y-5">
+                          <div className="rounded-[26px] border border-[#58CC02] bg-[rgba(88,204,2,0.08)] p-5">
+                            <p className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: '#46a302' }}>
+                              Trip saved
+                            </p>
+                            <p className="mt-2 text-2xl font-extrabold" style={{ color: '#1B2D45' }}>
+                              Access it anytime and edit later.
+                            </p>
+                            <p className="mt-3 text-sm leading-relaxed text-gray-500">
+                              {savedTripId
+                                ? 'Your planner is attached to your account and ready whenever you come back.'
+                                : 'Your planner is saved and ready whenever you come back.'}
+                            </p>
+                          </div>
+
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <a
+                              href="/my-trips"
+                              className="rounded-[22px] px-5 py-4 text-center text-sm font-bold text-white transition-opacity hover:opacity-90"
+                              style={{ backgroundColor: '#58CC02' }}
+                            >
+                              View my trips
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => setPlannerStep('results')}
+                              className="rounded-[22px] border border-gray-200 bg-white px-5 py-4 text-sm font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
+                            >
+                              Edit this trip
+                            </button>
+                          </div>
+
+                          <div className="grid gap-3">
+                            {[
+                              'Unlock premium routes',
+                              'AI recommendations tuned to your travel style',
+                              'Offline-friendly trip access for spotty signal days',
+                            ].map((item) => (
+                              <div
+                                key={item}
+                                className="rounded-[22px] border border-gray-200 bg-white px-4 py-4 text-sm font-semibold text-gray-600"
+                              >
+                                {item}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {(plannerError || saveMessage || shareMessage) && (
+                        <div
+                          className="mt-5 rounded-[20px] px-4 py-3 text-sm font-semibold"
+                          style={{
+                            backgroundColor: 'rgba(88,204,2,0.1)',
+                            color: '#46a302',
+                          }}
+                        >
+                          {plannerError || saveMessage || shareMessage}
+                        </div>
+                      )}
+                    </div>
+
+                    {plannerStep !== 'generating' && plannerStep !== 'save' && plannerStep !== 'saved' && (
+                      <div className="border-t border-gray-100 px-6 py-5 sm:px-8">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={handleBack}
+                            className="rounded-full border border-gray-200 px-5 py-3 text-sm font-bold text-gray-500 transition-colors hover:text-[#1B2D45]"
+                          >
+                            Back
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => void handleContinue()}
+                            disabled={!canProceed(plannerStep)}
+                            className="flex-1 rounded-full px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                            style={{ backgroundColor: '#58CC02' }}
+                          >
+                            {plannerStep === 'spots'
+                              ? 'Suggest my trip'
+                              : plannerStep === 'results'
+                                ? 'Save or export'
+                                : 'Next'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {plannerStep === 'save' && (
+                      <div className="border-t border-gray-100 px-6 py-5 sm:px-8">
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          className="rounded-full border border-gray-200 px-5 py-3 text-sm font-bold text-gray-500 transition-colors hover:text-[#1B2D45]"
+                        >
+                          Back
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </aside>
+
+                <div className="flex min-h-[380px] flex-1 flex-col overflow-hidden bg-[linear-gradient(180deg,#F7F9FB_0%,#EDF1F5_100%)]">
+                  <div className="flex items-center justify-between gap-4 border-b border-white/70 px-6 py-5 sm:px-8">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
+                        Live trip preview
+                      </p>
+                      <p className="mt-1 text-lg font-extrabold" style={{ color: '#1B2D45' }}>
+                        {startInput || 'Choose a starting point'} to {routeDestination}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 justify-end">
+                      <span
+                        className="rounded-full px-3 py-1 text-xs font-bold"
+                        style={{ backgroundColor: 'rgba(27,45,69,0.08)', color: '#1B2D45' }}
+                      >
+                        {tripDaysLabel}
+                      </span>
+                      <span
+                        className="rounded-full px-3 py-1 text-xs font-bold"
+                        style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}
+                      >
+                        {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} {routeDestination}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex-1 p-6 sm:p-8">
+                    <div className="grid h-full gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+                      <div className="relative min-h-[320px] overflow-hidden rounded-[30px] border border-white/80 bg-white/75 shadow-[0_16px_50px_rgba(27,45,69,0.1)]">
+                        {HAS_MAPBOX && startCoords && stops.length > 0 ? (
+                          <RouteMap
+                            stops={stops.map(stripPlannerStop)}
+                            start={startCoords}
+                            end={endCoords}
+                            activeStop={activeStop}
+                            onStopClick={setActiveStop}
+                          />
+                        ) : mapAnimation ? (
+                          <Lottie
+                            animationData={mapAnimation}
+                            loop
+                            style={{ width: '100%', height: '100%', transform: 'scale(1.04)' }}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(55,138,221,0.16),transparent_28%),radial-gradient(circle_at_72%_72%,rgba(88,204,2,0.16),transparent_26%),linear-gradient(180deg,#ecf6ff_0%,#f8fbfe_100%)]" />
+                        )}
+
+                        {stops.length === 0 && (
+                          <div className="absolute left-5 top-5 max-w-[280px] rounded-[22px] bg-white/94 px-4 py-3 shadow-md">
+                            <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>
+                              {plannerStep === 'start'
+                                ? 'Choose a starting point to begin.'
+                                : plannerStep === 'generating'
+                                  ? 'Roady is stitching the trip together now.'
+                                  : 'Answer the quick questions and the suggested trip will appear here.'}
+                            </p>
+                            <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                              The right side turns into a real trip card once Roady has enough context.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col gap-4">
+                        <div className="rounded-[26px] border border-white/80 bg-white p-5 shadow-sm">
+                          <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
+                            Trip card
+                          </p>
+                          <div className="mt-4">
+                            <p className="text-sm font-bold" style={{ color: '#D85A30' }}>
+                              {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} Suggested route
+                            </p>
+                            <p className="mt-2 text-2xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                              {routeName}
+                            </p>
+                            <p className="mt-2 text-sm text-gray-400">{routeDestination}</p>
+                            <p className="mt-4 text-sm leading-relaxed text-gray-500">{routeTagline}</p>
+                          </div>
+                          <div className="mt-5 grid grid-cols-3 gap-3">
+                            <div className="rounded-[18px] bg-[#FAFAF9] p-3">
+                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                                Days
+                              </p>
+                              <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
+                                {tripDaysLabel}
+                              </p>
+                            </div>
+                            <div className="rounded-[18px] bg-[#FAFAF9] p-3">
+                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                                Miles
+                              </p>
+                              <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
+                                {formatMiles(tripMiles)}
+                              </p>
+                            </div>
+                            <div className="rounded-[18px] bg-[#FAFAF9] p-3">
+                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                                Stops
+                              </p>
+                              <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
+                                {stops.length || '--'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="rounded-[26px] border border-white/80 bg-white p-5 shadow-sm">
+                          <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
+                            What you picked
+                          </p>
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {prefs.travelGroup && (
+                              <span
+                                className="rounded-full px-3 py-1 text-xs font-semibold"
+                                style={{ backgroundColor: 'rgba(27,45,69,0.08)', color: '#1B2D45' }}
+                              >
+                                {GROUP_LABELS[prefs.travelGroup]}
+                              </span>
+                            )}
+                            {previewHotel && (
+                              <span
+                                className="rounded-full px-3 py-1 text-xs font-semibold"
+                                style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}
+                              >
+                                {previewHotel}
+                              </span>
+                            )}
+                            {previewInterests.map((label) => (
+                              <span
+                                key={label}
+                                className="rounded-full px-3 py-1 text-xs font-semibold"
+                                style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}
+                              >
+                                {label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {topHotel && (
+                          <div className="rounded-[26px] border border-white/80 bg-white p-5 shadow-sm">
+                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
+                              Hotel suggestion
+                            </p>
+                            <p className="mt-3 text-lg font-extrabold" style={{ color: '#1B2D45' }}>
+                              {topHotel.name}
+                            </p>
+                            <p className="mt-1 text-sm text-gray-400">
+                              {topHotel.city} · {topHotel.priceRange}
+                            </p>
+                            <p className="mt-3 text-sm leading-relaxed text-gray-500">
+                              Roady will use your hotel answers to point the trip toward the right stay profile.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-import { Suspense } from 'react';
-
 export default function HomePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
-        <div className="animate-spin w-8 h-8 border-4 border-gray-200 rounded-full" style={{ borderTopColor: '#58CC02' }} />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#ffffff' }}>
+          <div className="animate-spin w-8 h-8 border-4 border-gray-200 rounded-full" style={{ borderTopColor: '#58CC02' }} />
+        </div>
+      }
+    >
       <HomeContent />
     </Suspense>
   );

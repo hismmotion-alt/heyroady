@@ -42,14 +42,18 @@ type RouteOption = { id: string; name: string; tagline: string; via: string; des
 async function askClaude(
   client: Anthropic,
   start: string,
-  distanceLabel: string,
-  distanceConstraint: string,
+  distanceLabel: string | null,
+  distanceConstraint: string | null,
   prefLines: string,
   excludeDestinations: string[]
 ): Promise<RouteOption[]> {
   const excludeClause = excludeDestinations.length
     ? ` Do NOT suggest these destinations (they were out of range): ${excludeDestinations.join(', ')}.`
     : '';
+  const distanceLine = distanceLabel ? `Distance preference: ${distanceLabel}` : 'Distance preference: not specified';
+  const distanceRule = distanceConstraint
+    ? `CRITICAL DISTANCE RULE: ${distanceConstraint}`
+    : 'Choose destinations that make sense for a California road trip from this start point. Keep them realistic and drivable.';
 
   const msg = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -58,9 +62,9 @@ async function askClaude(
     messages: [{
       role: 'user',
       content: `Generate 3 distinct California road trip route concepts starting from "${start}".
-Distance preference: ${distanceLabel}
+${distanceLine}
 ${prefLines}
-CRITICAL DISTANCE RULE: ${distanceConstraint}${excludeClause} Each concept must have a different theme/vibe AND a different specific destination city. All destinations must be in California.
+${distanceRule}${excludeClause} Each concept must have a different theme/vibe AND a different specific destination city. All destinations must be in California.
 Return ONLY this JSON array — no markdown, no extra text:
 [
   { "id": "1", "name": "string — catchy route name", "tagline": "string — one sentence vibe", "via": "string — 2-3 key waypoints or highlights", "destination": "string — specific city name only, e.g. Santa Barbara", "icon": "string — single relevant emoji for this route theme, e.g. 🌊 🌲 🍷 🏔️ 🌮" },
@@ -78,9 +82,16 @@ Return ONLY this JSON array — no markdown, no extra text:
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { start, distance, travelGroup, interests, numberOfEnrouteStops } = body;
-    if (!start || !distance) {
-      return Response.json({ error: 'start and distance required' }, { status: 400 });
+    const {
+      start,
+      distance,
+      travelGroup,
+      interests,
+      numberOfEnrouteStops,
+      excludeDestinations = [],
+    } = body;
+    if (!start) {
+      return Response.json({ error: 'start required' }, { status: 400 });
     }
     const client = getClient();
 
@@ -94,8 +105,8 @@ export async function POST(req: Request) {
       '50-100':    'Destinations must be AT LEAST 50 miles and NO MORE THAN 100 miles driving distance from start. Never suggest a nearby city under 50 miles away.',
       '150-plus':  'Destinations must be at least 150 miles driving distance from start.',
     };
-    const distanceLabel = distanceLabels[distance] ?? distance;
-    const distanceConstraint = distanceConstraints[distance] ?? '';
+    const distanceLabel = distance ? (distanceLabels[distance] ?? distance) : null;
+    const distanceConstraint = distance ? (distanceConstraints[distance] ?? '') : null;
     const prefLines = [
       travelGroup && `Travel group: ${travelGroup}`,
       interests && `Interests: ${interests}`,
@@ -103,11 +114,11 @@ export async function POST(req: Request) {
     ].filter(Boolean).join('\n');
 
     // Get initial suggestions from Claude
-    let options = await askClaude(client, start, distanceLabel, distanceConstraint, prefLines, []);
+    let options = await askClaude(client, start, distanceLabel, distanceConstraint, prefLines, excludeDestinations);
 
-    // Validate distances using geocoding (best-effort — if geocoding fails, return options as-is)
-    const startCoords = await geocodePlace(`${start}, California`);
-    if (startCoords) {
+    // Validate distances using geocoding only when a distance band was supplied.
+    const startCoords = distance ? await geocodePlace(`${start}, California`) : null;
+    if (startCoords && distance) {
       // Geocode each destination in parallel
       const destCoords = await Promise.all(
         options.map(o => geocodePlace(`${o.destination}, California`))
@@ -134,7 +145,10 @@ export async function POST(req: Request) {
       if (invalid.length > 0 && valid.length < 3) {
         try {
           const needed = 3 - valid.length;
-          const retry = await askClaude(client, start, distanceLabel, distanceConstraint, prefLines, invalid);
+          const retry = await askClaude(client, start, distanceLabel, distanceConstraint, prefLines, [
+            ...excludeDestinations,
+            ...invalid,
+          ]);
 
           // Re-validate the retried options
           const retryCoords = await Promise.all(

@@ -12,16 +12,26 @@ interface NavbarProps {
   logoOffsetY?: number;
   logoHref?: string;
   extraLinks?: React.ReactNode;
+  navLinks?: Array<{ label: string; href: string }>;
+  onPrimaryAction?: () => void;
+  primaryHref?: string;
+  primaryLabel?: string;
+  signedInPrimaryLabel?: string;
   className?: string;
   style?: React.CSSProperties;
 }
 
 export default function Navbar({
   fixed = true,
-  logoHeight = 56,
+  logoHeight = 48,
   logoOffsetY = 0,
   logoHref = '/',
   extraLinks,
+  navLinks,
+  onPrimaryAction,
+  primaryHref = '/chat',
+  primaryLabel = 'Start planning',
+  signedInPrimaryLabel = 'New trip',
   className = '',
   style,
 }: NavbarProps) {
@@ -56,14 +66,45 @@ export default function Navbar({
   };
 
   const positionClass = fixed ? 'fixed top-0 left-0 right-0 z-50' : '';
+  const resolvedLinks = navLinks ?? [
+    { label: 'Destinations', href: '/destinations' },
+    { label: 'How it works', href: '/#how-it-works' },
+    ...(user ? [{ label: 'My Trips', href: '/my-trips' }] : []),
+  ];
+
+  const handlePrimaryAction = () => {
+    if (onPrimaryAction) {
+      onPrimaryAction();
+      return;
+    }
+    router.push(primaryHref);
+  };
+
+  const renderNavLink = (link: { label: string; href: string }) => {
+    const classes = 'text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors';
+    if (link.href.startsWith('/#') || link.href.startsWith('#')) {
+      return (
+        <a key={link.label} href={link.href} className={classes}>
+          {link.label}
+        </a>
+      );
+    }
+    return (
+      <Link key={link.label} href={link.href} className={classes}>
+        {link.label}
+      </Link>
+    );
+  };
 
   return (
     <nav
       className={`${positionClass} backdrop-blur-md border-b ${className}`}
       style={{ backgroundColor: 'rgba(255,255,255,0.95)', borderColor: 'rgba(0,0,0,0.06)', ...style }}
     >
-      <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <a href={logoHref}>
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
+
+        {/* Logo */}
+        <a href={logoHref} className="flex-shrink-0">
           <img
             src="/roady-logo.png"
             alt="Roady"
@@ -71,26 +112,21 @@ export default function Navbar({
           />
         </a>
 
-        <div className="flex items-center gap-4">
+        {/* Center nav links */}
+        <div className="hidden md:flex items-center gap-7 flex-1 justify-center">
           {extraLinks}
-          <Link
-            href="/destinations"
-            className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors"
-          >
-            Destinations
-          </Link>
+          {resolvedLinks.map(renderNavLink)}
+        </div>
+
+        {/* Right side */}
+        <div className="flex items-center gap-3 flex-shrink-0">
           {user ? (
             <>
-              <a
-                href="/my-trips"
-                className="hidden sm:block text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors"
-              >
-                My Trips
-              </a>
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((o) => !o)}
                   title="Account"
+                  className="flex items-center gap-2"
                 >
                   {user.user_metadata?.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -100,7 +136,7 @@ export default function Navbar({
                       className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-[#58CC02] transition-colors"
                     />
                   ) : (
-                    <span className="text-sm font-semibold text-gray-500 hover:text-[#46a302] transition-colors">
+                    <span className="text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors">
                       Account
                     </span>
                   )}
@@ -113,7 +149,7 @@ export default function Navbar({
                       className="flex items-center px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-[#46a302] transition-colors"
                       onClick={() => setDropdownOpen(false)}
                     >
-                      Profile
+                      My Trips
                     </a>
                     <button
                       onClick={() => { setDropdownOpen(false); handleSignOut(); }}
@@ -124,15 +160,30 @@ export default function Navbar({
                   </div>
                 )}
               </div>
+              <button
+                onClick={handlePrimaryAction}
+                className="px-4 py-2 rounded-full text-sm font-bold text-white transition-all hover:opacity-90"
+                style={{ backgroundColor: '#1B2D45' }}
+              >
+                {signedInPrimaryLabel}
+              </button>
             </>
           ) : (
-            <a
-              href="/login"
-              className="text-sm font-bold px-4 py-2 rounded-lg border-2 transition-all duration-200 hover:border-[#58CC02] hover:text-[#46a302]"
-              style={{ borderColor: '#E5E7EB', color: '#1B2D45' }}
-            >
-              Sign in
-            </a>
+            <>
+              <a
+                href="/login"
+                className="text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors"
+              >
+                Log in
+              </a>
+              <button
+                onClick={handlePrimaryAction}
+                className="px-5 py-2.5 rounded-full text-sm font-bold text-white transition-all hover:opacity-90"
+                style={{ backgroundColor: '#1B2D45' }}
+              >
+                {primaryLabel}
+              </button>
+            </>
           )}
         </div>
       </div>
