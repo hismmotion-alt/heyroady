@@ -454,11 +454,28 @@ function ChatContent() {
         .then((r) => r.json())
         .then((data) => {
           if (data.action === 'proceed' && data.start) {
-            setTripPrefs((p) => ({ ...p, start: data.start }));
-            advanceTo('asking_group');
-          } else if (data.action === 'proceed_both' && data.start && data.end) {
-            setTripPrefs((p) => ({ ...p, start: data.start, end: data.end }));
-            advanceTo('asking_group');
+            // Apply all extracted prefs at once
+            setTripPrefs((p) => ({
+              ...p,
+              start: data.start,
+              ...(data.end && { end: data.end }),
+              ...(data.travelGroup && { travelGroup: data.travelGroup }),
+              ...(data.interests?.length && { interests: data.interests }),
+              ...(data.distance && { distance: data.distance }),
+            }));
+            if (data.interests?.length) setSelectedInterests(data.interests);
+
+            // Show acknowledgement if provided
+            if (data.acknowledgement) appendMessage('assistant', data.acknowledgement);
+
+            // Advance to the first step that still needs an answer
+            if (data.travelGroup && data.interests?.length) {
+              advanceTo('asking_enroute');
+            } else if (data.travelGroup) {
+              advanceTo('asking_interests');
+            } else {
+              advanceTo('asking_group');
+            }
           } else if (data.action === 'respond' && data.message) {
             appendMessage('assistant', data.message);
           } else {
