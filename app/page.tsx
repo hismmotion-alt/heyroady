@@ -94,6 +94,7 @@ type PersistedPlannerState = {
   stops: PlannerStop[];
   mapEndCoords: [number, number] | null;
   selectedHotelIndex: number;
+  hotelCarouselIndex?: number;
   autoSaveOnRestore?: boolean;
 };
 
@@ -485,6 +486,7 @@ function SortablePlannerStopCard({
   onSelect: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stop.id });
+  const stopTags = getStopTags(stop);
 
   return (
     <div
@@ -554,7 +556,36 @@ function SortablePlannerStopCard({
             </button>
           </div>
 
-          <p className="mt-3 text-sm leading-relaxed text-gray-500">{stop.description}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {stopTags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+                style={{
+                  backgroundColor:
+                    tag === 'Food'
+                      ? 'rgba(239,159,39,0.12)'
+                      : tag === 'Museum' || tag === 'Culture' || tag === 'Art'
+                        ? 'rgba(147,51,234,0.12)'
+                        : tag === 'Park' || tag === 'Nature'
+                          ? 'rgba(88,204,2,0.12)'
+                          : 'rgba(55,138,221,0.1)',
+                  color:
+                    tag === 'Food'
+                      ? '#C76B10'
+                      : tag === 'Museum' || tag === 'Culture' || tag === 'Art'
+                        ? '#7C3AED'
+                        : tag === 'Park' || tag === 'Nature'
+                          ? '#46A302'
+                          : '#378ADD',
+                }}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <p className="mt-3 text-sm leading-relaxed text-gray-500">{shortenStopDescription(stop.description)}</p>
         </div>
       </div>
     </div>
@@ -578,6 +609,10 @@ function getStartRegion(startInput: string, coords: [number, number] | null): St
 
 function formatMiles(miles: number) {
   return `${miles.toLocaleString()} miles`;
+}
+
+function normalizeHotelQueryText(value: string) {
+  return value.replace(/[-_/]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function haversineMiles(a: [number, number], b: [number, number]) {
@@ -640,7 +675,7 @@ function estimateTripDaysLabel(
 function getBookingSearchUrl(hotel: HotelSuggestion) {
   if (hotel.bookingUrl) return hotel.bookingUrl;
   return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
-    `${hotel.name} ${hotel.city}`
+    `${normalizeHotelQueryText(hotel.name)} ${hotel.city}`
   )}&dest_type=hotel&is_hotel=1&lang=en-us`;
 }
 
@@ -669,6 +704,58 @@ function getHotelDestinationLabel(hotel: HotelSuggestion) {
 
 function getHotelDestinationDisplay(hotel: HotelSuggestion) {
   return hotel.city ? `${hotel.name}, ${hotel.city}` : hotel.name;
+}
+
+function getHotelLocationSummary(hotel: HotelSuggestion) {
+  return hotel.city || 'Destination stay';
+}
+
+function getHotelAddressLine(hotel: HotelSuggestion) {
+  if (!hotel.address) return '';
+  const normalizedAddress = hotel.address.trim();
+  const city = hotel.city.trim();
+  if (normalizedAddress.toLowerCase() === city.toLowerCase()) return '';
+  return normalizedAddress;
+}
+
+function shortenStopDescription(text: string, maxLength = 112) {
+  const firstSentence = text.split(/(?<=[.!?])\s+/)[0]?.trim() || text.trim();
+  if (firstSentence.length <= maxLength) return firstSentence;
+  return `${firstSentence.slice(0, maxLength - 1).trimEnd()}…`;
+}
+
+function getStopTags(stop: PlannerStop) {
+  const haystack = `${stop.name} ${stop.description} ${stop.tip}`.toLowerCase();
+  const tags = new Set<string>();
+
+  if (stop.stopType === 'en-route') {
+    tags.add('Drive break');
+  } else {
+    tags.add('Destination');
+  }
+
+  if (/\bmuseum|history|historic|gallery|exhibit|mission\b/.test(haystack)) {
+    tags.add('Museum');
+  } else if (/\bpark|trail|forest|garden|reserve|beach|coast|bluff|cove|harbor|plaza\b/.test(haystack)) {
+    tags.add('Park');
+  } else if (/\bwine|brew|bakery|restaurant|cafe|coffee|tasting|market|farm\b/.test(haystack)) {
+    tags.add('Food');
+  } else if (/\bart|mural|studio\b/.test(haystack)) {
+    tags.add('Art');
+  } else if (/\bview|scenic|lookout|overlook|sunset\b/.test(haystack)) {
+    tags.add('Scenic');
+  }
+
+  const categoryFallback: Record<PlannerStop['category'], string> = {
+    food: 'Food',
+    culture: 'Culture',
+    nature: 'Nature',
+    adventure: 'Adventure',
+    scenic: 'Scenic',
+  };
+  tags.add(categoryFallback[stop.category]);
+
+  return Array.from(tags).slice(0, 3);
 }
 
 function ActionGlyph({
@@ -730,24 +817,37 @@ function PlannerHotelCard({
   hotel,
   selected,
   onSelect,
+  onPrevious,
+  onNext,
+  canGoPrevious,
+  canGoNext,
+  currentIndex,
+  total,
 }: {
   hotel: HotelSuggestion;
   selected: boolean;
   onSelect: () => void;
+  onPrevious: () => void;
+  onNext: () => void;
+  canGoPrevious: boolean;
+  canGoNext: boolean;
+  currentIndex: number;
+  total: number;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const hotelImage = imageFailed ? '' : getHotelCardImage(hotel);
   const ratingLabel = hotel.fsqRating ? `${hotel.fsqRating.toFixed(1)}★` : 'Roady pick';
+  const addressLine = getHotelAddressLine(hotel);
 
   return (
     <div
-      className="flex h-full min-h-[274px] flex-col overflow-hidden rounded-[20px] border-2 bg-white transition-all"
+      className="flex h-full min-h-[360px] flex-col overflow-hidden rounded-[24px] border-2 bg-white transition-all"
       style={{
         borderColor: selected ? '#58CC02' : '#E5E7EB',
         boxShadow: selected ? '0 18px 40px rgba(88,204,2,0.14)' : 'none',
       }}
     >
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#EEF2F7]">
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#EEF2F7]">
         {hotelImage ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -800,12 +900,47 @@ function PlannerHotelCard({
             Picked
           </span>
         )}
+
+        {total > 1 && (
+          <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={onPrevious}
+              disabled={!canGoPrevious}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#1B2D45] shadow-sm transition-opacity hover:opacity-90 disabled:opacity-35"
+              aria-label="Previous hotel"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+
+            <span
+              className="rounded-full px-3 py-1 text-[11px] font-bold"
+              style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#1B2D45' }}
+            >
+              {currentIndex + 1} / {total}
+            </span>
+
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canGoNext}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#1B2D45] shadow-sm transition-opacity hover:opacity-90 disabled:opacity-35"
+              aria-label="Next hotel"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                <path d="m9 6 6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-1 flex-col p-3.5">
+      <div className="flex flex-1 flex-col p-4">
         <div>
           <p
-            className="text-[15px] font-extrabold leading-tight"
+            className="text-xl font-extrabold leading-tight"
             style={{
               color: '#1B2D45',
               display: '-webkit-box',
@@ -816,36 +951,41 @@ function PlannerHotelCard({
           >
             {hotel.name}
           </p>
-          <p
-            className="mt-1 text-[12px] leading-relaxed text-gray-400"
-            style={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              minHeight: 36,
-            }}
-          >
-            {hotel.address || hotel.city}
+          <p className="mt-2 text-sm font-semibold" style={{ color: '#1B2D45' }}>
+            {getHotelLocationSummary(hotel)}
           </p>
+          {addressLine && (
+            <p
+              className="mt-1 text-[13px] leading-relaxed text-gray-400"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                minHeight: 40,
+              }}
+            >
+              {addressLine}
+            </p>
+          )}
         </div>
 
-        <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
           <button
             type="button"
             onClick={onSelect}
-            className="rounded-[14px] px-3 py-2 text-[11px] font-bold text-white transition-opacity hover:opacity-90"
+            className="rounded-[16px] px-3 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
             style={{ backgroundColor: selected ? '#58CC02' : '#1B2D45' }}
           >
-            {selected ? 'Selected' : 'Select'}
+            {selected ? 'Selected stay' : 'Select this stay'}
           </button>
           <a
             href={getBookingSearchUrl(hotel)}
             target="_blank"
             rel="noreferrer"
-            className="rounded-[14px] border border-gray-200 px-3 py-2 text-center text-[11px] font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
+            className="rounded-[16px] border border-gray-200 px-3 py-3 text-center text-sm font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
           >
-            Booking
+            Open on Booking
           </a>
         </div>
       </div>
@@ -1110,6 +1250,7 @@ function HomeContent() {
   const [mapEndCoords, setMapEndCoords] = useState<[number, number] | null>(null);
   const [activeStop, setActiveStop] = useState(-1);
   const [selectedHotelIndex, setSelectedHotelIndex] = useState(0);
+  const [hotelCarouselIndex, setHotelCarouselIndex] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [didTryAutoLocate, setDidTryAutoLocate] = useState(false);
@@ -1155,6 +1296,7 @@ function HomeContent() {
         ? 'Roady picks the distance'
         : '';
   const visibleHotels = tripData?.hotels?.slice(0, 4) ?? [];
+  const carouselHotel = visibleHotels[hotelCarouselIndex] ?? visibleHotels[0] ?? null;
   const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
   const selectedHotelDestination = selectedHotel ? getHotelDestinationLabel(selectedHotel) : '';
   const tripDestinationDisplay = selectedHotel ? getHotelDestinationDisplay(selectedHotel) : routeDestination;
@@ -1183,6 +1325,7 @@ function HomeContent() {
     setMapEndCoords(null);
     setActiveStop(-1);
     setSelectedHotelIndex(0);
+    setHotelCarouselIndex(0);
     if (clearMessages) {
       setPlannerError('');
       setSaveMessage('');
@@ -1254,6 +1397,7 @@ function HomeContent() {
       setStops(parsed.stops);
       setMapEndCoords(parsed.mapEndCoords);
       setSelectedHotelIndex(parsed.selectedHotelIndex ?? 0);
+      setHotelCarouselIndex(parsed.hotelCarouselIndex ?? parsed.selectedHotelIndex ?? 0);
       setActiveStop(-1);
     } catch {
       window.localStorage.removeItem(PLANNER_STORAGE_KEY);
@@ -1270,6 +1414,11 @@ function HomeContent() {
     if (selectedHotelIndex < visibleHotels.length) return;
     setSelectedHotelIndex(0);
   }, [selectedHotelIndex, visibleHotels.length]);
+
+  useEffect(() => {
+    if (hotelCarouselIndex < visibleHotels.length) return;
+    setHotelCarouselIndex(0);
+  }, [hotelCarouselIndex, visibleHotels.length]);
 
   useEffect(() => {
     if (!plannerOpen || !selectedHotel || !tripData?.hotels || !MAPBOX_TOKEN) return;
@@ -1321,6 +1470,73 @@ function HomeContent() {
     selectedHotelIndex,
     tripData?.hotels,
   ]);
+
+  useEffect(() => {
+    if (!plannerOpen || !tripData?.hotels?.length) return;
+
+    const hotelsNeedingPhotos = tripData.hotels
+      .slice(0, 4)
+      .map((hotel, index) => ({ hotel, index }))
+      .filter(({ hotel }) => !hotel.photoLookupTried && !getHotelCardImage(hotel));
+
+    if (!hotelsNeedingPhotos.length) return;
+
+    let cancelled = false;
+
+    const loadHotelPhotos = async () => {
+      const results = await Promise.all(
+        hotelsNeedingPhotos.map(async ({ hotel, index }) => {
+          try {
+            const response = await fetch('/api/hotel-photo', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: hotel.name, city: hotel.city }),
+            });
+
+            if (!response.ok) {
+              return { index, photoLookupTried: true };
+            }
+
+            const data = await response.json();
+            return {
+              index,
+              fsqPhoto: data.photoUrl as string | undefined,
+              fsqWebsite: data.website as string | undefined,
+              photoLookupTried: true,
+            };
+          } catch {
+            return { index, photoLookupTried: true };
+          }
+        })
+      );
+
+      if (cancelled) return;
+
+      setTripData((currentTrip) => {
+        if (!currentTrip?.hotels) return currentTrip;
+
+        const hotels = currentTrip.hotels.map((hotel, index) => {
+          const enrichment = results.find((item) => item.index === index);
+          if (!enrichment) return hotel;
+
+          return {
+            ...hotel,
+            fsqPhoto: hotel.fsqPhoto || enrichment.fsqPhoto,
+            fsqWebsite: hotel.fsqWebsite || enrichment.fsqWebsite,
+            photoLookupTried: true,
+          };
+        });
+
+        return { ...currentTrip, hotels };
+      });
+    };
+
+    void loadHotelPhotos();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [plannerOpen, tripData?.hotels]);
 
   useEffect(() => {
     if (!user || !autoSaveOnRestoreRef.current) return;
@@ -1413,6 +1629,7 @@ function HomeContent() {
     setMapEndCoords(null);
     setActiveStop(-1);
     setSelectedHotelIndex(0);
+    setHotelCarouselIndex(0);
     setPlannerError('');
     setSaveMessage('');
     setShareMessage('');
@@ -1441,6 +1658,7 @@ function HomeContent() {
       stops,
       mapEndCoords,
       selectedHotelIndex,
+      hotelCarouselIndex,
       autoSaveOnRestore,
     };
     window.localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(state));
@@ -1537,6 +1755,7 @@ function HomeContent() {
       setRouteOptionIndex(optionIndex);
       setActiveStop(-1);
       setSelectedHotelIndex(0);
+      setHotelCarouselIndex(0);
       setPlannerStep('results');
       return;
     } catch {
@@ -1579,6 +1798,7 @@ function HomeContent() {
       setRouteOptionIndex(optionIndex);
       setActiveStop(-1);
       setSelectedHotelIndex(0);
+      setHotelCarouselIndex(0);
       setMapEndCoords(fallbackVariant.destinationCoords);
       setPlannerError('Roady is showing a curated route while live suggestions warm up.');
       setPlannerStep('results');
@@ -1716,6 +1936,14 @@ function HomeContent() {
 
     setStops((currentStops) => arrayMove(currentStops, oldIndex, newIndex));
     setActiveStop(newIndex);
+  }
+
+  function browseHotel(direction: 'previous' | 'next') {
+    if (!visibleHotels.length) return;
+    setHotelCarouselIndex((currentIndex) => {
+      if (direction === 'previous') return Math.max(0, currentIndex - 1);
+      return Math.min(visibleHotels.length - 1, currentIndex + 1);
+    });
   }
 
   function toggleKidsAge(ageId: string) {
@@ -2700,17 +2928,41 @@ function HomeContent() {
                               Stay picks
                             </p>
                             {prefs.hotelPreference !== 'none' && visibleHotels.length > 0 ? (
-                              <div className="mt-4 grid grid-cols-2 gap-3">
-                                {visibleHotels.map((hotel, index) => {
-                                  return (
-                                    <PlannerHotelCard
-                                      key={`${hotel.name}-${hotel.city}-${index}`}
-                                      hotel={hotel}
-                                      selected={selectedHotelIndex === index}
-                                      onSelect={() => setSelectedHotelIndex(index)}
-                                    />
-                                  );
-                                })}
+                              <div className="mt-4 space-y-3">
+                                {carouselHotel && (
+                                  <PlannerHotelCard
+                                    key={`${carouselHotel.name}-${hotelCarouselIndex}`}
+                                    hotel={carouselHotel}
+                                    selected={selectedHotelIndex === hotelCarouselIndex}
+                                    onSelect={() => setSelectedHotelIndex(hotelCarouselIndex)}
+                                    onPrevious={() => browseHotel('previous')}
+                                    onNext={() => browseHotel('next')}
+                                    canGoPrevious={hotelCarouselIndex > 0}
+                                    canGoNext={hotelCarouselIndex < visibleHotels.length - 1}
+                                    currentIndex={hotelCarouselIndex}
+                                    total={visibleHotels.length}
+                                  />
+                                )}
+
+                                {visibleHotels.length > 1 && (
+                                  <div className="flex items-center justify-center gap-2">
+                                    {visibleHotels.map((hotel, index) => (
+                                      <button
+                                        key={`${hotel.name}-dot-${index}`}
+                                        type="button"
+                                        onClick={() => setHotelCarouselIndex(index)}
+                                        className="transition-all"
+                                        aria-label={`View hotel ${index + 1}`}
+                                        style={{
+                                          width: index === hotelCarouselIndex ? 24 : 8,
+                                          height: 8,
+                                          borderRadius: 999,
+                                          backgroundColor: index === hotelCarouselIndex ? '#58CC02' : '#D1D5DB',
+                                        }}
+                                      />
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             ) : prefs.hotelPreference === 'none' ? (
                               <div className="mt-3 rounded-[22px] border border-dashed border-gray-200 bg-white px-4 py-4 text-sm leading-relaxed text-gray-500">

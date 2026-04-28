@@ -54,7 +54,25 @@ const HOTEL_FETCH_HEADERS = {
 };
 
 function isLikelyLogoImage(url: string): boolean {
-  return /logo|icon|favicon|sprite|avatar|badge/i.test(url);
+  return /logo|icon|favicon|sprite|avatar|badge|instagram|facebook|twitter|vimeo|youtube|pinterest|social|android-icon|apple-icon/i.test(url);
+}
+
+function scoreHotelImageUrl(url: string): number {
+  const normalized = url.toLowerCase();
+  if (isLikelyLogoImage(normalized)) return -100;
+
+  let score = 0;
+  if (/\.(jpg|jpeg|webp)(\?|$)/i.test(normalized)) score += 6;
+  if (/room|suite|guest|hotel|property|inn|resort|spa|pool|bed|lobby|courtyard|house|villa|restaurant|dining|view/i.test(normalized)) {
+    score += 18;
+  }
+  if (/storage\.googleapis\.com\/webimages|cf\.bstatic\.com|images\/hotel|uploads\//i.test(normalized)) {
+    score += 8;
+  }
+  if (/thumb|thumbnail|small|assets\//i.test(normalized)) {
+    score -= 14;
+  }
+  return score;
 }
 
 function absolutizeUrl(rawUrl: string, baseUrl: string): string | null {
@@ -84,7 +102,11 @@ function extractBestImageFromHtml(html: string, baseUrl: string): string | null 
     .filter((value): value is string => Boolean(value))
     .filter((value) => !isLikelyLogoImage(value));
 
-  return imageCandidates[0] ?? null;
+  const rankedCandidates = imageCandidates
+    .map((url) => ({ url, score: scoreHotelImageUrl(url) }))
+    .sort((a, b) => b.score - a.score);
+
+  return rankedCandidates[0]?.score > 0 ? rankedCandidates[0].url : null;
 }
 
 function decodeDuckDuckGoUrl(rawUrl: string): string | null {
@@ -101,10 +123,16 @@ function decodeDuckDuckGoUrl(rawUrl: string): string | null {
   }
 }
 
+function normalizeHotelQueryText(value: string): string {
+  return value.replace(/[-_/]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 function isAllowedHotelWebsite(candidateUrl: string): boolean {
   try {
     const hostname = new URL(candidateUrl).hostname.toLowerCase();
     const blockedHosts = [
+      'duckduckgo.com',
+      'bing.com',
       'booking.com',
       'expedia.com',
       'hotels.com',
@@ -124,8 +152,41 @@ function isAllowedHotelWebsite(candidateUrl: string): boolean {
   }
 }
 
+function normalizePlaceText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function extractDestinationCity(destination: string): string {
+  const parts = destination.split(',').map((part) => part.trim()).filter(Boolean);
+  if (!parts.length) return destination;
+  if (parts.length === 1) return parts[0];
+
+  const blocked = /california|united states|usa|street|st\b|avenue|ave\b|road|rd\b|drive|dr\b|boulevard|blvd|lane|ln\b|court|ct\b|hotel|inn|resort|restaurant|farm/i;
+  const candidate = parts.find((part) => !blocked.test(part) && !/\d/.test(part));
+  return candidate ?? parts[parts.length - 1];
+}
+
+function hotelMatchesDestination(
+  hotel: { city?: string; address?: string; lat?: number; lng?: number },
+  destinationCity: string,
+  endCoords: [number, number] | null
+): boolean {
+  const destinationNorm = normalizePlaceText(destinationCity);
+  const cityNorm = normalizePlaceText(hotel.city ?? '');
+  const addressNorm = normalizePlaceText(hotel.address ?? '');
+
+  const cityMatch = cityNorm && (cityNorm.includes(destinationNorm) || destinationNorm.includes(cityNorm));
+  const addressMatch = addressNorm.includes(destinationNorm);
+  const coordinateMatch =
+    endCoords && hotel.lat != null && hotel.lng != null
+      ? haversineKm(endCoords[0], endCoords[1], hotel.lat, hotel.lng) <= 30
+      : false;
+
+  return Boolean(cityMatch || addressMatch || coordinateMatch);
+}
+
 async function fetchOfficialHotelSitePhoto(hotelName: string, hotelCity: string) {
-  const query = encodeURIComponent(`${hotelName} ${hotelCity} official hotel`);
+  const query = encodeURIComponent(`${normalizeHotelQueryText(hotelName)} ${hotelCity} official hotel`);
 
   try {
     const searchRes = await fetch(`https://lite.duckduckgo.com/lite/?q=${query}`, {
@@ -468,7 +529,7 @@ ${hotelJsonField}  "stops": [
 
             // ── 1. Booking.com search page: extract og:image or cf.bstatic.com CDN photo ──
             try {
-              const bQuery = encodeURIComponent(`${hotel.name} ${hotel.city || ''}`);
+              const bQuery = encodeURIComponent(`${normalizeHotelQueryText(hotel.name)} ${hotel.city || ''}`);
               const bUrl = `https://www.booking.com/searchresults.html?ss=${bQuery}&dest_type=hotel&is_hotel=1&lang=en-us`;
               hotel.bookingUrl = bUrl;
               const bCtrl = new AbortController();
@@ -511,7 +572,7 @@ ${hotelJsonField}  "stops": [
             // ── 3. Foursquare: metadata + photo via dedicated /photos endpoint (enriches even if Booking got photo) ──
             if (fsqKey) {
               try {
-                const query = hotel.city ? `${hotel.name} ${hotel.city}` : hotel.name;
+                const query = hotel.city ? `${normalizeHotelQueryText(hotel.name)} ${hotel.city}` : normalizeHotelQueryText(hotel.name);
                 const hotelParams = new URLSearchParams({
                   query,
                   ...(ll && { ll }),
@@ -591,7 +652,7 @@ ${hotelJsonField}  "stops": [
                       'X-Goog-FieldMask': 'places.photos',
                     },
                     body: JSON.stringify({
-                      textQuery: `${hotel.name} hotel ${hotel.city || ''}`.trim(),
+                      textQuery: `${normalizeHotelQueryText(hotel.name)} hotel ${hotel.city || ''}`.trim(),
                       maxResultCount: 1,
                       ...(endCoords && {
                         locationBias: {
@@ -622,14 +683,12 @@ ${hotelJsonField}  "stops": [
           })
         );
 
-        // Drop hotels that aren't in the destination city (case-insensitive partial match)
+        // Drop hotels that aren't in the destination city or close to the destination coordinates.
         if (Array.isArray(data.hotels) && end) {
-          const endNorm = end.toLowerCase();
-          data.hotels = data.hotels.filter((h: any) => {
-            if (!h?.city) return false;
-            const cityNorm = h.city.toLowerCase();
-            return cityNorm.includes(endNorm) || endNorm.includes(cityNorm);
-          });
+          const destinationCity = extractDestinationCity(end);
+          data.hotels = data.hotels.filter((hotel: any) =>
+            hotelMatchesDestination(hotel, destinationCity, endCoords)
+          );
         }
       }
 

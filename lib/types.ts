@@ -13,6 +13,7 @@ export interface HotelSuggestion {
   // Coordinates — from Foursquare geocodes (used to update map when hotel is selected)
   lat?: number;
   lng?: number;
+  photoLookupTried?: boolean;
 }
 
 export interface PlannerAnswersSnapshot {
