@@ -517,7 +517,7 @@ ${hotelJsonField}  "stops": [
                   ...(ll && { ll }),
                   radius: '30000',
                   limit: '1',
-                  fields: 'fsq_id,rating,website,price,geocodes',
+                  fields: 'fsq_id,rating,website,price,geocodes,location',
                 });
                 const hotelRes = await fetch(`https://api.foursquare.com/v3/places/search?${hotelParams}`, {
                   headers: { Authorization: fsqKey, Accept: 'application/json' },
@@ -529,6 +529,7 @@ ${hotelJsonField}  "stops": [
                     if (hotelPlace.rating != null) hotel.fsqRating = hotelPlace.rating;
                     if (hotelPlace.price != null) hotel.fsqPrice = hotelPlace.price;
                     if (hotelPlace.website) hotel.fsqWebsite = hotelPlace.website;
+                    if (hotelPlace.location?.formatted_address) hotel.address = hotelPlace.location.formatted_address;
 
                     const geo = hotelPlace.geocodes?.main;
                     if (geo?.latitude && geo?.longitude) {

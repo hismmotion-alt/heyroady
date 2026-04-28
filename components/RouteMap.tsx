@@ -10,6 +10,7 @@ interface RouteMapProps {
   stops: Stop[];
   start: [number, number];
   end: [number, number];
+  endLabel?: string;
   activeStop?: number;
   onStopClick?: (index: number) => void;
 }
@@ -18,7 +19,7 @@ const ROUTE_SOURCE_ID = 'route';
 const ROUTE_GLOW_ID = 'route-glow';
 const ROUTE_LINE_ID = 'route-line';
 
-export default function RouteMap({ stops, start, end, activeStop, onStopClick }: RouteMapProps) {
+export default function RouteMap({ stops, start, end, endLabel, activeStop, onStopClick }: RouteMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -111,7 +112,7 @@ export default function RouteMap({ stops, start, end, activeStop, onStopClick }:
       markersRef.current.push(
         new mapboxgl.Marker({ color: '#1B2D45' })
           .setLngLat(end)
-          .setPopup(new mapboxgl.Popup().setText('End'))
+          .setPopup(new mapboxgl.Popup().setText(endLabel || 'End'))
           .addTo(mapInstance)
       );
 
@@ -167,7 +168,7 @@ export default function RouteMap({ stops, start, end, activeStop, onStopClick }:
     };
 
     void drawRoute();
-  }, [mapLoaded, stops, start, end, onStopClick]);
+  }, [mapLoaded, stops, start, end, endLabel, onStopClick]);
 
   useEffect(() => {
     if (activeStop === undefined || activeStop < 0 || !stops[activeStop] || !map.current) return;

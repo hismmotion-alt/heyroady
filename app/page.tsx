@@ -644,10 +644,140 @@ function getBookingSearchUrl(hotel: HotelSuggestion) {
   )}&dest_type=hotel&is_hotel=1&lang=en-us`;
 }
 
-function getHotelCardImage(hotel: HotelSuggestion) {
-  const image = hotel.bookingPhoto ?? hotel.fsqPhoto ?? '';
-  if (image.includes('mapbox.com/styles/v1/mapbox/satellite-streets')) return '';
-  return image;
+function getHotelDestinationLabel(hotel: HotelSuggestion) {
+  return hotel.address?.trim() || `${hotel.name}, ${hotel.city}`;
+}
+
+function ActionGlyph({
+  kind,
+  active = false,
+}: {
+  kind: 'hotel' | 'google' | 'apple' | 'copy' | 'save';
+  active?: boolean;
+}) {
+  const stroke = active ? '#ffffff' : '#1B2D45';
+
+  if (kind === 'hotel') {
+    return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7" />
+        <path d="M3 18h18" />
+        <path d="M7 9V7a2 2 0 1 1 4 0v2" />
+        <path d="M14 12h3" />
+      </svg>
+    );
+  }
+
+  if (kind === 'google') {
+    return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="m3 11 8-8 10 10-8 8-2-6-8-4Z" />
+        <path d="m11 3 2 12" />
+      </svg>
+    );
+  }
+
+  if (kind === 'apple') {
+    return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </svg>
+    );
+  }
+
+  if (kind === 'copy') {
+    return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="9" y="9" width="10" height="10" rx="2" />
+        <path d="M5 15V7a2 2 0 0 1 2-2h8" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 21a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2h9l5 5V19a2 2 0 0 1-2 2Z" />
+      <path d="M14 5.5V11h5" />
+    </svg>
+  );
+}
+
+function ShareActionButton({
+  href,
+  onClick,
+  label,
+  sublabel,
+  kind,
+  primary = false,
+  disabled = false,
+}: {
+  href?: string;
+  onClick?: () => void;
+  label: string;
+  sublabel: string;
+  kind: 'google' | 'apple' | 'copy' | 'save';
+  primary?: boolean;
+  disabled?: boolean;
+}) {
+  const className =
+    'flex items-center gap-3 rounded-[18px] border px-3.5 py-3 text-left transition-all';
+  const iconWrapStyle = {
+    backgroundColor: primary ? 'rgba(255,255,255,0.18)' : 'rgba(27,45,69,0.06)',
+  } as const;
+  const labelColor = primary ? '#ffffff' : '#1B2D45';
+  const sublabelColor = primary ? 'rgba(255,255,255,0.75)' : '#9CA3AF';
+
+  const inner = (
+    <>
+      <span
+        className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-2xl"
+        style={iconWrapStyle}
+      >
+        <ActionGlyph kind={kind} active={primary} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-bold" style={{ color: labelColor }}>
+          {label}
+        </span>
+        <span className="mt-0.5 block text-[11px] leading-relaxed" style={{ color: sublabelColor }}>
+          {sublabel}
+        </span>
+      </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        className={className}
+        style={{
+          borderColor: primary ? '#58CC02' : '#E5E7EB',
+          backgroundColor: primary ? '#58CC02' : '#ffffff',
+        }}
+      >
+        {inner}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`${className} disabled:opacity-60`}
+      style={{
+        borderColor: primary ? '#58CC02' : '#E5E7EB',
+        backgroundColor: primary ? '#58CC02' : '#ffffff',
+      }}
+    >
+      {inner}
+    </button>
+  );
 }
 
 function buildGoogleMapsUrl(start: string, stops: PlannerStop[], end: string) {
@@ -847,17 +977,12 @@ function HomeContent() {
   const fallbackRoute = PLANNER_ROUTE_DEFINITIONS[seedRouteId][routeRegion];
   const activeRouteOption = routeOptions[routeOptionIndex] ?? null;
   const routeDestination = activeRouteOption?.destination ?? fallbackRoute.destination;
-  const endCoords = mapEndCoords ?? fallbackRoute.destinationCoords;
   const routeName = tripData?.routeName ?? activeRouteOption?.name ?? fallbackRoute.routeName;
   const routeTagline = tripData?.tagline ?? activeRouteOption?.tagline ?? fallbackRoute.tagline;
   const routeSummary = tripData?.destinationDescription ?? fallbackRoute.summary;
   const routeHighlights = activeRouteOption?.via
     ? activeRouteOption.via.split(',').map((item) => item.trim()).filter(Boolean)
     : fallbackRoute.highlights;
-  const tripMiles = tripData?.totalMiles ?? estimateTripMiles(startCoords, stops, endCoords);
-  const tripDaysLabel = estimateTripDaysLabel(prefs, stops.length, fallbackRoute.durationLabel);
-  const googleMapsUrl = startInput ? buildGoogleMapsUrl(startInput, stops, routeDestination) : '#';
-  const appleMapsUrl = startInput ? buildAppleMapsUrl(startInput, stops, routeDestination) : '#';
   const questionSteps = buildQuestionSteps(prefs);
   const mapStops = useMemo(() => stops.map(stripPlannerStop), [stops]);
   const progressSteps =
@@ -881,6 +1006,17 @@ function HomeContent() {
         : '';
   const visibleHotels = tripData?.hotels?.slice(0, 4) ?? [];
   const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
+  const selectedHotelDestination = selectedHotel ? getHotelDestinationLabel(selectedHotel) : '';
+  const tripDestinationLabel = selectedHotelDestination || routeDestination;
+  const hotelEndCoords =
+    selectedHotel?.lat != null && selectedHotel?.lng != null
+      ? ([selectedHotel.lng, selectedHotel.lat] as [number, number])
+      : null;
+  const endCoords = hotelEndCoords ?? mapEndCoords ?? fallbackRoute.destinationCoords;
+  const tripMiles = tripData?.totalMiles ?? estimateTripMiles(startCoords, stops, endCoords);
+  const tripDaysLabel = estimateTripDaysLabel(prefs, stops.length, fallbackRoute.durationLabel);
+  const googleMapsUrl = startInput ? buildGoogleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
+  const appleMapsUrl = startInput ? buildAppleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
   const greenButtonStyle = { backgroundColor: '#58CC02', boxShadow: '0 18px 44px rgba(88,204,2,0.22)' };
 
   const sensors = useSensors(
@@ -983,6 +1119,57 @@ function HomeContent() {
     if (selectedHotelIndex < visibleHotels.length) return;
     setSelectedHotelIndex(0);
   }, [selectedHotelIndex, visibleHotels.length]);
+
+  useEffect(() => {
+    if (!plannerOpen || !selectedHotel || !tripData?.hotels || !MAPBOX_TOKEN) return;
+    if (selectedHotel.address && selectedHotel.lat != null && selectedHotel.lng != null) return;
+
+    let cancelled = false;
+
+    const resolveSelectedHotel = async () => {
+      try {
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            `${selectedHotel.name}, ${selectedHotel.city}, California`
+          )}.json?access_token=${MAPBOX_TOKEN}&country=us&types=poi,address,place&limit=1`
+        );
+        const data = await response.json();
+        const feature = data.features?.[0];
+        if (!feature || cancelled) return;
+
+        const [lng, lat] = feature.center ?? [];
+        const address = feature.place_name as string | undefined;
+
+        setTripData((currentTrip) => {
+          if (!currentTrip?.hotels) return currentTrip;
+          const hotels = currentTrip.hotels.map((hotel, index) =>
+            index === selectedHotelIndex
+              ? {
+                  ...hotel,
+                  lat: hotel.lat ?? lat,
+                  lng: hotel.lng ?? lng,
+                  address: hotel.address ?? address,
+                }
+              : hotel
+          );
+          return { ...currentTrip, hotels };
+        });
+      } catch {
+        // Keep the current hotel card info if geocoding fails.
+      }
+    };
+
+    void resolveSelectedHotel();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    plannerOpen,
+    selectedHotel,
+    selectedHotelIndex,
+    tripData?.hotels,
+  ]);
 
   useEffect(() => {
     if (!user || !autoSaveOnRestoreRef.current) return;
@@ -1315,7 +1502,7 @@ function HomeContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           start: startInput,
-          end: routeDestination,
+          end: tripDestinationLabel,
           trip_data: buildTripData(),
         }),
       });
@@ -2351,69 +2538,64 @@ function HomeContent() {
                               <div className="mt-4 grid grid-cols-2 gap-3">
                                 {visibleHotels.map((hotel, index) => {
                                   const selected = selectedHotelIndex === index;
-                                  const hotelImage = getHotelCardImage(hotel);
                                   return (
                                     <div
                                       key={`${hotel.name}-${hotel.city}-${index}`}
-                                      className="overflow-hidden rounded-[20px] border-2 bg-white transition-all"
+                                      className="rounded-[20px] border-2 bg-white p-3.5 transition-all"
                                       style={{
                                         borderColor: selected ? '#58CC02' : '#E5E7EB',
                                         boxShadow: selected ? '0 18px 40px rgba(88,204,2,0.14)' : 'none',
                                       }}
                                     >
-                                      <div className="aspect-[4/3] overflow-hidden bg-[linear-gradient(180deg,#EAF4FF_0%,#F7FAFC_100%)]">
-                                        {hotelImage ? (
-                                          <img
-                                            src={hotelImage}
-                                            alt={hotel.name}
-                                            className="h-full w-full object-cover"
-                                          />
-                                        ) : (
-                                          <div className="flex h-full items-center justify-center px-6 text-center text-sm font-semibold text-gray-400">
-                                            Live hotel photo unavailable here yet. Open on Booking.com to see the listing.
-                                          </div>
+                                      <div className="flex items-start justify-between gap-3">
+                                        <span
+                                          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl"
+                                          style={{
+                                            backgroundColor: selected ? '#58CC02' : 'rgba(27,45,69,0.06)',
+                                          }}
+                                        >
+                                          <ActionGlyph kind="hotel" active={selected} />
+                                        </span>
+                                        {selected && (
+                                          <span
+                                            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+                                            style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
+                                          >
+                                            Picked
+                                          </span>
                                         )}
                                       </div>
 
-                                      <div className="p-3">
-                                        <div className="flex items-start justify-between gap-3">
-                                          <div className="min-w-0">
-                                            <p className="text-[15px] font-extrabold leading-tight line-clamp-2" style={{ color: '#1B2D45' }}>
-                                              {hotel.name}
-                                            </p>
-                                            <p className="mt-1 text-xs text-gray-400">
-                                              {hotel.city} · {hotel.priceRange}
-                                              {hotel.fsqRating ? ` · ${hotel.fsqRating.toFixed(1)}★` : ''}
-                                            </p>
-                                          </div>
-                                          {selected && (
-                                            <span
-                                              className="rounded-full px-2.5 py-1 text-[11px] font-bold"
-                                              style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
-                                            >
-                                              Picked
-                                            </span>
-                                          )}
-                                        </div>
+                                      <div className="mt-4">
+                                        <p className="text-[15px] font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                                          {hotel.name}
+                                        </p>
+                                        <p className="mt-1 text-[12px] leading-relaxed text-gray-400">
+                                          {hotel.address || hotel.city}
+                                        </p>
+                                        <p className="mt-2 text-[12px] font-semibold text-gray-500">
+                                          {hotel.priceRange}
+                                          {hotel.fsqRating ? ` · ${hotel.fsqRating.toFixed(1)}★` : ''}
+                                        </p>
+                                      </div>
 
-                                        <div className="mt-3 grid grid-cols-2 gap-2">
-                                          <button
-                                            type="button"
-                                            onClick={() => setSelectedHotelIndex(index)}
-                                            className="rounded-[14px] px-3 py-2 text-[11px] font-bold text-white transition-opacity hover:opacity-90"
-                                            style={{ backgroundColor: selected ? '#58CC02' : '#1B2D45' }}
-                                          >
-                                            {selected ? 'Selected hotel' : 'Pick this hotel'}
-                                          </button>
-                                          <a
-                                            href={getBookingSearchUrl(hotel)}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="rounded-[14px] border border-gray-200 px-3 py-2 text-center text-[11px] font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
-                                          >
-                                            Booking.com
-                                          </a>
-                                        </div>
+                                      <div className="mt-3 grid grid-cols-2 gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedHotelIndex(index)}
+                                          className="rounded-[14px] px-3 py-2 text-[11px] font-bold text-white transition-opacity hover:opacity-90"
+                                          style={{ backgroundColor: selected ? '#58CC02' : '#1B2D45' }}
+                                        >
+                                          {selected ? 'Selected' : 'Select'}
+                                        </button>
+                                        <a
+                                          href={getBookingSearchUrl(hotel)}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="rounded-[14px] border border-gray-200 px-3 py-2 text-center text-[11px] font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
+                                        >
+                                          Booking
+                                        </a>
                                       </div>
                                     </div>
                                   );
@@ -2500,61 +2682,37 @@ function HomeContent() {
                             </p>
                           </div>
 
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <a
+                          <div className="grid gap-2.5 sm:grid-cols-2">
+                            <ShareActionButton
                               href={googleMapsUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
-                            >
-                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
-                                Open in Google Maps
-                              </p>
-                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                                Open the route with directions already stitched together.
-                              </p>
-                            </a>
-                            <a
+                              label="Open in Google Maps"
+                              sublabel="Launch the full route."
+                              kind="google"
+                            />
+                            <ShareActionButton
                               href={appleMapsUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
-                            >
-                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
-                                Open in Apple Maps
-                              </p>
-                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                                Send the whole trip straight into Apple Maps.
-                              </p>
-                            </a>
-                            <button
-                              type="button"
+                              label="Open in Apple Maps"
+                              sublabel="Send it to Apple Maps."
+                              kind="apple"
+                            />
+                            <ShareActionButton
                               onClick={() => void handleCopyLink()}
-                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
-                            >
-                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
-                                Copy link
-                              </p>
-                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                                Copy a shareable trip link to your clipboard.
-                              </p>
-                            </button>
-                            <button
-                              type="button"
+                              label="Copy link"
+                              sublabel="Copy a shareable trip link."
+                              kind="copy"
+                            />
+                            <ShareActionButton
                               onClick={() => void handleSaveTrip(false)}
                               disabled={saving}
-                              className="rounded-[22px] p-4 text-left text-white transition-opacity hover:opacity-90 disabled:opacity-70"
-                              style={{ backgroundColor: '#58CC02' }}
-                            >
-                              <p className="font-bold text-sm text-white">
-                                {saving ? 'Saving...' : 'Save'}
-                              </p>
-                              <p className="mt-2 text-xs leading-relaxed text-white/80">
-                                {user
-                                  ? 'Keep this trip in your Roady account.'
-                                  : 'Continue with Google and save it to your account.'}
-                              </p>
-                            </button>
+                              label={saving ? 'Saving...' : 'Save'}
+                              sublabel={
+                                user
+                                  ? 'Keep it in your Roady account.'
+                                  : 'Continue with Google and save it.'
+                              }
+                              kind="save"
+                              primary
+                            />
                           </div>
                         </div>
                       )}
@@ -2671,7 +2829,7 @@ function HomeContent() {
                         Live trip preview
                       </p>
                       <p className="mt-1 text-lg font-extrabold" style={{ color: '#1B2D45' }}>
-                        {startInput || 'Choose a starting point'} to {routeDestination}
+                        {startInput || 'Choose a starting point'} to {tripDestinationLabel}
                       </p>
                     </div>
 
@@ -2686,7 +2844,7 @@ function HomeContent() {
                         className="rounded-full px-3 py-1 text-xs font-bold"
                         style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}
                       >
-                        {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} {routeDestination}
+                        {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} {tripDestinationLabel}
                       </span>
                     </div>
                   </div>
@@ -2699,6 +2857,7 @@ function HomeContent() {
                             stops={mapStops}
                             start={startCoords}
                             end={endCoords}
+                            endLabel={tripDestinationLabel}
                             activeStop={activeStop}
                             onStopClick={setActiveStop}
                           />
@@ -2740,7 +2899,7 @@ function HomeContent() {
                             <p className="mt-2 text-2xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
                               {routeName}
                             </p>
-                            <p className="mt-2 text-sm text-gray-400">{routeDestination}</p>
+                            <p className="mt-2 text-sm text-gray-400">{tripDestinationLabel}</p>
                             <p className="mt-4 text-sm leading-relaxed text-gray-500">{routeTagline}</p>
                           </div>
                           <div className="mt-5 grid grid-cols-3 gap-3">
@@ -2821,10 +2980,10 @@ function HomeContent() {
                               {selectedHotel.name}
                             </p>
                             <p className="mt-1 text-sm text-gray-400">
-                              {selectedHotel.city} · {selectedHotel.priceRange}
+                              {selectedHotel.address || selectedHotel.city} · {selectedHotel.priceRange}
                             </p>
                             <p className="mt-3 text-sm leading-relaxed text-gray-500">
-                              Roady will use your hotel answers to point the trip toward the right stay profile.
+                              Roady is routing the trip to this stay as your final stop.
                             </p>
                             <a
                               href={getBookingSearchUrl(selectedHotel)}

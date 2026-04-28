@@ -1,6 +1,7 @@
 export interface HotelSuggestion {
   name: string;
   city: string;
+  address?: string;
   priceRange: '$' | '$$' | '$$$';
   bookingPhoto?: string;
   bookingUrl?: string;
