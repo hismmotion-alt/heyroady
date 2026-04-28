@@ -25,7 +25,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-  HOME_PREVIEW_STEPS,
   PLANNER_ROUTE_DEFINITIONS,
   PLANNER_ROUTE_ORDER,
   POPULAR_STARTS,
@@ -1234,7 +1233,6 @@ function HomeContent() {
   const faqFade = useFadeIn(0.08);
 
   const [mapAnimation, setMapAnimation] = useState<object | null>(null);
-  const [heroStep, setHeroStep] = useState(0);
   const [plannerOpen, setPlannerOpen] = useState(false);
   const [plannerVisible, setPlannerVisible] = useState(false);
   const [plannerStep, setPlannerStep] = useState<PlannerStep>('start');
@@ -1339,14 +1337,6 @@ function HomeContent() {
       .then((data) => setMapAnimation(data))
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (plannerOpen) return;
-    const interval = setInterval(() => {
-      setHeroStep((value) => (value + 1) % HOME_PREVIEW_STEPS.length);
-    }, 1800);
-    return () => clearInterval(interval);
-  }, [plannerOpen]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -2096,14 +2086,14 @@ function HomeContent() {
 
       <section
         className="relative overflow-hidden pt-28 pb-14 sm:pt-32 lg:pt-36 lg:pb-20"
-        style={{ backgroundColor: '#FAFAF9' }}
+        style={{ backgroundColor: '#ffffff' }}
       >
         <div
           className="absolute pointer-events-none"
           style={{
             inset: 0,
             background:
-              'radial-gradient(circle at 12% 18%, rgba(216,90,48,0.08) 0%, transparent 32%), radial-gradient(circle at 84% 22%, rgba(55,138,221,0.08) 0%, transparent 34%)',
+              'radial-gradient(circle at 12% 18%, rgba(216,90,48,0.08) 0%, transparent 32%), radial-gradient(circle at 52% 44%, rgba(255,209,115,0.08) 0%, transparent 32%), radial-gradient(circle at 84% 80%, rgba(88,204,2,0.05) 0%, transparent 24%)',
           }}
         />
 
@@ -2181,93 +2171,19 @@ function HomeContent() {
               </div>
             </div>
 
-            <div className="w-full max-w-[760px]">
+            <div className="w-full max-w-[920px] flex-1">
               <button
                 type="button"
                 onClick={() => openPlanner('pch')}
-                className="group relative w-full overflow-hidden rounded-[32px] border border-white/80 bg-white/90 text-left shadow-[0_28px_80px_rgba(27,45,69,0.16)] transition-transform duration-300 hover:-translate-y-1"
+                aria-label="Open Roady planner"
+                className="group relative block w-full text-left transition-transform duration-300 hover:-translate-y-1"
               >
-                <div className="grid lg:grid-cols-[260px_minmax(0,1fr)]">
-                  <div className="border-b lg:border-b-0 lg:border-r border-gray-100 p-7 lg:p-8">
-                    <p className="text-sm font-bold uppercase tracking-[0.18em]" style={{ color: '#D85A30' }}>
-                      Your Road Trip
-                    </p>
-                    <p className="mt-2 text-xl font-extrabold" style={{ color: '#1B2D45' }}>
-                      Roady Planner
-                    </p>
-                    <div className="mt-8 flex flex-col gap-5">
-                      {HOME_PREVIEW_STEPS.map((step, index) => {
-                        const isActive = heroStep === index;
-                        return (
-                          <div
-                            key={step.label}
-                            className="flex items-start gap-3 transition-all duration-500"
-                            style={{ opacity: isActive ? 1 : 0.48 }}
-                          >
-                            <div
-                              className="h-7 w-7 rounded-full flex items-center justify-center text-xs font-extrabold"
-                              style={{
-                                backgroundColor: isActive ? '#D85A30' : 'rgba(216,90,48,0.12)',
-                                color: isActive ? '#ffffff' : '#D85A30',
-                              }}
-                            >
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>
-                                {step.label}
-                              </p>
-                              <p className="mt-1 text-xs text-gray-400">{step.sub}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div
-                      className="mt-8 w-full rounded-2xl px-5 py-3 text-center text-sm font-bold text-white transition-opacity group-hover:opacity-90"
-                      style={{ backgroundColor: '#58CC02' }}
-                    >
-                      Generate my trip
-                    </div>
-                    <p className="mt-3 text-xs text-gray-400">Takes less than 30 seconds</p>
-                  </div>
-
-                  <div className="relative min-h-[380px] overflow-hidden bg-[#F4F7FB]">
-                    {mapAnimation ? (
-                      <Lottie
-                        animationData={mapAnimation}
-                        loop
-                        style={{ width: '100%', height: '100%', transform: 'scale(1.08)' }}
-                      />
-                    ) : (
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_18%,rgba(55,138,221,0.14),transparent_24%),radial-gradient(circle_at_70%_70%,rgba(88,204,2,0.14),transparent_26%),linear-gradient(180deg,#ecf6ff_0%,#f7fafc_100%)]" />
-                    )}
-
-                    <div className="absolute right-6 top-6 w-[220px] rounded-[24px] bg-white/96 p-4 shadow-[0_20px_50px_rgba(27,45,69,0.16)]">
-                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-gray-400">
-                        Suggested trip
-                      </p>
-                      <p className="mt-2 text-2xl font-extrabold" style={{ color: '#1B2D45' }}>
-                        4 days
-                      </p>
-                      <div className="mt-3 space-y-2 text-sm text-gray-500">
-                        <p>Starts with your location</p>
-                        <p>Ends with a Roady-picked route</p>
-                      </div>
-                    </div>
-
-                    <div className="absolute right-6 bottom-6 flex flex-col gap-3">
-                      {['Tags', 'Trip card', 'Maps'].map((label) => (
-                        <div
-                          key={label}
-                          className="rounded-2xl bg-white/94 px-4 py-3 text-xs font-bold text-gray-500 shadow-md"
-                        >
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                <div className="relative min-h-[380px] sm:min-h-[480px] lg:min-h-[620px]">
+                  <img
+                    src="/roady%2Bbg-clean.png"
+                    alt="Roady hero artwork"
+                    className="absolute inset-0 h-full w-full object-contain object-center transition-transform duration-500 group-hover:scale-[1.03] lg:object-right"
+                  />
                 </div>
               </button>
             </div>
@@ -2275,68 +2191,27 @@ function HomeContent() {
         </div>
       </section>
 
-      <section id="how-it-works" className="px-6 pb-20" style={{ backgroundColor: '#FAFAF9' }}>
+      <section id="how-it-works" className="px-6 pb-20" style={{ backgroundColor: '#ffffff' }}>
         <div
           ref={howFade.ref}
-          className="max-w-7xl mx-auto rounded-[36px] border border-white/80 bg-white px-6 py-10 shadow-[0_20px_60px_rgba(27,45,69,0.08)] transition-all duration-700 md:px-10"
+          className="max-w-6xl mx-auto transition-all duration-700"
           style={{
             opacity: howFade.visible ? 1 : 0,
             transform: howFade.visible ? 'none' : 'translateY(24px)',
           }}
         >
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-extrabold" style={{ color: '#1B2D45' }}>
-              Five simple moves to your perfect road trip
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 xl:grid-cols-5">
-            {[
-              {
-                n: '1',
-                title: 'Choose starting point',
-                desc: 'Use your location or pick a city and watch the planner wake up.',
-              },
-              {
-                n: '2',
-                title: 'Tell Roady who is coming',
-                desc: 'A quick crew question changes the whole shape of the route.',
-              },
-              {
-                n: '3',
-                title: 'Pick your vibe',
-                desc: 'Tap interests, hotel style, and stop counts instead of typing a form.',
-              },
-              {
-                n: '4',
-                title: 'Get a suggested trip',
-                desc: 'Roady suggests a route and shows the full trip card on the right.',
-              },
-              {
-                n: '5',
-                title: 'Save or share',
-                desc: 'Save it, copy the route link, or open everything in Maps.',
-              },
-            ].map((item) => (
-              <div key={item.n} className="relative flex flex-col gap-4">
-                <p className="text-sm font-bold" style={{ color: '#9CA3AF' }}>
-                  {item.n}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' }}
-                  >
-                    <span className="text-base font-extrabold">{item.n}</span>
-                  </div>
-                  <h3 className="font-extrabold text-sm leading-tight" style={{ color: '#1B2D45' }}>
-                    {item.title}
-                  </h3>
-                </div>
-                <p className="text-sm leading-relaxed text-gray-500">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+          <button
+            type="button"
+            onClick={() => openPlanner('pch')}
+            aria-label="Open Roady planner"
+            className="block w-full overflow-hidden rounded-[34px] transition-transform duration-300 hover:-translate-y-1"
+          >
+            <img
+              src="/how%20roady%20works.png"
+              alt="How Roady works"
+              className="mx-auto block h-auto w-full max-w-[1180px]"
+            />
+          </button>
         </div>
       </section>
 
