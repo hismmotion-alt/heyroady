@@ -15,6 +15,19 @@ export interface HotelSuggestion {
   lng?: number;
 }
 
+export interface PlannerAnswersSnapshot {
+  travelGroup: string;
+  kidsAges: string[];
+  distancePreference: string;
+  interests: string[];
+  hotelPreference: string;
+  hotelGuests: string;
+  hotelCheckin: string;
+  hotelNights: string;
+  numberOfEnrouteStops: string;
+  numberOfStops: string;
+}
+
 export interface Stop {
   name: string;
   city: string;
@@ -44,6 +57,9 @@ export interface TripData {
   destinationDescription?: string;
   funFacts?: string[];
   tripChecklist?: string[];
+  selectedHotelName?: string;
+  selectedHotelAddress?: string;
+  plannerAnswers?: PlannerAnswersSnapshot;
 }
 
 export interface TripPreferences {

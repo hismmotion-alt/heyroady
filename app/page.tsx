@@ -644,8 +644,31 @@ function getBookingSearchUrl(hotel: HotelSuggestion) {
   )}&dest_type=hotel&is_hotel=1&lang=en-us`;
 }
 
+function isMapLikeHotelImage(url?: string) {
+  if (!url) return true;
+  const normalized = url.toLowerCase();
+  return (
+    normalized.includes('mapbox.com/styles') ||
+    normalized.includes('maps.googleapis.com/maps') ||
+    normalized.includes('googleapis.com/maps/api/staticmap') ||
+    normalized.includes('googleusercontent.com/maps') ||
+    normalized.includes('/tiles/') ||
+    normalized.includes('/satellite')
+  );
+}
+
+function getHotelCardImage(hotel: HotelSuggestion) {
+  if (hotel.bookingPhoto && !isMapLikeHotelImage(hotel.bookingPhoto)) return hotel.bookingPhoto;
+  if (hotel.fsqPhoto && !isMapLikeHotelImage(hotel.fsqPhoto)) return hotel.fsqPhoto;
+  return '';
+}
+
 function getHotelDestinationLabel(hotel: HotelSuggestion) {
   return hotel.address?.trim() || `${hotel.name}, ${hotel.city}`;
+}
+
+function getHotelDestinationDisplay(hotel: HotelSuggestion) {
+  return hotel.city ? `${hotel.name}, ${hotel.city}` : hotel.name;
 }
 
 function ActionGlyph({
@@ -700,6 +723,133 @@ function ActionGlyph({
       <path d="M6 21a2 2 0 0 1-2-2V7.5a2 2 0 0 1 2-2h9l5 5V19a2 2 0 0 1-2 2Z" />
       <path d="M14 5.5V11h5" />
     </svg>
+  );
+}
+
+function PlannerHotelCard({
+  hotel,
+  selected,
+  onSelect,
+}: {
+  hotel: HotelSuggestion;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const hotelImage = imageFailed ? '' : getHotelCardImage(hotel);
+  const ratingLabel = hotel.fsqRating ? `${hotel.fsqRating.toFixed(1)}★` : 'Roady pick';
+
+  return (
+    <div
+      className="flex h-full min-h-[274px] flex-col overflow-hidden rounded-[20px] border-2 bg-white transition-all"
+      style={{
+        borderColor: selected ? '#58CC02' : '#E5E7EB',
+        boxShadow: selected ? '0 18px 40px rgba(88,204,2,0.14)' : 'none',
+      }}
+    >
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#EEF2F7]">
+        {hotelImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={hotelImage}
+            alt={hotel.name}
+            className="h-full w-full object-cover"
+            onError={() => setImageFailed(true)}
+          />
+        ) : (
+          <div
+            className="flex h-full w-full items-end"
+            style={{
+              background:
+                hotel.priceRange === '$$$'
+                  ? 'linear-gradient(135deg,#1B2D45 0%,#35537A 100%)'
+                  : hotel.priceRange === '$$'
+                    ? 'linear-gradient(135deg,#2A5F8A 0%,#5E9AE2 100%)'
+                    : 'linear-gradient(135deg,#2E4F1D 0%,#58CC02 100%)',
+            }}
+          >
+            <div className="w-full bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.4)_100%)] px-3 py-3">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/75">Stay pick</p>
+              <p className="mt-1 text-base font-extrabold leading-tight text-white">
+                {hotel.name}
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="absolute left-3 top-3 flex items-center gap-2">
+          <span
+            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#1B2D45' }}
+          >
+            {hotel.priceRange}
+          </span>
+          <span
+            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+            style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#6B7280' }}
+          >
+            {ratingLabel}
+          </span>
+        </div>
+
+        {selected && (
+          <span
+            className="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold"
+            style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
+          >
+            Picked
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-3.5">
+        <div>
+          <p
+            className="text-[15px] font-extrabold leading-tight"
+            style={{
+              color: '#1B2D45',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+            }}
+          >
+            {hotel.name}
+          </p>
+          <p
+            className="mt-1 text-[12px] leading-relaxed text-gray-400"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              minHeight: 36,
+            }}
+          >
+            {hotel.address || hotel.city}
+          </p>
+        </div>
+
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
+          <button
+            type="button"
+            onClick={onSelect}
+            className="rounded-[14px] px-3 py-2 text-[11px] font-bold text-white transition-opacity hover:opacity-90"
+            style={{ backgroundColor: selected ? '#58CC02' : '#1B2D45' }}
+          >
+            {selected ? 'Selected' : 'Select'}
+          </button>
+          <a
+            href={getBookingSearchUrl(hotel)}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-[14px] border border-gray-200 px-3 py-2 text-center text-[11px] font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
+          >
+            Booking
+          </a>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1007,6 +1157,7 @@ function HomeContent() {
   const visibleHotels = tripData?.hotels?.slice(0, 4) ?? [];
   const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
   const selectedHotelDestination = selectedHotel ? getHotelDestinationLabel(selectedHotel) : '';
+  const tripDestinationDisplay = selectedHotel ? getHotelDestinationDisplay(selectedHotel) : routeDestination;
   const tripDestinationLabel = selectedHotelDestination || routeDestination;
   const hotelEndCoords =
     selectedHotel?.lat != null && selectedHotel?.lng != null
@@ -1304,6 +1455,20 @@ function HomeContent() {
       hotels: tripData?.hotels,
       completed: true,
       destinationDescription: routeSummary,
+      selectedHotelName: selectedHotel?.name,
+      selectedHotelAddress: selectedHotel?.address,
+      plannerAnswers: {
+        travelGroup: prefs.travelGroup,
+        kidsAges: prefs.kidsAges,
+        distancePreference: prefs.distancePreference,
+        interests: prefs.interests,
+        hotelPreference: prefs.hotelPreference,
+        hotelGuests: prefs.hotelGuests,
+        hotelCheckin: prefs.hotelCheckin,
+        hotelNights: prefs.hotelNights,
+        numberOfEnrouteStops: prefs.numberOfEnrouteStops,
+        numberOfStops: prefs.numberOfStops,
+      },
       funFacts: tripData?.funFacts ?? [fallbackRoute.estimateNote],
       tripChecklist: tripData?.tripChecklist ?? [
         'Download offline maps before you leave.',
@@ -2537,67 +2702,13 @@ function HomeContent() {
                             {prefs.hotelPreference !== 'none' && visibleHotels.length > 0 ? (
                               <div className="mt-4 grid grid-cols-2 gap-3">
                                 {visibleHotels.map((hotel, index) => {
-                                  const selected = selectedHotelIndex === index;
                                   return (
-                                    <div
+                                    <PlannerHotelCard
                                       key={`${hotel.name}-${hotel.city}-${index}`}
-                                      className="rounded-[20px] border-2 bg-white p-3.5 transition-all"
-                                      style={{
-                                        borderColor: selected ? '#58CC02' : '#E5E7EB',
-                                        boxShadow: selected ? '0 18px 40px rgba(88,204,2,0.14)' : 'none',
-                                      }}
-                                    >
-                                      <div className="flex items-start justify-between gap-3">
-                                        <span
-                                          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl"
-                                          style={{
-                                            backgroundColor: selected ? '#58CC02' : 'rgba(27,45,69,0.06)',
-                                          }}
-                                        >
-                                          <ActionGlyph kind="hotel" active={selected} />
-                                        </span>
-                                        {selected && (
-                                          <span
-                                            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
-                                            style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
-                                          >
-                                            Picked
-                                          </span>
-                                        )}
-                                      </div>
-
-                                      <div className="mt-4">
-                                        <p className="text-[15px] font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
-                                          {hotel.name}
-                                        </p>
-                                        <p className="mt-1 text-[12px] leading-relaxed text-gray-400">
-                                          {hotel.address || hotel.city}
-                                        </p>
-                                        <p className="mt-2 text-[12px] font-semibold text-gray-500">
-                                          {hotel.priceRange}
-                                          {hotel.fsqRating ? ` · ${hotel.fsqRating.toFixed(1)}★` : ''}
-                                        </p>
-                                      </div>
-
-                                      <div className="mt-3 grid grid-cols-2 gap-2">
-                                        <button
-                                          type="button"
-                                          onClick={() => setSelectedHotelIndex(index)}
-                                          className="rounded-[14px] px-3 py-2 text-[11px] font-bold text-white transition-opacity hover:opacity-90"
-                                          style={{ backgroundColor: selected ? '#58CC02' : '#1B2D45' }}
-                                        >
-                                          {selected ? 'Selected' : 'Select'}
-                                        </button>
-                                        <a
-                                          href={getBookingSearchUrl(hotel)}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="rounded-[14px] border border-gray-200 px-3 py-2 text-center text-[11px] font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
-                                        >
-                                          Booking
-                                        </a>
-                                      </div>
-                                    </div>
+                                      hotel={hotel}
+                                      selected={selectedHotelIndex === index}
+                                      onSelect={() => setSelectedHotelIndex(index)}
+                                    />
                                   );
                                 })}
                               </div>
@@ -2829,7 +2940,7 @@ function HomeContent() {
                         Live trip preview
                       </p>
                       <p className="mt-1 text-lg font-extrabold" style={{ color: '#1B2D45' }}>
-                        {startInput || 'Choose a starting point'} to {tripDestinationLabel}
+                        {startInput || 'Choose a starting point'} to {tripDestinationDisplay}
                       </p>
                     </div>
 
@@ -2844,7 +2955,7 @@ function HomeContent() {
                         className="rounded-full px-3 py-1 text-xs font-bold"
                         style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}
                       >
-                        {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} {tripDestinationLabel}
+                        {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} {tripDestinationDisplay}
                       </span>
                     </div>
                   </div>
@@ -2899,7 +3010,7 @@ function HomeContent() {
                             <p className="mt-2 text-2xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
                               {routeName}
                             </p>
-                            <p className="mt-2 text-sm text-gray-400">{tripDestinationLabel}</p>
+                            <p className="mt-2 text-sm text-gray-400">{tripDestinationDisplay}</p>
                             <p className="mt-4 text-sm leading-relaxed text-gray-500">{routeTagline}</p>
                           </div>
                           <div className="mt-5 grid grid-cols-3 gap-3">
