@@ -46,6 +46,122 @@ function getClient() {
   });
 }
 
+const HOTEL_FETCH_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+};
+
+function isLikelyLogoImage(url: string): boolean {
+  return /logo|icon|favicon|sprite|avatar|badge/i.test(url);
+}
+
+function absolutizeUrl(rawUrl: string, baseUrl: string): string | null {
+  try {
+    return new URL(rawUrl.replace(/&amp;/g, '&'), baseUrl).toString();
+  } catch {
+    return null;
+  }
+}
+
+function extractBestImageFromHtml(html: string, baseUrl: string): string | null {
+  const ogMatch =
+    html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ??
+    html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i) ??
+    html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i);
+
+  if (ogMatch?.[1]) {
+    const url = absolutizeUrl(ogMatch[1], baseUrl);
+    if (url && !isLikelyLogoImage(url)) return url;
+  }
+
+  const imageCandidates = Array.from(
+    html.matchAll(/https?:\/\/[^"'\\\s>]+?\.(?:jpg|jpeg|png|webp)/gi)
+  )
+    .concat(Array.from(html.matchAll(/(?:src|data-src|content)=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)/gi)))
+    .map((match) => absolutizeUrl(match[1] ?? match[0], baseUrl))
+    .filter((value): value is string => Boolean(value))
+    .filter((value) => !isLikelyLogoImage(value));
+
+  return imageCandidates[0] ?? null;
+}
+
+function decodeDuckDuckGoUrl(rawUrl: string): string | null {
+  try {
+    const normalized = rawUrl.startsWith('//') ? `https:${rawUrl}` : rawUrl;
+    const url = new URL(normalized);
+    if (url.hostname.endsWith('duckduckgo.com')) {
+      const uddg = url.searchParams.get('uddg');
+      return uddg ? decodeURIComponent(uddg) : null;
+    }
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
+function isAllowedHotelWebsite(candidateUrl: string): boolean {
+  try {
+    const hostname = new URL(candidateUrl).hostname.toLowerCase();
+    const blockedHosts = [
+      'booking.com',
+      'expedia.com',
+      'hotels.com',
+      'tripadvisor.com',
+      'kayak.com',
+      'travelocity.com',
+      'orbitz.com',
+      'priceline.com',
+      'trip.com',
+      'facebook.com',
+      'instagram.com',
+      'yelp.com',
+    ];
+    return !blockedHosts.some((blocked) => hostname === blocked || hostname.endsWith(`.${blocked}`));
+  } catch {
+    return false;
+  }
+}
+
+async function fetchOfficialHotelSitePhoto(hotelName: string, hotelCity: string) {
+  const query = encodeURIComponent(`${hotelName} ${hotelCity} official hotel`);
+
+  try {
+    const searchRes = await fetch(`https://lite.duckduckgo.com/lite/?q=${query}`, {
+      headers: HOTEL_FETCH_HEADERS,
+    });
+    if (!searchRes.ok) return null;
+
+    const html = await searchRes.text();
+    const links = Array.from(
+      html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*class=['"]result-link['"][^>]*>/g)
+    )
+      .map((match) => decodeDuckDuckGoUrl(match[1]))
+      .filter((value): value is string => Boolean(value))
+      .filter(isAllowedHotelWebsite)
+      .slice(0, 3);
+
+    for (const link of links) {
+      try {
+        const pageRes = await fetch(link, { headers: HOTEL_FETCH_HEADERS });
+        if (!pageRes.ok) continue;
+        const pageHtml = await pageRes.text();
+        const image = extractBestImageFromHtml(pageHtml, link);
+        if (image) {
+          return { website: link, photo: image };
+        }
+      } catch {
+        // Try the next result.
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
 function buildPreferenceContext(body: Record<string, string>): string {
   const parts: string[] = [];
 
@@ -359,11 +475,7 @@ ${hotelJsonField}  "stops": [
               const bTimeout = setTimeout(() => bCtrl.abort(), 6000);
               const bRes = await fetch(bUrl, {
                 signal: bCtrl.signal,
-                headers: {
-                  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                  'Accept-Language': 'en-US,en;q=0.9',
-                },
+                headers: HOTEL_FETCH_HEADERS,
               });
               clearTimeout(bTimeout);
               if (bRes.ok) {
@@ -381,7 +493,22 @@ ${hotelJsonField}  "stops": [
               }
             } catch { /* silently skip */ }
 
-            // ── 2. Foursquare: metadata + photo via dedicated /photos endpoint (enriches even if Booking got photo) ──
+            // ── 2. Official hotel site fallback via search, since Booking often returns WAF challenge pages ──
+            if (!hotel.bookingPhoto) {
+              try {
+                const officialSite = await fetchOfficialHotelSitePhoto(hotel.name, hotel.city || '');
+                if (officialSite?.website && !hotel.fsqWebsite) {
+                  hotel.fsqWebsite = officialSite.website;
+                }
+                if (officialSite?.photo) {
+                  hotel.fsqPhoto = officialSite.photo;
+                }
+              } catch {
+                // silently skip
+              }
+            }
+
+            // ── 3. Foursquare: metadata + photo via dedicated /photos endpoint (enriches even if Booking got photo) ──
             if (fsqKey) {
               try {
                 const query = hotel.city ? `${hotel.name} ${hotel.city}` : hotel.name;
@@ -432,26 +559,25 @@ ${hotelJsonField}  "stops": [
               } catch { /* silently skip */ }
             }
 
-            // ── 3. Hotel website og:image (uses website URL found by Foursquare) ──
+            // ── 4. Hotel website og:image (uses website URL found by Foursquare / search) ──
             if (!hotel.fsqPhoto && hotel.fsqWebsite) {
               try {
                 const controller = new AbortController();
                 const t = setTimeout(() => controller.abort(), 4000);
                 const pageRes = await fetch(hotel.fsqWebsite, {
                   signal: controller.signal,
-                  headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)' },
+                  headers: HOTEL_FETCH_HEADERS,
                 });
                 clearTimeout(t);
                 if (pageRes.ok) {
                   const html = await pageRes.text();
-                  const m = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-                    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-                  if (m?.[1]?.startsWith('http')) hotel.fsqPhoto = m[1];
+                  const image = extractBestImageFromHtml(html, hotel.fsqWebsite);
+                  if (image) hotel.fsqPhoto = image;
                 }
               } catch { /* silently skip */ }
             }
 
-            // ── 4. Google Places photo ──
+            // ── 5. Google Places photo ──
             if (!hotel.fsqPhoto) {
               const googleKey = process.env.GOOGLE_PLACES_API_KEY;
               if (googleKey) {
@@ -490,22 +616,6 @@ ${hotelJsonField}  "stops": [
                     }
                   }
                 } catch { /* silently skip */ }
-              }
-            }
-
-            // ── 5. Mapbox satellite — always-available visual fallback ──
-            if (!hotel.fsqPhoto) {
-              const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-              if (mapboxToken) {
-                let lat = hotel.lat;
-                let lng = hotel.lng;
-                if (!lat || !lng) {
-                  const coords = await geocodePlace(`${hotel.name}, ${hotel.city}`);
-                  if (coords) { lat = coords[0]; lng = coords[1]; hotel.lat = lat; hotel.lng = lng; }
-                }
-                if (lat && lng) {
-                  hotel.fsqPhoto = `https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/static/${lng},${lat},16,0/400x200@2x?access_token=${mapboxToken}`;
-                }
               }
             }
           })

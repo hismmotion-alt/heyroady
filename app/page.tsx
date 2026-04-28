@@ -287,12 +287,12 @@ const PLANNER_META: Record<
   results: {
     eyebrow: 'Roady suggestion',
     title: 'Roady picked your trip.',
-    description: 'Review the route, see the trip card on the right, or ask Roady to suggest a new one.',
+    description: 'Review the route, browse stay picks, see the trip card on the right, or ask Roady for another one.',
   },
   save: {
-    eyebrow: 'Save and export',
+    eyebrow: 'Save and share',
     title: 'Keep it, share it, or open it in Maps.',
-    description: 'Save the trip to your account, send it to your phone, or export a clean summary.',
+    description: 'Save the trip, copy the route link, or open it directly in your maps app.',
   },
   saved: {
     eyebrow: 'Trip saved',
@@ -645,7 +645,9 @@ function getBookingSearchUrl(hotel: HotelSuggestion) {
 }
 
 function getHotelCardImage(hotel: HotelSuggestion) {
-  return hotel.bookingPhoto ?? hotel.fsqPhoto ?? '';
+  const image = hotel.bookingPhoto ?? hotel.fsqPhoto ?? '';
+  if (image.includes('mapbox.com/styles/v1/mapbox/satellite-streets')) return '';
+  return image;
 }
 
 function buildGoogleMapsUrl(start: string, stops: PlannerStop[], end: string) {
@@ -877,7 +879,7 @@ function HomeContent() {
       : prefs.distancePreference === 'surprise'
         ? 'Roady picks the distance'
         : '';
-  const visibleHotels = tripData?.hotels?.slice(0, 3) ?? [];
+  const visibleHotels = tripData?.hotels?.slice(0, 4) ?? [];
   const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
   const greenButtonStyle = { backgroundColor: '#58CC02', boxShadow: '0 18px 44px rgba(88,204,2,0.22)' };
 
@@ -1189,10 +1191,10 @@ function HomeContent() {
       const fallbackStops = cloneStops(fallbackVariant.stops);
       const fallbackHotelNames =
         prefs.hotelPreference === '$$$'
-          ? ['Grand Hotel', 'Resort & Spa', 'Historic Suites']
+          ? ['Grand Hotel', 'Resort & Spa', 'Historic Suites', 'Coastal House']
           : prefs.hotelPreference === '$$'
-            ? ['Inn & Suites', 'Plaza Hotel', 'Foundry Hotel']
-            : ['Motor Lodge', 'Roadside Inn', 'Stay & Suites'];
+            ? ['Inn & Suites', 'Plaza Hotel', 'Foundry Hotel', 'Harbor Hotel']
+            : ['Motor Lodge', 'Roadside Inn', 'Stay & Suites', 'Sunset Inn'];
       const fallbackTrip: TripData = {
         routeName: option.name || fallbackVariant.routeName,
         tagline: option.tagline || fallbackVariant.tagline,
@@ -1341,65 +1343,15 @@ function HomeContent() {
     }
   }
 
-  async function handleSendToPhone() {
+  async function handleCopyLink() {
     if (!startInput.trim()) return;
 
     try {
-      if (navigator.share) {
-        await navigator.share({
-          title: 'My Roady trip',
-          text: `${routeName} from ${startInput}`,
-          url: googleMapsUrl,
-        });
-        setShareMessage('Shared to your phone.');
-        return;
-      }
-
       await navigator.clipboard.writeText(googleMapsUrl);
       setShareMessage('Trip link copied.');
     } catch {
-      setShareMessage('Sharing was canceled.');
+      setShareMessage('Unable to copy the trip link right now.');
     }
-  }
-
-  function handleExportPdf() {
-    if (!startInput.trim()) return;
-
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
-    if (!printWindow) {
-      setShareMessage('Allow popups to export the trip as a PDF.');
-      return;
-    }
-
-    const stopMarkup = stops
-      .map(
-        (stop, index) =>
-          `<li style="margin-bottom:16px;"><strong>${index + 1}. ${stop.name}</strong><div style="color:#667085;font-size:14px;">${stop.city} · ${stop.duration}</div><div style="margin-top:4px;color:#475467;font-size:14px;line-height:1.6;">${stop.description}</div></li>`
-      )
-      .join('');
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${routeName}</title>
-        </head>
-        <body style="font-family: 'Plus Jakarta Sans', Arial, sans-serif; padding: 40px; color: #1B2D45;">
-          <h1 style="font-size: 32px; margin-bottom: 8px;">${routeName}</h1>
-          <p style="font-size: 18px; color: #667085; margin-top: 0;">${startInput} to ${routeDestination}</p>
-          <div style="display:flex; gap:16px; margin:24px 0;">
-            <div style="padding:16px 20px; border:1px solid #EAECF0; border-radius:16px;">${tripDaysLabel}</div>
-            <div style="padding:16px 20px; border:1px solid #EAECF0; border-radius:16px;">${formatMiles(tripMiles)}</div>
-            <div style="padding:16px 20px; border:1px solid #EAECF0; border-radius:16px;">${stops.length} stops</div>
-          </div>
-          <p style="font-size: 15px; line-height: 1.7; color: #475467; max-width: 760px;">${routeSummary}</p>
-          <h2 style="margin-top: 32px;">Stops</h2>
-          <ol style="padding-left: 20px;">${stopMarkup}</ol>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -1782,8 +1734,8 @@ function HomeContent() {
               },
               {
                 n: '5',
-                title: 'Save or export',
-                desc: 'Save it, send it to your phone, or open everything in Maps.',
+                title: 'Save or share',
+                desc: 'Save it, copy the route link, or open everything in Maps.',
               },
             ].map((item) => (
               <div key={item.n} className="relative flex flex-col gap-4">
@@ -1941,14 +1893,14 @@ function HomeContent() {
           <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
             <div className="rounded-[30px] p-8 shadow-[0_18px_48px_rgba(27,45,69,0.08)]" style={{ backgroundColor: '#1B2D45' }}>
               <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#F8C9B8' }}>
-                Save and export
+                Save and share
               </p>
               <h2 className="mt-3 text-3xl font-extrabold text-white">
                 Save the trip once and keep moving.
               </h2>
               <p className="mt-4 text-base leading-relaxed text-white/75">
-                The planner ends where growth happens: save your trip, export a clean version,
-                send it to your phone, or open it directly in Google Maps.
+                The planner ends where growth happens: save your trip, copy a shareable route
+                link, or open it directly in your maps app.
               </p>
             </div>
 
@@ -1959,12 +1911,12 @@ function HomeContent() {
                   body: 'One-click Google sign-in keeps the whole itinerary attached to your account.',
                 },
                 {
-                  title: 'Export PDF',
-                  body: 'Print or export a compact route summary when you want something shareable.',
+                  title: 'Copy the link',
+                  body: 'Grab a shareable route link instantly when you want to send the trip somewhere else.',
                 },
                 {
-                  title: 'Send to phone',
-                  body: 'Phone-first sharing is built into the planner so the route leaves with you.',
+                  title: 'Open in Maps',
+                  body: 'Jump straight into Google Maps or Apple Maps when it is time to go.',
                 },
               ].map((item) => (
                 <div
@@ -2014,7 +1966,7 @@ function HomeContent() {
               },
               {
                 q: 'Can I open the route on my phone?',
-                a: 'Yes. The final step includes send-to-phone and direct Google Maps opening so the route can leave your laptop with you.',
+                a: 'Yes. The final step includes direct Google Maps and Apple Maps actions, plus a shareable copied link.',
               },
             ].map((item) => (
               <FaqItem key={item.q} question={item.q} answer={item.a} />
@@ -2055,15 +2007,20 @@ function HomeContent() {
                 plannerVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 scale-[0.98] opacity-0'
               }`}
             >
-              <div className="flex h-full flex-col lg:flex-row">
-                <aside className="w-full border-b border-gray-200 bg-white lg:h-full lg:w-[430px] lg:flex-shrink-0 lg:border-b-0 lg:border-r">
-                  <div className="flex h-full flex-col">
+              <div className="flex h-full min-h-0 flex-col lg:flex-row">
+                <aside className="w-full min-h-0 border-b border-gray-200 bg-white lg:h-full lg:w-[430px] lg:flex-shrink-0 lg:border-b-0 lg:border-r">
+                  <div className="flex h-full min-h-0 flex-col">
                     <div className="flex items-center justify-between px-6 pt-6 pb-4 sm:px-8">
                       <img src="/roady-logo.png" alt="Roady" style={{ height: 38, width: 'auto' }} />
                       <button
                         type="button"
                         onClick={closePlanner}
-                        className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-500 transition-colors hover:text-[#1B2D45]"
+                        className="rounded-full border px-4 py-2 text-sm font-semibold transition-colors"
+                        style={{
+                          borderColor: 'rgba(216,90,48,0.28)',
+                          backgroundColor: 'rgba(216,90,48,0.08)',
+                          color: '#D85A30',
+                        }}
                       >
                         Close
                       </button>
@@ -2100,7 +2057,7 @@ function HomeContent() {
                       </p>
                     </div>
 
-                    <div className="mt-8 flex-1 overflow-y-auto px-6 pb-8 sm:px-8">
+                    <div className="mt-8 min-h-0 flex-1 overflow-y-auto px-6 pb-8 sm:px-8">
                       {plannerStep === 'start' && (
                         <div ref={suggestionRef}>
                           <div className="rounded-[26px] border border-gray-200 bg-[#FAFAF9] p-4">
@@ -2391,20 +2348,20 @@ function HomeContent() {
                               Stay picks
                             </p>
                             {prefs.hotelPreference !== 'none' && visibleHotels.length > 0 ? (
-                              <div className="mt-4 grid gap-3">
+                              <div className="mt-4 grid grid-cols-2 gap-3">
                                 {visibleHotels.map((hotel, index) => {
                                   const selected = selectedHotelIndex === index;
                                   const hotelImage = getHotelCardImage(hotel);
                                   return (
                                     <div
                                       key={`${hotel.name}-${hotel.city}-${index}`}
-                                      className="overflow-hidden rounded-[24px] border-2 bg-white transition-all"
+                                      className="overflow-hidden rounded-[20px] border-2 bg-white transition-all"
                                       style={{
                                         borderColor: selected ? '#58CC02' : '#E5E7EB',
                                         boxShadow: selected ? '0 18px 40px rgba(88,204,2,0.14)' : 'none',
                                       }}
                                     >
-                                      <div className="aspect-square overflow-hidden bg-[linear-gradient(180deg,#EAF4FF_0%,#F7FAFC_100%)]">
+                                      <div className="aspect-[4/3] overflow-hidden bg-[linear-gradient(180deg,#EAF4FF_0%,#F7FAFC_100%)]">
                                         {hotelImage ? (
                                           <img
                                             src={hotelImage}
@@ -2413,18 +2370,18 @@ function HomeContent() {
                                           />
                                         ) : (
                                           <div className="flex h-full items-center justify-center px-6 text-center text-sm font-semibold text-gray-400">
-                                            Booking.com photos are loading for this stay.
+                                            Live hotel photo unavailable here yet. Open on Booking.com to see the listing.
                                           </div>
                                         )}
                                       </div>
 
-                                      <div className="p-4">
+                                      <div className="p-3">
                                         <div className="flex items-start justify-between gap-3">
                                           <div className="min-w-0">
-                                            <p className="text-lg font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                                            <p className="text-[15px] font-extrabold leading-tight line-clamp-2" style={{ color: '#1B2D45' }}>
                                               {hotel.name}
                                             </p>
-                                            <p className="mt-1 text-sm text-gray-400">
+                                            <p className="mt-1 text-xs text-gray-400">
                                               {hotel.city} · {hotel.priceRange}
                                               {hotel.fsqRating ? ` · ${hotel.fsqRating.toFixed(1)}★` : ''}
                                             </p>
@@ -2439,11 +2396,11 @@ function HomeContent() {
                                           )}
                                         </div>
 
-                                        <div className="mt-4 flex gap-2">
+                                        <div className="mt-3 grid grid-cols-2 gap-2">
                                           <button
                                             type="button"
                                             onClick={() => setSelectedHotelIndex(index)}
-                                            className="flex-1 rounded-[16px] px-3 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90"
+                                            className="rounded-[14px] px-3 py-2 text-[11px] font-bold text-white transition-opacity hover:opacity-90"
                                             style={{ backgroundColor: selected ? '#58CC02' : '#1B2D45' }}
                                           >
                                             {selected ? 'Selected hotel' : 'Pick this hotel'}
@@ -2452,7 +2409,7 @@ function HomeContent() {
                                             href={getBookingSearchUrl(hotel)}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="rounded-[16px] border border-gray-200 px-3 py-2 text-xs font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
+                                            className="rounded-[14px] border border-gray-200 px-3 py-2 text-center text-[11px] font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
                                           >
                                             Booking.com
                                           </a>
@@ -2505,7 +2462,7 @@ function HomeContent() {
                               className="flex-1 rounded-[20px] px-4 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
                               style={{ backgroundColor: '#58CC02' }}
                             >
-                              Save or export
+                              Save or share
                             </button>
                           </div>
 
@@ -2534,51 +2491,16 @@ function HomeContent() {
 
                       {plannerStep === 'save' && (
                         <div className="space-y-4">
-                          <button
-                            type="button"
-                            onClick={() => void handleSaveTrip(false)}
-                            disabled={saving}
-                            className="w-full rounded-[26px] px-5 py-5 text-left text-white transition-opacity hover:opacity-90 disabled:opacity-70"
-                            style={{ backgroundColor: '#58CC02' }}
-                          >
-                            <p className="text-sm font-bold uppercase tracking-[0.14em] text-white/70">
-                              Save your trip
+                          <div className="rounded-[26px] bg-[#FAFAF9] p-5">
+                            <p className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
+                              Save or share
                             </p>
-                            <p className="mt-2 text-xl font-extrabold">
-                              {saving ? 'Saving...' : user ? 'Save to my account' : 'Continue with Google'}
+                            <p className="mt-2 text-sm leading-relaxed text-gray-500">
+                              Pick the easiest way to take this trip with you.
                             </p>
-                            <p className="mt-2 text-sm leading-relaxed text-white/70">
-                              {user
-                                ? 'Keep this trip in Roady so you can reopen and edit it later.'
-                                : 'One-click sign-in keeps the planner state intact and brings you right back here.'}
-                            </p>
-                          </button>
+                          </div>
 
-                          <div className="grid gap-3 sm:grid-cols-3">
-                            <button
-                              type="button"
-                              onClick={handleExportPdf}
-                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
-                            >
-                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
-                                Export PDF
-                              </p>
-                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                                Print a compact version of the route.
-                              </p>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleSendToPhone()}
-                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
-                            >
-                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
-                                Send to phone
-                              </p>
-                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                                Share the route with the device you are taking on the road.
-                              </p>
-                            </button>
+                          <div className="grid gap-3 sm:grid-cols-2">
                             <a
                               href={googleMapsUrl}
                               target="_blank"
@@ -2589,9 +2511,50 @@ function HomeContent() {
                                 Open in Google Maps
                               </p>
                               <p className="mt-2 text-xs leading-relaxed text-gray-400">
-                                Leave Roady with the route already stitched together.
+                                Open the route with directions already stitched together.
                               </p>
                             </a>
+                            <a
+                              href={appleMapsUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
+                            >
+                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                                Open in Apple Maps
+                              </p>
+                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                                Send the whole trip straight into Apple Maps.
+                              </p>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => void handleCopyLink()}
+                              className="rounded-[22px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-[#1B2D45]"
+                            >
+                              <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
+                                Copy link
+                              </p>
+                              <p className="mt-2 text-xs leading-relaxed text-gray-400">
+                                Copy a shareable trip link to your clipboard.
+                              </p>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleSaveTrip(false)}
+                              disabled={saving}
+                              className="rounded-[22px] p-4 text-left text-white transition-opacity hover:opacity-90 disabled:opacity-70"
+                              style={{ backgroundColor: '#58CC02' }}
+                            >
+                              <p className="font-bold text-sm text-white">
+                                {saving ? 'Saving...' : 'Save'}
+                              </p>
+                              <p className="mt-2 text-xs leading-relaxed text-white/80">
+                                {user
+                                  ? 'Keep this trip in your Roady account.'
+                                  : 'Continue with Google and save it to your account.'}
+                              </p>
+                            </button>
                           </div>
                         </div>
                       )}
@@ -2680,7 +2643,7 @@ function HomeContent() {
                             {plannerStep === 'spots'
                               ? 'Suggest my trip'
                               : plannerStep === 'results'
-                                ? 'Save or export'
+                                ? 'Save or share'
                                 : 'Next'}
                           </button>
                         </div>
@@ -2701,7 +2664,7 @@ function HomeContent() {
                   </div>
                 </aside>
 
-                <div className="flex min-h-[380px] flex-1 flex-col overflow-hidden bg-[linear-gradient(180deg,#F7F9FB_0%,#EDF1F5_100%)]">
+                <div className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,#F7F9FB_0%,#EDF1F5_100%)]">
                   <div className="flex items-center justify-between gap-4 border-b border-white/70 px-6 py-5 sm:px-8">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
@@ -2728,8 +2691,8 @@ function HomeContent() {
                     </div>
                   </div>
 
-                  <div className="flex-1 p-6 sm:p-8">
-                    <div className="grid h-full gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+                  <div className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
+                    <div className="grid min-h-full items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
                       <div className="relative min-h-[320px] overflow-hidden rounded-[30px] border border-white/80 bg-white/75 shadow-[0_16px_50px_rgba(27,45,69,0.1)]">
                         {HAS_MAPBOX && startCoords && stops.length > 0 ? (
                           <RouteMap
