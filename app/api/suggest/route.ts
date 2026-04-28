@@ -118,6 +118,7 @@ function buildPreferenceContext(body: Record<string, string>): string {
   // Distance preference
   if (body.distance) {
     const distanceConstraintMap: Record<string, string> = {
+      'under-150':     'The destination should stay under 150 miles from the start.',
       'under-50':      'The destination must be under 50 miles from the start.',
       '50-100':        'The destination must be AT LEAST 50 miles and NO MORE THAN 100 miles from the start. Do NOT pick a destination closer than 50 miles.',
       '150-plus':      'The destination must be at least 150 miles from the start.',
@@ -218,7 +219,8 @@ export async function POST(req: Request) {
       if (body.vibe === 'relaxed') base = 3;
       else if (body.vibe === 'adventurous') base = 6;
 
-      if (body.distance === '50-100' || body.distance === '50-100 miles') base = Math.min(base, 3);
+      if (body.distance === 'under-150') base = Math.min(base, 3);
+      else if (body.distance === '50-100' || body.distance === '50-100 miles') base = Math.min(base, 3);
       else if (body.distance === '150-plus' || body.distance === '100-150 miles') base = Math.min(base, 4);
       else if (body.distance === '200+ miles') base = Math.max(base, 4);
 
@@ -352,6 +354,7 @@ ${hotelJsonField}  "stops": [
             try {
               const bQuery = encodeURIComponent(`${hotel.name} ${hotel.city || ''}`);
               const bUrl = `https://www.booking.com/searchresults.html?ss=${bQuery}&dest_type=hotel&is_hotel=1&lang=en-us`;
+              hotel.bookingUrl = bUrl;
               const bCtrl = new AbortController();
               const bTimeout = setTimeout(() => bCtrl.abort(), 6000);
               const bRes = await fetch(bUrl, {
@@ -369,11 +372,11 @@ ${hotelJsonField}  "stops": [
                 const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
                   ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
                 if (ogMatch?.[1]?.startsWith('http') && !ogMatch[1].includes('logo') && !ogMatch[1].includes('favicon')) {
-                  hotel.fsqPhoto = ogMatch[1];
+                  hotel.bookingPhoto = ogMatch[1];
                 } else {
                   // Fallback: extract first cf.bstatic.com hotel CDN image
                   const cdnMatch = html.match(/https:\/\/cf\.bstatic\.com\/xdata\/images\/hotel\/[^"'\s,\\]+\.jpg/);
-                  if (cdnMatch?.[0]) hotel.fsqPhoto = cdnMatch[0];
+                  if (cdnMatch?.[0]) hotel.bookingPhoto = cdnMatch[0];
                 }
               }
             } catch { /* silently skip */ }

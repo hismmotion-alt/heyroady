@@ -2,6 +2,8 @@ export interface HotelSuggestion {
   name: string;
   city: string;
   priceRange: '$' | '$$' | '$$$';
+  bookingPhoto?: string;
+  bookingUrl?: string;
   // Foursquare enrichment (optional)
   fsqRating?: number;
   fsqPhoto?: string;

@@ -1,12 +1,12 @@
 'use client';
 
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import { geocode } from '@/lib/geocode';
-import type { Stop, TripData } from '@/lib/types';
+import type { HotelSuggestion, Stop, TripData } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import {
   DndContext,
@@ -48,6 +48,7 @@ type PlannerStep =
   | 'start'
   | 'group'
   | 'kids'
+  | 'distance'
   | 'interests'
   | 'hotelBudget'
   | 'hotelDetails'
@@ -61,6 +62,7 @@ type PlannerStep =
 type PlannerPreferences = {
   travelGroup: string;
   kidsAges: string[];
+  distancePreference: string;
   interests: string[];
   hotelPreference: string;
   hotelGuests: string;
@@ -91,6 +93,7 @@ type PersistedPlannerState = {
   tripData: TripData | null;
   stops: PlannerStop[];
   mapEndCoords: [number, number] | null;
+  selectedHotelIndex: number;
   autoSaveOnRestore?: boolean;
 };
 
@@ -104,6 +107,7 @@ type ChoiceCardItem = {
 const DEFAULT_PREFS: PlannerPreferences = {
   travelGroup: '',
   kidsAges: [],
+  distancePreference: '',
   interests: [],
   hotelPreference: '',
   hotelGuests: '',
@@ -178,6 +182,12 @@ const HOTEL_BUDGETS: ChoiceCardItem[] = [
   { id: 'none', label: 'No hotel', desc: "I'll sort accommodation separately", emoji: '🚗' },
 ];
 
+const DISTANCE_OPTIONS: ChoiceCardItem[] = [
+  { id: 'under-150', label: 'Under 150 miles', desc: 'Keep the destination close and easy.', emoji: '🚘' },
+  { id: '150-plus', label: '150+ miles', desc: "I'm up for a longer drive.", emoji: '🛣️' },
+  { id: 'surprise', label: 'Surprise me', desc: 'Let Roady choose the best distance.', emoji: '✨' },
+];
+
 const ENROUTE_COUNTS: ChoiceCardItem[] = [
   { id: '0', label: 'None', desc: 'Drive straight through', emoji: '⚡' },
   { id: '1', label: '1 stop', desc: 'One quick break', emoji: '1️⃣' },
@@ -209,6 +219,10 @@ const HOTEL_LABELS: Record<string, string> = Object.fromEntries(
   HOTEL_BUDGETS.map((hotel) => [hotel.id, hotel.label])
 );
 
+const DISTANCE_LABELS: Record<string, string> = Object.fromEntries(
+  DISTANCE_OPTIONS.map((option) => [option.id, option.label])
+);
+
 const ROUTE_ICONS: Record<PlannerRouteKey, string> = {
   pch: '🌊',
   parks: '🌲',
@@ -234,6 +248,11 @@ const PLANNER_META: Record<
     eyebrow: 'Kids ages',
     title: 'How old are the kids?',
     description: 'Select all that apply so we find age-appropriate spots.',
+  },
+  distance: {
+    eyebrow: 'Drive distance',
+    title: 'How far do you want the main drive to be?',
+    description: 'Pick the rough distance you are comfortable with and Roady will keep the destination in that range.',
   },
   interests: {
     eyebrow: 'Trip vibe',
@@ -618,6 +637,17 @@ function estimateTripDaysLabel(
   return fallbackLabel;
 }
 
+function getBookingSearchUrl(hotel: HotelSuggestion) {
+  if (hotel.bookingUrl) return hotel.bookingUrl;
+  return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
+    `${hotel.name} ${hotel.city}`
+  )}&dest_type=hotel&is_hotel=1&lang=en-us`;
+}
+
+function getHotelCardImage(hotel: HotelSuggestion) {
+  return hotel.bookingPhoto ?? hotel.fsqPhoto ?? '';
+}
+
 function buildGoogleMapsUrl(start: string, stops: PlannerStop[], end: string) {
   const points = [
     encodeURIComponent(start),
@@ -665,7 +695,7 @@ async function reverseGeocodeLabel(lng: number, lat: number): Promise<string | n
 function buildQuestionSteps(prefs: PlannerPreferences): PlannerStep[] {
   const steps: PlannerStep[] = ['start', 'group'];
   if (prefs.travelGroup === 'family-kids') steps.push('kids');
-  steps.push('interests', 'hotelBudget');
+  steps.push('distance', 'interests', 'hotelBudget');
   if (prefs.hotelPreference && prefs.hotelPreference !== 'none') steps.push('hotelDetails');
   steps.push('enroute', 'spots');
   return steps;
@@ -711,23 +741,46 @@ function pickSeedRouteId(prefs: PlannerPreferences, currentSeed: PlannerRouteKey
     scores.custom += 1;
   }
 
+  if (prefs.distancePreference === 'under-150') {
+    scores.custom += 2;
+    scores.pch += 1;
+  }
+  if (prefs.distancePreference === '150-plus') {
+    scores.parks += 1;
+    scores.desert += 2;
+  }
+
   return (Object.entries(scores).sort((a, b) => b[1] - a[1])[0]?.[0] as PlannerRouteKey) ?? currentSeed;
 }
 
 function buildFallbackRouteOptions(
   routeRegion: StartRegion,
   prefs: PlannerPreferences,
-  currentSeed: PlannerRouteKey
+  currentSeed: PlannerRouteKey,
+  startCoords: [number, number] | null
 ): SuggestedRouteOption[] {
   const preferredSeed = pickSeedRouteId(prefs, currentSeed);
 
   return [...PLANNER_ROUTE_ORDER]
     .sort((a, b) => {
+      const aVariant = PLANNER_ROUTE_DEFINITIONS[a][routeRegion];
+      const bVariant = PLANNER_ROUTE_DEFINITIONS[b][routeRegion];
       const aScore = pickSeedRouteId(prefs, a) === a ? 1 : 0;
       const bScore = pickSeedRouteId(prefs, b) === b ? 1 : 0;
-      if (a === preferredSeed) return -1;
-      if (b === preferredSeed) return 1;
-      return bScore - aScore;
+      const aDistance = startCoords ? haversineMiles(startCoords, aVariant.destinationCoords) : null;
+      const bDistance = startCoords ? haversineMiles(startCoords, bVariant.destinationCoords) : null;
+
+      const fitDistanceScore = (distance: number | null) => {
+        if (distance == null || prefs.distancePreference === 'surprise' || !prefs.distancePreference) return 0;
+        if (prefs.distancePreference === 'under-150') return distance <= 150 ? 2 : -1;
+        if (prefs.distancePreference === '150-plus') return distance >= 150 ? 2 : -1;
+        return 0;
+      };
+
+      const totalScore = (routeId: PlannerRouteKey, distance: number | null, seedScore: number) =>
+        fitDistanceScore(distance) + seedScore + (routeId === preferredSeed ? 2 : 0);
+
+      return totalScore(b, bDistance, bScore) - totalScore(a, aDistance, aScore);
     })
     .slice(0, 3)
     .map((routeId, index) => {
@@ -774,6 +827,7 @@ function HomeContent() {
   const [stops, setStops] = useState<PlannerStop[]>([]);
   const [mapEndCoords, setMapEndCoords] = useState<[number, number] | null>(null);
   const [activeStop, setActiveStop] = useState(-1);
+  const [selectedHotelIndex, setSelectedHotelIndex] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [didTryAutoLocate, setDidTryAutoLocate] = useState(false);
@@ -803,6 +857,7 @@ function HomeContent() {
   const googleMapsUrl = startInput ? buildGoogleMapsUrl(startInput, stops, routeDestination) : '#';
   const appleMapsUrl = startInput ? buildAppleMapsUrl(startInput, stops, routeDestination) : '#';
   const questionSteps = buildQuestionSteps(prefs);
+  const mapStops = useMemo(() => stops.map(stripPlannerStop), [stops]);
   const progressSteps =
     plannerStep === 'generating' || plannerStep === 'results' || plannerStep === 'save' || plannerStep === 'saved'
       ? [...questionSteps, 'results', 'save']
@@ -816,7 +871,14 @@ function HomeContent() {
   const currentPlannerMeta = PLANNER_META[plannerStep];
   const previewInterests = prefs.interests.slice(0, 4).map((interest) => INTEREST_LABELS[interest] ?? interest);
   const previewHotel = prefs.hotelPreference ? HOTEL_LABELS[prefs.hotelPreference] : '';
-  const topHotel = tripData?.hotels?.[0];
+  const previewDistance =
+    prefs.distancePreference && prefs.distancePreference !== 'surprise'
+      ? DISTANCE_LABELS[prefs.distancePreference]
+      : prefs.distancePreference === 'surprise'
+        ? 'Roady picks the distance'
+        : '';
+  const visibleHotels = tripData?.hotels?.slice(0, 3) ?? [];
+  const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
   const greenButtonStyle = { backgroundColor: '#58CC02', boxShadow: '0 18px 44px rgba(88,204,2,0.22)' };
 
   const sensors = useSensors(
@@ -831,6 +893,7 @@ function HomeContent() {
     setStops([]);
     setMapEndCoords(null);
     setActiveStop(-1);
+    setSelectedHotelIndex(0);
     if (clearMessages) {
       setPlannerError('');
       setSaveMessage('');
@@ -846,11 +909,12 @@ function HomeContent() {
   }, []);
 
   useEffect(() => {
+    if (plannerOpen) return;
     const interval = setInterval(() => {
       setHeroStep((value) => (value + 1) % HOME_PREVIEW_STEPS.length);
     }, 1800);
     return () => clearInterval(interval);
-  }, []);
+  }, [plannerOpen]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -900,6 +964,7 @@ function HomeContent() {
       setTripData(parsed.tripData);
       setStops(parsed.stops);
       setMapEndCoords(parsed.mapEndCoords);
+      setSelectedHotelIndex(parsed.selectedHotelIndex ?? 0);
       setActiveStop(-1);
     } catch {
       window.localStorage.removeItem(PLANNER_STORAGE_KEY);
@@ -911,6 +976,11 @@ function HomeContent() {
     setDidTryAutoLocate(true);
     void detectCurrentLocation(false);
   }, [plannerOpen, plannerStep, didTryAutoLocate]);
+
+  useEffect(() => {
+    if (selectedHotelIndex < visibleHotels.length) return;
+    setSelectedHotelIndex(0);
+  }, [selectedHotelIndex, visibleHotels.length]);
 
   useEffect(() => {
     if (!user || !autoSaveOnRestoreRef.current) return;
@@ -1002,6 +1072,7 @@ function HomeContent() {
     setStops([]);
     setMapEndCoords(null);
     setActiveStop(-1);
+    setSelectedHotelIndex(0);
     setPlannerError('');
     setSaveMessage('');
     setShareMessage('');
@@ -1029,6 +1100,7 @@ function HomeContent() {
       tripData,
       stops,
       mapEndCoords,
+      selectedHotelIndex,
       autoSaveOnRestore,
     };
     window.localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(state));
@@ -1084,6 +1156,7 @@ function HomeContent() {
           routeHint: option.name,
           travelGroup: prefs.travelGroup,
           kidsAges: prefs.kidsAges.join(','),
+          distance: prefs.distancePreference === 'surprise' ? '' : prefs.distancePreference,
           interests: prefs.interests.join(','),
           hotelPreference: prefs.hotelPreference,
           hotelGuests: prefs.hotelGuests,
@@ -1109,10 +1182,17 @@ function HomeContent() {
       setRouteOptions(options);
       setRouteOptionIndex(optionIndex);
       setActiveStop(-1);
+      setSelectedHotelIndex(0);
       setPlannerStep('results');
       return;
     } catch {
       const fallbackStops = cloneStops(fallbackVariant.stops);
+      const fallbackHotelNames =
+        prefs.hotelPreference === '$$$'
+          ? ['Grand Hotel', 'Resort & Spa', 'Historic Suites']
+          : prefs.hotelPreference === '$$'
+            ? ['Inn & Suites', 'Plaza Hotel', 'Foundry Hotel']
+            : ['Motor Lodge', 'Roadside Inn', 'Stay & Suites'];
       const fallbackTrip: TripData = {
         routeName: option.name || fallbackVariant.routeName,
         tagline: option.tagline || fallbackVariant.tagline,
@@ -1120,13 +1200,14 @@ function HomeContent() {
         stops: fallbackStops.map(stripPlannerStop),
         hotels:
           prefs.hotelPreference && prefs.hotelPreference !== 'none'
-            ? [
-                {
-                  name: `${fallbackVariant.destination} Stay`,
-                  city: fallbackVariant.destination,
-                  priceRange: prefs.hotelPreference as '$' | '$$' | '$$$',
-                },
-              ]
+            ? fallbackHotelNames.map((suffix) => ({
+                name: `${fallbackVariant.destination} ${suffix}`,
+                city: fallbackVariant.destination,
+                priceRange: prefs.hotelPreference as '$' | '$$' | '$$$',
+                bookingUrl: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
+                  `${fallbackVariant.destination} ${suffix} ${fallbackVariant.destination}`
+                )}&dest_type=hotel&is_hotel=1&lang=en-us`,
+              }))
             : undefined,
         completed: true,
         destinationDescription: fallbackVariant.summary,
@@ -1143,6 +1224,7 @@ function HomeContent() {
       setRouteOptions(options);
       setRouteOptionIndex(optionIndex);
       setActiveStop(-1);
+      setSelectedHotelIndex(0);
       setMapEndCoords(fallbackVariant.destinationCoords);
       setPlannerError('Roady is showing a curated route while live suggestions warm up.');
       setPlannerStep('results');
@@ -1170,6 +1252,7 @@ function HomeContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           start: startInput,
+          distance: prefs.distancePreference === 'surprise' ? '' : prefs.distancePreference,
           travelGroup: prefs.travelGroup,
           interests: prefs.interests.join(','),
           numberOfEnrouteStops: prefs.numberOfEnrouteStops,
@@ -1188,12 +1271,12 @@ function HomeContent() {
         fallbackRouteId: option.fallbackRouteId ?? preferredSeed,
       }));
     } catch {
-      options = buildFallbackRouteOptions(routeRegion, prefs, preferredSeed);
+      options = buildFallbackRouteOptions(routeRegion, prefs, preferredSeed, startCoords);
       setPlannerError('Roady is using curated route ideas for this suggestion.');
     }
 
     if (!options.length) {
-      options = buildFallbackRouteOptions(routeRegion, prefs, preferredSeed);
+      options = buildFallbackRouteOptions(routeRegion, prefs, preferredSeed, startCoords);
     }
 
     setRouteOptions(options);
@@ -1360,6 +1443,11 @@ function HomeContent() {
     }));
   }
 
+  function setDistancePreference(distancePreference: string) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => ({ ...currentPrefs, distancePreference }));
+  }
+
   function setHotelPreference(hotelPreference: string) {
     resetSuggestedTrip();
     setPrefs((currentPrefs) => ({
@@ -1389,6 +1477,8 @@ function HomeContent() {
         return Boolean(prefs.travelGroup);
       case 'kids':
         return prefs.kidsAges.length > 0;
+      case 'distance':
+        return Boolean(prefs.distancePreference);
       case 'interests':
         return prefs.interests.length > 0;
       case 'hotelBudget':
@@ -2113,6 +2203,19 @@ function HomeContent() {
                         </div>
                       )}
 
+                      {plannerStep === 'distance' && (
+                        <div className="space-y-3">
+                          {DISTANCE_OPTIONS.map((option) => (
+                            <SelectionCard
+                              key={option.id}
+                              item={option}
+                              selected={prefs.distancePreference === option.id}
+                              onClick={() => setDistancePreference(option.id)}
+                            />
+                          ))}
+                        </div>
+                      )}
+
                       {plannerStep === 'interests' && (
                         <div className="space-y-8">
                           {INTEREST_GROUPS.map((group) => (
@@ -2266,6 +2369,11 @@ function HomeContent() {
                                   {GROUP_LABELS[prefs.travelGroup]}
                                 </span>
                               )}
+                              {previewDistance && (
+                                <span className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}>
+                                  {previewDistance}
+                                </span>
+                              )}
                               {previewInterests.map((label) => (
                                 <span key={label} className="rounded-full px-3 py-1 text-xs font-semibold" style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}>
                                   {label}
@@ -2280,12 +2388,89 @@ function HomeContent() {
                         <div className="space-y-5">
                           <div className="rounded-[26px] bg-[#FAFAF9] p-5">
                             <p className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
-                              Suggested route
+                              Stay picks
                             </p>
-                            <p className="mt-2 text-2xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
-                              {routeName}
-                            </p>
-                            <p className="mt-3 text-sm leading-relaxed text-gray-500">{routeTagline}</p>
+                            {prefs.hotelPreference !== 'none' && visibleHotels.length > 0 ? (
+                              <div className="mt-4 grid gap-3">
+                                {visibleHotels.map((hotel, index) => {
+                                  const selected = selectedHotelIndex === index;
+                                  const hotelImage = getHotelCardImage(hotel);
+                                  return (
+                                    <div
+                                      key={`${hotel.name}-${hotel.city}-${index}`}
+                                      className="overflow-hidden rounded-[24px] border-2 bg-white transition-all"
+                                      style={{
+                                        borderColor: selected ? '#58CC02' : '#E5E7EB',
+                                        boxShadow: selected ? '0 18px 40px rgba(88,204,2,0.14)' : 'none',
+                                      }}
+                                    >
+                                      <div className="aspect-square overflow-hidden bg-[linear-gradient(180deg,#EAF4FF_0%,#F7FAFC_100%)]">
+                                        {hotelImage ? (
+                                          <img
+                                            src={hotelImage}
+                                            alt={hotel.name}
+                                            className="h-full w-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="flex h-full items-center justify-center px-6 text-center text-sm font-semibold text-gray-400">
+                                            Booking.com photos are loading for this stay.
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div className="min-w-0">
+                                            <p className="text-lg font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                                              {hotel.name}
+                                            </p>
+                                            <p className="mt-1 text-sm text-gray-400">
+                                              {hotel.city} · {hotel.priceRange}
+                                              {hotel.fsqRating ? ` · ${hotel.fsqRating.toFixed(1)}★` : ''}
+                                            </p>
+                                          </div>
+                                          {selected && (
+                                            <span
+                                              className="rounded-full px-2.5 py-1 text-[11px] font-bold"
+                                              style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
+                                            >
+                                              Picked
+                                            </span>
+                                          )}
+                                        </div>
+
+                                        <div className="mt-4 flex gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => setSelectedHotelIndex(index)}
+                                            className="flex-1 rounded-[16px] px-3 py-2 text-xs font-bold text-white transition-opacity hover:opacity-90"
+                                            style={{ backgroundColor: selected ? '#58CC02' : '#1B2D45' }}
+                                          >
+                                            {selected ? 'Selected hotel' : 'Pick this hotel'}
+                                          </button>
+                                          <a
+                                            href={getBookingSearchUrl(hotel)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="rounded-[16px] border border-gray-200 px-3 py-2 text-xs font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
+                                          >
+                                            Booking.com
+                                          </a>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : prefs.hotelPreference === 'none' ? (
+                              <div className="mt-3 rounded-[22px] border border-dashed border-gray-200 bg-white px-4 py-4 text-sm leading-relaxed text-gray-500">
+                                You chose to sort accommodation separately, so Roady kept the focus on the route.
+                              </div>
+                            ) : (
+                              <div className="mt-3 rounded-[22px] border border-dashed border-gray-200 bg-white px-4 py-4 text-sm leading-relaxed text-gray-500">
+                                Roady is still lining up hotel matches for this destination.
+                              </div>
+                            )}
                           </div>
 
                           <div className="rounded-[26px] border border-gray-200 bg-white p-5">
@@ -2548,7 +2733,7 @@ function HomeContent() {
                       <div className="relative min-h-[320px] overflow-hidden rounded-[30px] border border-white/80 bg-white/75 shadow-[0_16px_50px_rgba(27,45,69,0.1)]">
                         {HAS_MAPBOX && startCoords && stops.length > 0 ? (
                           <RouteMap
-                            stops={stops.map(stripPlannerStop)}
+                            stops={mapStops}
                             start={startCoords}
                             end={endCoords}
                             activeStop={activeStop}
@@ -2636,6 +2821,14 @@ function HomeContent() {
                                 {GROUP_LABELS[prefs.travelGroup]}
                               </span>
                             )}
+                            {previewDistance && (
+                              <span
+                                className="rounded-full px-3 py-1 text-xs font-semibold"
+                                style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
+                              >
+                                {previewDistance}
+                              </span>
+                            )}
                             {previewHotel && (
                               <span
                                 className="rounded-full px-3 py-1 text-xs font-semibold"
@@ -2656,20 +2849,28 @@ function HomeContent() {
                           </div>
                         </div>
 
-                        {topHotel && (
+                        {selectedHotel && (
                           <div className="rounded-[26px] border border-white/80 bg-white p-5 shadow-sm">
                             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
                               Hotel suggestion
                             </p>
                             <p className="mt-3 text-lg font-extrabold" style={{ color: '#1B2D45' }}>
-                              {topHotel.name}
+                              {selectedHotel.name}
                             </p>
                             <p className="mt-1 text-sm text-gray-400">
-                              {topHotel.city} · {topHotel.priceRange}
+                              {selectedHotel.city} · {selectedHotel.priceRange}
                             </p>
                             <p className="mt-3 text-sm leading-relaxed text-gray-500">
                               Roady will use your hotel answers to point the trip toward the right stay profile.
                             </p>
+                            <a
+                              href={getBookingSearchUrl(selectedHotel)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-4 inline-flex rounded-full border border-gray-200 px-3 py-2 text-xs font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
+                            >
+                              Open on Booking.com
+                            </a>
                           </div>
                         )}
                       </div>

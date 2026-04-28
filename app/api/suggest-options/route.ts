@@ -31,6 +31,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 /** Returns true if distMiles is within the user's selected distance band. */
 function inRange(distMiles: number, distanceKey: string): boolean {
+  if (distanceKey === 'under-150') return distMiles <= 165;
   if (distanceKey === 'under-50')  return distMiles < 55;           // small buffer
   if (distanceKey === '50-100')    return distMiles >= 45 && distMiles <= 115;
   if (distanceKey === '150-plus')  return distMiles >= 140;
@@ -96,11 +97,13 @@ export async function POST(req: Request) {
     const client = getClient();
 
     const distanceLabels: Record<string, string> = {
+      'under-150': 'under 150 miles',
       'under-50':  'under 50 miles',
       '50-100':    'between 50 and 100 miles',
       '150-plus':  'more than 150 miles',
     };
     const distanceConstraints: Record<string, string> = {
+      'under-150': 'Destinations must be under 150 miles driving distance from start.',
       'under-50':  'Destinations must be under 50 miles driving distance from start.',
       '50-100':    'Destinations must be AT LEAST 50 miles and NO MORE THAN 100 miles driving distance from start. Never suggest a nearby city under 50 miles away.',
       '150-plus':  'Destinations must be at least 150 miles driving distance from start.',
