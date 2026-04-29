@@ -6,24 +6,9 @@ import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import { geocode } from '@/lib/geocode';
+import { getHotelImageUrl } from '@/lib/hotel-images';
 import type { HotelSuggestion, Stop, TripData } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
-import {
-  DndContext,
-  PointerSensor,
-  TouchSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  SortableContext,
-  arrayMove,
-  useSortable,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import {
   PLANNER_ROUTE_DEFINITIONS,
   PLANNER_ROUTE_ORDER,
@@ -473,124 +458,6 @@ function NumberPill({
   );
 }
 
-function SortablePlannerStopCard({
-  stop,
-  number,
-  onRemove,
-  onSelect,
-}: {
-  stop: PlannerStop;
-  number: number;
-  onRemove: () => void;
-  onSelect: () => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: stop.id });
-  const stopTags = getStopTags(stop);
-
-  return (
-    <div
-      ref={setNodeRef}
-      onClick={onSelect}
-      className="rounded-[24px] border border-white/80 bg-white shadow-sm transition-all cursor-pointer"
-      style={{
-        transform: CSS.Transform.toString(transform),
-        transition,
-        boxShadow: isDragging ? '0 24px 48px rgba(27,45,69,0.16)' : undefined,
-      }}
-    >
-      <div className="flex items-start gap-3 p-4">
-        <button
-          type="button"
-          onClick={(event) => event.stopPropagation()}
-          {...attributes}
-          {...listeners}
-          className="mt-1 flex flex-col gap-[3px] rounded-xl border border-gray-200 px-2 py-2 text-gray-400 transition-colors hover:text-[#1B2D45] cursor-grab active:cursor-grabbing"
-          aria-label={`Reorder ${stop.name}`}
-        >
-          {[0, 1, 2].map((row) => (
-            <span key={row} className="flex gap-[3px]">
-              <span className="w-[3px] h-[3px] rounded-full bg-current" />
-              <span className="w-[3px] h-[3px] rounded-full bg-current" />
-            </span>
-          ))}
-        </button>
-
-        <div
-          className="mt-0.5 h-8 w-8 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-extrabold text-white"
-          style={{ backgroundColor: stop.stopType === 'en-route' ? '#D85A30' : '#378ADD' }}
-        >
-          {number}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
-                  {stop.name}
-                </p>
-                {stop.recommended && (
-                  <span
-                    className="rounded-full px-2 py-0.5 text-[10px] font-bold"
-                    style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
-                  >
-                    Recommended
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-xs text-gray-400">
-                {stop.city} · {stop.duration}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onRemove();
-              }}
-              className="rounded-full px-2 py-1 text-xs font-bold text-gray-400 transition-colors hover:text-red-500"
-            >
-              Remove
-            </button>
-          </div>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            {stopTags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full px-2.5 py-1 text-[11px] font-bold"
-                style={{
-                  backgroundColor:
-                    tag === 'Food'
-                      ? 'rgba(239,159,39,0.12)'
-                      : tag === 'Museum' || tag === 'Culture' || tag === 'Art'
-                        ? 'rgba(147,51,234,0.12)'
-                        : tag === 'Park' || tag === 'Nature'
-                          ? 'rgba(88,204,2,0.12)'
-                          : 'rgba(55,138,221,0.1)',
-                  color:
-                    tag === 'Food'
-                      ? '#C76B10'
-                      : tag === 'Museum' || tag === 'Culture' || tag === 'Art'
-                        ? '#7C3AED'
-                        : tag === 'Park' || tag === 'Nature'
-                          ? '#46A302'
-                          : '#378ADD',
-                }}
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          <p className="mt-3 text-sm leading-relaxed text-gray-500">{shortenStopDescription(stop.description)}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function getStartRegion(startInput: string, coords: [number, number] | null): StartRegion {
   const start = startInput.toLowerCase();
   const northHints = ['san francisco', 'oakland', 'berkeley', 'sacramento', 'napa', 'sonoma', 'san jose', 'palo alto'];
@@ -678,23 +545,8 @@ function getBookingSearchUrl(hotel: HotelSuggestion) {
   )}&dest_type=hotel&is_hotel=1&lang=en-us`;
 }
 
-function isMapLikeHotelImage(url?: string) {
-  if (!url) return true;
-  const normalized = url.toLowerCase();
-  return (
-    normalized.includes('mapbox.com/styles') ||
-    normalized.includes('maps.googleapis.com/maps') ||
-    normalized.includes('googleapis.com/maps/api/staticmap') ||
-    normalized.includes('googleusercontent.com/maps') ||
-    normalized.includes('/tiles/') ||
-    normalized.includes('/satellite')
-  );
-}
-
 function getHotelCardImage(hotel: HotelSuggestion) {
-  if (hotel.bookingPhoto && !isMapLikeHotelImage(hotel.bookingPhoto)) return hotel.bookingPhoto;
-  if (hotel.fsqPhoto && !isMapLikeHotelImage(hotel.fsqPhoto)) return hotel.fsqPhoto;
-  return '';
+  return getHotelImageUrl(hotel);
 }
 
 function getHotelDestinationLabel(hotel: HotelSuggestion) {
@@ -707,20 +559,6 @@ function getHotelDestinationDisplay(hotel: HotelSuggestion) {
 
 function getHotelLocationSummary(hotel: HotelSuggestion) {
   return hotel.city || 'Destination stay';
-}
-
-function getHotelAddressLine(hotel: HotelSuggestion) {
-  if (!hotel.address) return '';
-  const normalizedAddress = hotel.address.trim();
-  const city = hotel.city.trim();
-  if (normalizedAddress.toLowerCase() === city.toLowerCase()) return '';
-  return normalizedAddress;
-}
-
-function shortenStopDescription(text: string, maxLength = 112) {
-  const firstSentence = text.split(/(?<=[.!?])\s+/)[0]?.trim() || text.trim();
-  if (firstSentence.length <= maxLength) return firstSentence;
-  return `${firstSentence.slice(0, maxLength - 1).trimEnd()}…`;
 }
 
 function getStopTags(stop: PlannerStop) {
@@ -812,180 +650,339 @@ function ActionGlyph({
   );
 }
 
-function PlannerHotelCard({
+const RESULT_STEPS = ['Preferences', 'Route', 'Stops', 'Review', 'Stay', 'Finalize'];
+
+function ResultStepRail() {
+  return (
+    <div className="mx-auto flex w-full max-w-[760px] items-center justify-center gap-2 overflow-x-auto px-1 pb-1">
+      {RESULT_STEPS.map((step, index) => {
+        const completed = index < 4;
+        const current = index === 4;
+
+        return (
+          <div key={step} className="flex flex-shrink-0 items-center gap-2">
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-extrabold"
+              style={{
+                backgroundColor: completed || current ? '#13A85B' : '#ffffff',
+                border: completed || current ? '0' : '2px solid #CBD5E1',
+                color: completed || current ? '#ffffff' : '#94A3B8',
+              }}
+            >
+              {completed ? (
+                <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                index + 1
+              )}
+            </span>
+            <span
+              className="text-xs font-bold"
+              style={{ color: completed || current ? '#1B2D45' : '#94A3B8' }}
+            >
+              {step}
+            </span>
+            {index < RESULT_STEPS.length - 1 && (
+              <span
+                className="h-0.5 w-7 rounded-full sm:w-10"
+                style={{ backgroundColor: completed ? '#CBD5E1' : '#E2E8F0' }}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function getCategoryIcon(category: PlannerStop['category']) {
+  const icons: Record<PlannerStop['category'], string> = {
+    food: '☕',
+    culture: '🏛',
+    nature: '🌲',
+    adventure: '🥾',
+    scenic: '🌄',
+  };
+  return icons[category];
+}
+
+function getStayTags(hotel: HotelSuggestion, preferenceLabels: string[]) {
+  const tags = new Set<string>();
+  if (hotel.priceRange === '$$$') tags.add('Luxury');
+  else if (hotel.priceRange === '$$') tags.add('Comfort');
+  else tags.add('Value');
+
+  preferenceLabels.forEach((label) => {
+    const normalized = label.toLowerCase();
+    if (normalized.includes('wine')) tags.add('Wine');
+    else if (normalized.includes('beach')) tags.add('Beach');
+    else if (normalized.includes('history') || normalized.includes('museum')) tags.add('Historic');
+    else if (normalized.includes('coffee') || normalized.includes('baker') || normalized.includes('local food')) tags.add('Food nearby');
+    else if (normalized.includes('hiking') || normalized.includes('national')) tags.add('Nature');
+    else if (normalized.includes('boutique')) tags.add('Boutique');
+  });
+
+  if (tags.size < 3) tags.add('Roady pick');
+  if (tags.size < 3) tags.add('Easy stop');
+
+  return Array.from(tags).slice(0, 3);
+}
+
+function getStayTagStyle(index: number) {
+  const styles = [
+    { backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' },
+    { backgroundColor: 'rgba(88,204,2,0.12)', color: '#46A302' },
+    { backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' },
+  ];
+  return styles[index % styles.length];
+}
+
+function ResultStayCard({
   hotel,
   selected,
+  preferenceLabels,
   onSelect,
-  onPrevious,
-  onNext,
-  canGoPrevious,
-  canGoNext,
-  currentIndex,
-  total,
 }: {
   hotel: HotelSuggestion;
   selected: boolean;
+  preferenceLabels: string[];
   onSelect: () => void;
-  onPrevious: () => void;
-  onNext: () => void;
-  canGoPrevious: boolean;
-  canGoNext: boolean;
-  currentIndex: number;
-  total: number;
 }) {
   const [imageFailed, setImageFailed] = useState(false);
   const hotelImage = imageFailed ? '' : getHotelCardImage(hotel);
-  const ratingLabel = hotel.fsqRating ? `${hotel.fsqRating.toFixed(1)}★` : 'Roady pick';
-  const addressLine = getHotelAddressLine(hotel);
+  const priceLabel = hotel.fsqPrice != null ? '$'.repeat(hotel.fsqPrice) : hotel.priceRange;
+  const ratingLabel = hotel.fsqRating ? hotel.fsqRating.toFixed(1) : '4.6';
+  const tags = getStayTags(hotel, preferenceLabels);
 
   return (
     <div
-      className="flex h-full min-h-[360px] flex-col overflow-hidden rounded-[24px] border-2 bg-white transition-all"
+      className="rounded-[22px] border bg-white p-3 transition-all"
       style={{
-        borderColor: selected ? '#58CC02' : '#E5E7EB',
-        boxShadow: selected ? '0 18px 40px rgba(88,204,2,0.14)' : 'none',
+        borderColor: selected ? '#13A85B' : '#DDE3EA',
+        boxShadow: selected ? '0 12px 30px rgba(19,168,91,0.12)' : '0 8px 22px rgba(27,45,69,0.05)',
       }}
     >
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-[#EEF2F7]">
-        {hotelImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={hotelImage}
-            alt={hotel.name}
-            className="h-full w-full object-cover"
-            onError={() => setImageFailed(true)}
-          />
-        ) : (
-          <div
-            className="flex h-full w-full items-end"
-            style={{
-              background:
-                hotel.priceRange === '$$$'
-                  ? 'linear-gradient(135deg,#1B2D45 0%,#35537A 100%)'
-                  : hotel.priceRange === '$$'
-                    ? 'linear-gradient(135deg,#2A5F8A 0%,#5E9AE2 100%)'
-                    : 'linear-gradient(135deg,#2E4F1D 0%,#58CC02 100%)',
-            }}
-          >
-            <div className="w-full bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.4)_100%)] px-3 py-3">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/75">Stay pick</p>
-              <p className="mt-1 text-base font-extrabold leading-tight text-white">
-                {hotel.name}
-              </p>
+      <div className="grid gap-3 sm:grid-cols-[136px_minmax(0,1fr)]">
+        <div className="relative h-[124px] overflow-hidden rounded-[16px] bg-[#EEF2F7] sm:h-full">
+          {hotelImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={hotelImage}
+              alt={hotel.name}
+              className="h-full w-full object-cover"
+              onError={() => setImageFailed(true)}
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-end p-3"
+              style={{
+                background:
+                  hotel.priceRange === '$$$'
+                    ? 'linear-gradient(135deg,#1B2D45 0%,#35537A 100%)'
+                    : hotel.priceRange === '$$'
+                      ? 'linear-gradient(135deg,#2A5F8A 0%,#5E9AE2 100%)'
+                      : 'linear-gradient(135deg,#2E4F1D 0%,#58CC02 100%)',
+              }}
+            >
+              <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-white/80">Stay</span>
             </div>
-          </div>
-        )}
-
-        <div className="absolute left-3 top-3 flex items-center gap-2">
-          <span
-            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
-            style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#1B2D45' }}
-          >
-            {hotel.priceRange}
-          </span>
-          <span
-            className="rounded-full px-2.5 py-1 text-[11px] font-bold"
-            style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#6B7280' }}
-          >
-            {ratingLabel}
-          </span>
+          )}
         </div>
 
-        {selected && (
-          <span
-            className="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-bold"
-            style={{ backgroundColor: '#58CC02', color: '#ffffff' }}
-          >
-            Picked
-          </span>
-        )}
-
-        {total > 1 && (
-          <div className="absolute inset-x-3 bottom-3 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={onPrevious}
-              disabled={!canGoPrevious}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#1B2D45] shadow-sm transition-opacity hover:opacity-90 disabled:opacity-35"
-              aria-label="Previous hotel"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
-                <path d="m15 18-6-6 6-6" />
-              </svg>
-            </button>
-
-            <span
-              className="rounded-full px-3 py-1 text-[11px] font-bold"
-              style={{ backgroundColor: 'rgba(255,255,255,0.92)', color: '#1B2D45' }}
-            >
-              {currentIndex + 1} / {total}
-            </span>
-
-            <button
-              type="button"
-              onClick={onNext}
-              disabled={!canGoNext}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-[#1B2D45] shadow-sm transition-opacity hover:opacity-90 disabled:opacity-35"
-              aria-label="Next hotel"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
-                <path d="m9 6 6 6-6 6" />
-              </svg>
-            </button>
+        <div className="min-w-0">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p
+                className="text-lg font-extrabold leading-tight"
+                style={{
+                  color: '#1B2D45',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {hotel.name}
+              </p>
+              <p className="mt-1 text-sm text-gray-400">{getHotelLocationSummary(hotel)}</p>
+            </div>
+            {selected && (
+              <span className="flex-shrink-0 rounded-full bg-[#13A85B] px-3 py-1 text-[11px] font-extrabold text-white">
+                Selected
+              </span>
+            )}
           </div>
-        )}
+
+          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+            <span className="font-bold" style={{ color: '#EF9F27' }}>
+              ★ {ratingLabel}
+            </span>
+            <span className="text-gray-300">|</span>
+            <span className="font-extrabold" style={{ color: '#13A85B' }}>
+              {priceLabel}
+            </span>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {tags.map((tag, index) => (
+              <span
+                key={tag}
+                className="rounded-full px-3 py-1 text-xs font-bold"
+                style={getStayTagStyle(index)}
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={onSelect}
+              className="rounded-[12px] px-3 py-2 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: selected ? '#13A85B' : '#1B2D45' }}
+            >
+              {selected ? 'Selected' : 'Select this stay'}
+            </button>
+            <a
+              href={getBookingSearchUrl(hotel)}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-[12px] border border-gray-200 px-3 py-2 text-center text-sm font-extrabold transition-colors hover:text-[#1B2D45]"
+              style={{ color: '#1B2D45' }}
+            >
+              View details
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RouteAtGlance({
+  startLabel,
+  stops,
+  selectedHotel,
+  fallbackDestination,
+  activeStop,
+  onStopClick,
+}: {
+  startLabel: string;
+  stops: PlannerStop[];
+  selectedHotel: HotelSuggestion | null;
+  fallbackDestination: string;
+  activeStop: number;
+  onStopClick: (index: number) => void;
+}) {
+  const finalLabel = selectedHotel?.city || fallbackDestination;
+  const finalSubLabel = selectedHotel ? selectedHotel.name : 'Final stop';
+
+  return (
+    <div className="rounded-[26px] border border-[#DDE3EA] bg-white p-5 shadow-[0_10px_30px_rgba(27,45,69,0.05)]">
+      <div className="flex items-start gap-3">
+        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-[#F1F3F6] text-xl">
+          ✨
+        </span>
+        <div>
+          <p className="text-xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+            Your route at a glance
+          </p>
+          <p className="mt-1 text-sm text-gray-500">
+            A relaxed drive with Roady's best stops laid out in order.
+          </p>
+        </div>
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
-        <div>
-          <p
-            className="text-xl font-extrabold leading-tight"
-            style={{
-              color: '#1B2D45',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-            }}
-          >
-            {hotel.name}
-          </p>
-          <p className="mt-2 text-sm font-semibold" style={{ color: '#1B2D45' }}>
-            {getHotelLocationSummary(hotel)}
-          </p>
-          {addressLine && (
+      <div className="mt-6 overflow-x-auto pb-1">
+        <div
+          className="grid min-w-[760px] items-start gap-3"
+          style={{ gridTemplateColumns: `repeat(${stops.length + 2}, minmax(100px, 1fr))` }}
+        >
+          <div className="relative flex flex-col items-center text-center">
+            <div className="absolute left-1/2 top-8 h-0.5 w-full border-t-2 border-dashed border-[#C6CED8]" />
+            <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#13A85B] bg-[#EFFFF4] text-2xl">
+              🚩
+            </span>
+            <span className="mt-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#13A85B] text-[11px] font-extrabold text-white">
+              1
+            </span>
+            <p className="mt-2 text-sm font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+              {startLabel || 'Start'}
+            </p>
+            <p className="mt-1 text-xs font-bold" style={{ color: '#13A85B' }}>
+              Start
+            </p>
+          </div>
+
+          {stops.map((stop, index) => {
+            const selected = activeStop === index;
+            return (
+              <button
+                key={stop.id}
+                type="button"
+                onClick={() => onStopClick(index)}
+                className="relative flex flex-col items-center text-center"
+              >
+                <div className="absolute left-1/2 top-8 h-0.5 w-full border-t-2 border-dashed border-[#C6CED8]" />
+                <span
+                  className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 bg-white text-2xl transition-transform"
+                  style={{
+                    borderColor: selected ? '#1B2D45' : stop.stopType === 'en-route' ? '#D85A30' : '#378ADD',
+                    transform: selected ? 'scale(1.06)' : 'none',
+                  }}
+                >
+                  {getCategoryIcon(stop.category)}
+                </span>
+                <span
+                  className="mt-3 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-extrabold text-white"
+                  style={{ backgroundColor: stop.stopType === 'en-route' ? '#D85A30' : '#378ADD' }}
+                >
+                  {index + 2}
+                </span>
+                <p className="mt-2 text-sm font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                  {stop.name}
+                </p>
+                <p className="mt-1 text-xs text-gray-400">{stop.duration}</p>
+                <div className="mt-2 flex justify-center gap-1.5">
+                  {getStopTags(stop).slice(0, 2).map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+                      style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </button>
+            );
+          })}
+
+          <div className="relative flex flex-col items-center text-center">
+            <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#1B66D2] bg-white text-2xl">
+              🏨
+            </span>
+            <span className="mt-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B66D2] text-[11px] font-extrabold text-white">
+              {stops.length + 2}
+            </span>
+            <p className="mt-2 text-sm font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+              {finalLabel}
+            </p>
             <p
-              className="mt-1 text-[13px] leading-relaxed text-gray-400"
+              className="mt-1 text-xs font-bold"
               style={{
+                color: '#1B66D2',
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
-                minHeight: 40,
               }}
             >
-              {addressLine}
+              {finalSubLabel}
             </p>
-          )}
-        </div>
-
-        <div className="mt-auto grid grid-cols-2 gap-2 pt-5">
-          <button
-            type="button"
-            onClick={onSelect}
-            className="rounded-[16px] px-3 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
-            style={{ backgroundColor: selected ? '#58CC02' : '#1B2D45' }}
-          >
-            {selected ? 'Selected stay' : 'Select this stay'}
-          </button>
-          <a
-            href={getBookingSearchUrl(hotel)}
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-[16px] border border-gray-200 px-3 py-3 text-center text-sm font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
-          >
-            Open on Booking
-          </a>
+          </div>
         </div>
       </div>
     </div>
@@ -1269,9 +1266,6 @@ function HomeContent() {
   const routeName = tripData?.routeName ?? activeRouteOption?.name ?? fallbackRoute.routeName;
   const routeTagline = tripData?.tagline ?? activeRouteOption?.tagline ?? fallbackRoute.tagline;
   const routeSummary = tripData?.destinationDescription ?? fallbackRoute.summary;
-  const routeHighlights = activeRouteOption?.via
-    ? activeRouteOption.via.split(',').map((item) => item.trim()).filter(Boolean)
-    : fallbackRoute.highlights;
   const questionSteps = buildQuestionSteps(prefs);
   const mapStops = useMemo(() => stops.map(stripPlannerStop), [stops]);
   const progressSteps =
@@ -1294,7 +1288,6 @@ function HomeContent() {
         ? 'Roady picks the distance'
         : '';
   const visibleHotels = tripData?.hotels?.slice(0, 4) ?? [];
-  const carouselHotel = visibleHotels[hotelCarouselIndex] ?? visibleHotels[0] ?? null;
   const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
   const selectedHotelDestination = selectedHotel ? getHotelDestinationLabel(selectedHotel) : '';
   const tripDestinationDisplay = selectedHotel ? getHotelDestinationDisplay(selectedHotel) : routeDestination;
@@ -1309,11 +1302,6 @@ function HomeContent() {
   const googleMapsUrl = startInput ? buildGoogleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
   const appleMapsUrl = startInput ? buildAppleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
   const greenButtonStyle = { backgroundColor: '#58CC02', boxShadow: '0 18px 44px rgba(88,204,2,0.22)' };
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } })
-  );
 
   function resetSuggestedTrip(clearMessages = true) {
     setTripData(null);
@@ -1467,7 +1455,14 @@ function HomeContent() {
     const hotelsNeedingPhotos = tripData.hotels
       .slice(0, 4)
       .map((hotel, index) => ({ hotel, index }))
-      .filter(({ hotel }) => !hotel.photoLookupTried && !getHotelCardImage(hotel));
+      .filter(
+        ({ hotel }) =>
+          !hotel.photoLookupTried &&
+          !getHotelImageUrl(hotel, {
+            includeFallback: false,
+            includeKnownFallbackAsReal: false,
+          })
+      );
 
     if (!hotelsNeedingPhotos.length) return;
 
@@ -1511,7 +1506,10 @@ function HomeContent() {
 
           return {
             ...hotel,
-            fsqPhoto: hotel.fsqPhoto || enrichment.fsqPhoto,
+            fsqPhoto:
+              getHotelImageUrl(hotel, { includeFallback: false, includeKnownFallbackAsReal: false }) ||
+              enrichment.fsqPhoto ||
+              hotel.fsqPhoto,
             fsqWebsite: hotel.fsqWebsite || enrichment.fsqWebsite,
             photoLookupTried: true,
           };
@@ -1914,26 +1912,6 @@ function HomeContent() {
     } catch {
       setShareMessage('Unable to copy the trip link right now.');
     }
-  }
-
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-
-    const oldIndex = stops.findIndex((stop) => stop.id === active.id);
-    const newIndex = stops.findIndex((stop) => stop.id === over.id);
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    setStops((currentStops) => arrayMove(currentStops, oldIndex, newIndex));
-    setActiveStop(newIndex);
-  }
-
-  function browseHotel(direction: 'previous' | 'next') {
-    if (!visibleHotels.length) return;
-    setHotelCarouselIndex((currentIndex) => {
-      if (direction === 'previous') return Math.max(0, currentIndex - 1);
-      return Math.min(visibleHotels.length - 1, currentIndex + 1);
-    });
   }
 
   function toggleKidsAge(ageId: string) {
@@ -2458,10 +2436,240 @@ function HomeContent() {
 
           <div className="relative flex h-full w-full items-end justify-center sm:items-center sm:p-4">
             <div
-              className={`relative h-full w-full overflow-hidden bg-[#F3F4F2] shadow-[0_36px_120px_rgba(27,45,69,0.24)] transition-all duration-300 sm:max-w-7xl sm:rounded-[34px] ${
+              className={`relative h-full w-full overflow-hidden bg-[#F3F4F2] shadow-[0_36px_120px_rgba(27,45,69,0.24)] transition-all duration-300 sm:rounded-[34px] ${
+                plannerStep === 'results' ? 'sm:max-w-[1480px]' : 'sm:max-w-7xl'
+              } ${
                 plannerVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 scale-[0.98] opacity-0'
               }`}
             >
+              {plannerStep === 'results' ? (
+                <div className="flex h-full min-h-0 flex-col bg-white">
+                  <header className="flex-shrink-0 border-b border-gray-100 bg-white px-4 py-4 sm:px-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <img src="/roady-logo.png" alt="Roady" className="h-10 w-auto object-contain" />
+                        <button
+                          type="button"
+                          onClick={handleBack}
+                          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-extrabold transition-colors hover:text-[#1B2D45]"
+                          style={{ color: '#1B2D45' }}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                            <path d="m15 18-6-6 6-6" />
+                          </svg>
+                          Back
+                        </button>
+                      </div>
+
+                      <div className="order-3 w-full text-center lg:order-none lg:w-auto">
+                        <h2 className="text-2xl font-extrabold leading-tight sm:text-3xl" style={{ color: '#1B2D45' }}>
+                          Roady picked your trip!
+                        </h2>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={closePlanner}
+                        className="rounded-full border px-5 py-2.5 text-sm font-extrabold transition-colors"
+                        style={{
+                          borderColor: 'rgba(216,90,48,0.24)',
+                          backgroundColor: 'rgba(216,90,48,0.08)',
+                          color: '#D85A30',
+                        }}
+                      >
+                        Close
+                      </button>
+                    </div>
+
+                    <div className="mt-4">
+                      <ResultStepRail />
+                    </div>
+                  </header>
+
+                  <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F8F6] px-4 py-4 sm:px-5">
+                    <div className="mx-auto grid max-w-[1400px] gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(390px,0.95fr)]">
+                      <div className="flex min-w-0 flex-col gap-4">
+                        <div className="relative min-h-[430px] overflow-hidden rounded-[28px] border border-[#DDE3EA] bg-white shadow-[0_16px_42px_rgba(27,45,69,0.08)] lg:min-h-[560px]">
+                          {HAS_MAPBOX && startCoords && stops.length > 0 ? (
+                            <RouteMap
+                              stops={mapStops}
+                              start={startCoords}
+                              end={endCoords}
+                              endLabel={tripDestinationLabel}
+                              activeStop={activeStop}
+                              onStopClick={setActiveStop}
+                            />
+                          ) : mapAnimation ? (
+                            <Lottie
+                              animationData={mapAnimation}
+                              loop
+                              style={{ width: '100%', height: '100%', minHeight: 430, transform: 'scale(1.04)' }}
+                            />
+                          ) : (
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(55,138,221,0.16),transparent_28%),radial-gradient(circle_at_72%_72%,rgba(88,204,2,0.16),transparent_26%),linear-gradient(180deg,#ecf6ff_0%,#f8fbfe_100%)]" />
+                          )}
+
+                          <div className="absolute left-4 top-4 rounded-[18px] bg-white/95 p-4 shadow-[0_12px_30px_rgba(27,45,69,0.12)] backdrop-blur">
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-3">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F5F9] text-[#1B2D45]">
+                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <path d="M5 17h14l-1.5-7.5A2 2 0 0 0 15.54 8H8.46A2 2 0 0 0 6.5 9.5L5 17Z" />
+                                    <path d="M7 17v2M17 17v2M8 13h8" />
+                                  </svg>
+                                </span>
+                                <span className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{tripDaysLabel}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F5F9] text-[#1B2D45]">
+                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <path d="M4 19 10 5l4 14 2-6 4 6" />
+                                  </svg>
+                                </span>
+                                <span className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{formatMiles(tripMiles)}</span>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F1F5F9] text-[#1B2D45]">
+                                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                                    <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
+                                    <circle cx="12" cy="10" r="2.5" />
+                                  </svg>
+                                </span>
+                                <span className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{stops.length} stops</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <a
+                            href={googleMapsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="absolute bottom-5 left-5 inline-flex items-center gap-2 rounded-[14px] bg-white px-4 py-3 text-sm font-extrabold shadow-[0_12px_30px_rgba(27,45,69,0.14)] transition-colors hover:text-[#D85A30]"
+                            style={{ color: '#1B2D45' }}
+                          >
+                            View full route
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                              <path d="M14 3h7v7" />
+                              <path d="M10 14 21 3" />
+                              <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+                            </svg>
+                          </a>
+                        </div>
+
+                        <RouteAtGlance
+                          startLabel={startInput}
+                          stops={stops}
+                          selectedHotel={selectedHotel}
+                          fallbackDestination={routeDestination}
+                          activeStop={activeStop}
+                          onStopClick={setActiveStop}
+                        />
+                      </div>
+
+                      <aside className="flex min-h-0 flex-col rounded-[28px] border border-[#DDE3EA] bg-white p-4 shadow-[0_16px_42px_rgba(27,45,69,0.06)] sm:p-5">
+                        <div className="flex items-center gap-4">
+                          <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-[20px] bg-[#EFFFF4]">
+                            <img src="/roady.png" alt="" className="h-full w-full object-cover object-top" />
+                          </div>
+                          <div>
+                            <p className="text-2xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                              Pick your stay
+                            </p>
+                            <p className="mt-1 text-sm text-gray-500">
+                              {visibleHotels.length > 0
+                                ? `We found ${visibleHotels.length} great option${visibleHotels.length === 1 ? '' : 's'} for your final stop.`
+                                : 'Roady kept the route ready while you choose where to stay.'}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
+                          {prefs.hotelPreference !== 'none' && visibleHotels.length > 0 ? (
+                            visibleHotels.map((hotel, index) => (
+                              <ResultStayCard
+                                key={`${hotel.name}-${hotel.city}-${index}`}
+                                hotel={hotel}
+                                selected={selectedHotelIndex === index}
+                                preferenceLabels={[previewHotel, ...previewInterests].filter(Boolean)}
+                                onSelect={() => {
+                                  setSelectedHotelIndex(index);
+                                  setHotelCarouselIndex(index);
+                                }}
+                              />
+                            ))
+                          ) : (
+                            <div className="rounded-[22px] border border-dashed border-gray-200 bg-[#FAFAF9] px-4 py-5 text-sm leading-relaxed text-gray-500">
+                              {prefs.hotelPreference === 'none'
+                                ? 'You chose to sort accommodation separately, so Roady kept the stay step optional.'
+                                : 'Roady is still lining up hotel matches for this destination.'}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-4 rounded-[18px] bg-[#FAFAF9] p-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[rgba(216,90,48,0.1)] text-lg">
+                                ✨
+                              </span>
+                              <div>
+                                <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>
+                                  Why these stays?
+                                </p>
+                                <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                                  Handpicked based on your preferences: {[previewHotel, ...previewInterests].filter(Boolean).slice(0, 4).join(', ') || 'route fit'}.
+                                </p>
+                              </div>
+                            </div>
+                            <svg className="h-5 w-5 flex-shrink-0 text-[#1B2D45]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </div>
+                        </div>
+
+                        {(plannerError || saveMessage || shareMessage) && (
+                          <div
+                            className="mt-4 rounded-[18px] px-4 py-3 text-sm font-semibold"
+                            style={{
+                              backgroundColor: 'rgba(88,204,2,0.1)',
+                              color: '#46a302',
+                            }}
+                          >
+                            {plannerError || saveMessage || shareMessage}
+                          </div>
+                        )}
+
+                        <div className="mt-4 grid grid-cols-[0.7fr_1.3fr] gap-3">
+                          <button
+                            type="button"
+                            onClick={handleBack}
+                            className="rounded-[14px] border border-gray-200 bg-white px-4 py-3 text-sm font-extrabold transition-colors hover:text-[#1B2D45]"
+                            style={{ color: '#1B2D45' }}
+                          >
+                            Back
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPlannerStep('save')}
+                            disabled={!canProceed('results')}
+                            className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                            style={{ backgroundColor: '#FF4E18' }}
+                          >
+                            Save stay & continue
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                              <path d="M5 12h14" />
+                              <path d="m13 6 6 6-6 6" />
+                            </svg>
+                          </button>
+                        </div>
+                        <p className="mt-3 text-center text-xs font-semibold text-gray-400">
+                          You can change this later
+                        </p>
+                      </aside>
+                    </div>
+                  </div>
+                </div>
+              ) : (
               <div className="flex h-full min-h-0 flex-col lg:flex-row">
                 <aside className="w-full min-h-0 border-b border-gray-200 bg-white lg:h-full lg:w-[430px] lg:flex-shrink-0 lg:border-b-0 lg:border-r">
                   <div className="flex h-full min-h-0 flex-col">
@@ -2796,119 +3004,6 @@ function HomeContent() {
                         </div>
                       )}
 
-                      {plannerStep === 'results' && (
-                        <div className="space-y-5">
-                          <div className="rounded-[26px] bg-[#FAFAF9] p-5">
-                            <p className="text-sm font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
-                              Stay picks
-                            </p>
-                            {prefs.hotelPreference !== 'none' && visibleHotels.length > 0 ? (
-                              <div className="mt-4 space-y-3">
-                                {carouselHotel && (
-                                  <PlannerHotelCard
-                                    key={`${carouselHotel.name}-${hotelCarouselIndex}`}
-                                    hotel={carouselHotel}
-                                    selected={selectedHotelIndex === hotelCarouselIndex}
-                                    onSelect={() => setSelectedHotelIndex(hotelCarouselIndex)}
-                                    onPrevious={() => browseHotel('previous')}
-                                    onNext={() => browseHotel('next')}
-                                    canGoPrevious={hotelCarouselIndex > 0}
-                                    canGoNext={hotelCarouselIndex < visibleHotels.length - 1}
-                                    currentIndex={hotelCarouselIndex}
-                                    total={visibleHotels.length}
-                                  />
-                                )}
-
-                                {visibleHotels.length > 1 && (
-                                  <div className="flex items-center justify-center gap-2">
-                                    {visibleHotels.map((hotel, index) => (
-                                      <button
-                                        key={`${hotel.name}-dot-${index}`}
-                                        type="button"
-                                        onClick={() => setHotelCarouselIndex(index)}
-                                        className="transition-all"
-                                        aria-label={`View hotel ${index + 1}`}
-                                        style={{
-                                          width: index === hotelCarouselIndex ? 24 : 8,
-                                          height: 8,
-                                          borderRadius: 999,
-                                          backgroundColor: index === hotelCarouselIndex ? '#58CC02' : '#D1D5DB',
-                                        }}
-                                      />
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            ) : prefs.hotelPreference === 'none' ? (
-                              <div className="mt-3 rounded-[22px] border border-dashed border-gray-200 bg-white px-4 py-4 text-sm leading-relaxed text-gray-500">
-                                You chose to sort accommodation separately, so Roady kept the focus on the route.
-                              </div>
-                            ) : (
-                              <div className="mt-3 rounded-[22px] border border-dashed border-gray-200 bg-white px-4 py-4 text-sm leading-relaxed text-gray-500">
-                                Roady is still lining up hotel matches for this destination.
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="rounded-[26px] border border-gray-200 bg-white p-5">
-                            <p className="font-bold text-sm" style={{ color: '#1B2D45' }}>
-                              Why Roady picked it
-                            </p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {routeHighlights.map((highlight) => (
-                                <span
-                                  key={highlight}
-                                  className="rounded-full px-3 py-1 text-xs font-semibold"
-                                  style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}
-                                >
-                                  {highlight}
-                                </span>
-                              ))}
-                            </div>
-                            <p className="mt-4 text-sm leading-relaxed text-gray-500">{routeSummary}</p>
-                          </div>
-
-                          <div className="flex flex-col gap-3 sm:flex-row">
-                            <button
-                              type="button"
-                              onClick={() => void handleSuggestNewRoute()}
-                              className="flex-1 rounded-[20px] border border-gray-200 bg-white px-4 py-3 text-sm font-bold text-gray-600 transition-colors hover:text-[#1B2D45]"
-                            >
-                              Suggest a new route
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPlannerStep('save')}
-                              className="flex-1 rounded-[20px] px-4 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
-                              style={{ backgroundColor: '#58CC02' }}
-                            >
-                              Save or share
-                            </button>
-                          </div>
-
-                          <div>
-                            <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400 mb-3">
-                              Stops
-                            </p>
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                              <SortableContext items={stops.map((stop) => stop.id)} strategy={verticalListSortingStrategy}>
-                                <div className="space-y-3">
-                                  {stops.map((stop, index) => (
-                                    <SortablePlannerStopCard
-                                    key={stop.id}
-                                    stop={stop}
-                                    number={index + 1}
-                                    onRemove={() => setStops((currentStops) => currentStops.filter((item) => item.id !== stop.id))}
-                                      onSelect={() => setActiveStop(index)}
-                                    />
-                                  ))}
-                                </div>
-                              </SortableContext>
-                            </DndContext>
-                          </div>
-                        </div>
-                      )}
-
                       {plannerStep === 'save' && (
                         <div className="space-y-4">
                           <div className="rounded-[26px] bg-[#FAFAF9] p-5">
@@ -3036,11 +3131,7 @@ function HomeContent() {
                             className="flex-1 rounded-full px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                             style={{ backgroundColor: '#58CC02' }}
                           >
-                            {plannerStep === 'spots'
-                              ? 'Suggest my trip'
-                              : plannerStep === 'results'
-                                ? 'Save or share'
-                                : 'Next'}
+                            {plannerStep === 'spots' ? 'Suggest my trip' : 'Next'}
                           </button>
                         </div>
                       </div>
@@ -3238,6 +3329,7 @@ function HomeContent() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
           </div>
         </div>
