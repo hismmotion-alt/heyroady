@@ -2169,79 +2169,278 @@ function HomeContent() {
         </div>
       </section>
 
-      <section id="how-it-works" className="px-6 pb-20" style={{ backgroundColor: '#ffffff' }}>
+      <section id="how-it-works" className="px-6 py-16 lg:py-20" style={{ backgroundColor: '#ffffff' }}>
         <div
           ref={howFade.ref}
-          className="max-w-6xl mx-auto transition-all duration-700"
+          className="mx-auto max-w-[1320px] transition-all duration-700"
           style={{
             opacity: howFade.visible ? 1 : 0,
             transform: howFade.visible ? 'none' : 'translateY(24px)',
           }}
         >
-          <button
-            type="button"
-            onClick={() => openPlanner('pch')}
-            aria-label="Open Roady planner"
-            className="block w-full overflow-hidden rounded-[34px] transition-transform duration-300 hover:-translate-y-1"
-          >
-            <img
-              src="/how%20roady%20works.png"
-              alt="How Roady works"
-              className="mx-auto block h-auto w-full max-w-[1180px]"
-            />
-          </button>
+          <div>
+            <div className="text-center">
+              <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#D85A30' }}>
+                How it works
+              </p>
+              <h2 className="mt-3 text-4xl font-extrabold leading-tight sm:text-5xl" style={{ color: '#080D45' }}>
+                How Roady works
+              </h2>
+            </div>
+
+            <div className="mt-10 grid gap-8 md:grid-cols-5 md:gap-6 lg:mt-12">
+              {[
+                {
+                  number: '1',
+                  title: 'Starting point',
+                  body: 'Set where the drive begins',
+                  accent: '#FF4E18',
+                  bg: '#FFF0E9',
+                  icon: (
+                    <>
+                      <path d="M12 21s6-4.7 6-10a6 6 0 1 0-12 0c0 5.3 6 10 6 10Z" />
+                      <circle cx="12" cy="11" r="2.3" />
+                    </>
+                  ),
+                },
+                {
+                  number: '2',
+                  title: 'Travel crew',
+                  body: "Tell Roady who's coming along",
+                  accent: '#6946E8',
+                  bg: '#F0EBFF',
+                  icon: (
+                    <>
+                      <circle cx="9" cy="8.5" r="3" />
+                      <path d="M3.5 19a5.5 5.5 0 0 1 11 0" />
+                      <path d="M16 11a3 3 0 1 0-1.8-5.4" />
+                      <path d="M15.5 14.5a5 5 0 0 1 5 4.5" />
+                    </>
+                  ),
+                },
+                {
+                  number: '3',
+                  title: 'Trip vibe',
+                  body: 'Pick interests and hotel style',
+                  accent: '#F3B300',
+                  bg: '#FFF1B8',
+                  icon: (
+                    <>
+                      <path d="M4 7h9" />
+                      <path d="M17 7h3" />
+                      <circle cx="15" cy="7" r="2" />
+                      <path d="M4 17h3" />
+                      <path d="M11 17h9" />
+                      <circle cx="9" cy="17" r="2" />
+                    </>
+                  ),
+                },
+                {
+                  number: '4',
+                  title: 'Roady suggests',
+                  body: 'Get a custom route built by AI',
+                  accent: '#22B95B',
+                  bg: '#DFF8E6',
+                  icon: (
+                    <>
+                      <path d="M5 18c3.5-7 10.5 0 14-7" />
+                      <circle cx="5" cy="18" r="2" />
+                      <circle cx="19" cy="11" r="2" />
+                      <path d="M8 4v4M6 6h4" />
+                    </>
+                  ),
+                },
+                {
+                  number: '5',
+                  title: 'Save or export',
+                  body: 'Keep it, share it, or open it in Maps',
+                  accent: '#EF5E9C',
+                  bg: '#FDEAF2',
+                  icon: (
+                    <>
+                      <path d="M6 20V5a2 2 0 0 1 2-2h9l3 3v14l-7-4-7 4Z" />
+                      <path d="M14 3v5h5" />
+                    </>
+                  ),
+                },
+              ].map((step, index, steps) => (
+                <div key={step.title} className="relative text-center">
+                  {index < steps.length - 1 && (
+                    <div className="pointer-events-none absolute left-[calc(50%+48px)] top-[50px] hidden w-[calc(100%-56px)] items-center md:flex">
+                      <span className="h-0.5 flex-1 border-t-4 border-dotted border-[#080D45]" />
+                      <svg className="ml-2 h-4 w-4 flex-shrink-0 text-[#080D45]" fill="none" stroke="currentColor" strokeWidth="2.6" viewBox="0 0 24 24">
+                        <path d="M5 12h14" />
+                        <path d="m13 6 6 6-6 6" />
+                      </svg>
+                    </div>
+                  )}
+
+                  <div className="relative mx-auto h-28 w-28">
+                    <div
+                      className="absolute -left-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full text-base font-extrabold text-white shadow-[0_8px_18px_rgba(27,45,69,0.16)]"
+                      style={{ backgroundColor: step.accent }}
+                    >
+                      {step.number}
+                    </div>
+                    <div
+                      className="flex h-full w-full items-center justify-center rounded-[30px]"
+                      style={{ backgroundColor: step.bg }}
+                    >
+                      <svg
+                        className="h-12 w-12"
+                        fill="none"
+                        stroke="#080D45"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2.3"
+                        viewBox="0 0 24 24"
+                      >
+                        {step.icon}
+                      </svg>
+                    </div>
+                  </div>
+
+                  <p className="mt-5 text-xl font-extrabold leading-tight" style={{ color: '#080D45' }}>
+                    {step.title}
+                  </p>
+                  <p className="mx-auto mt-2 max-w-[180px] text-sm font-medium leading-relaxed text-gray-500">
+                    {step.body}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-10 flex flex-col items-center lg:mt-12">
+              <button
+                type="button"
+                onClick={() => openPlanner('pch')}
+                className="inline-flex items-center gap-3 rounded-full px-8 py-4 text-lg font-extrabold text-white shadow-[0_18px_42px_rgba(19,168,91,0.24)] transition-opacity hover:opacity-90"
+                style={{ backgroundColor: '#13A85B' }}
+              >
+                Generate my trip
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="m8 3 1.5 4L13 8.5 9.5 10 8 14l-1.5-4L3 8.5 6.5 7 8 3Z" />
+                  <path d="m17 11 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z" />
+                </svg>
+              </button>
+              <p className="mt-4 text-base font-medium text-gray-500">Takes less than 30 seconds</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section id="features" className="py-20 px-6" style={{ backgroundColor: '#F8FAFB' }}>
+      <section id="features" className="py-20 px-6" style={{ backgroundColor: '#F7F8F6' }}>
         <div className="max-w-6xl mx-auto">
-          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-            <div className="rounded-[30px] bg-white p-8 shadow-[0_18px_48px_rgba(27,45,69,0.08)]">
+          <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
               <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#D85A30' }}>
-                Planner-first flow
+                Roady features
               </p>
-              <h2 className="mt-3 text-3xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
-                This feels like entering a tool, not opening a page.
+              <h2 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl" style={{ color: '#1B2D45' }}>
+                A trip planner that gives you the route, stops, stay, and next move.
               </h2>
-              <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-500">
-                The trip planner now opens as a full-screen workspace, asks a short sequence of
-                smart preference questions, and turns those answers into a Roady suggestion.
+              <p className="mt-4 text-base leading-relaxed text-gray-500">
+                Roady turns a few quick preferences into a complete California road trip: a mapped route,
+                handpicked stops, stay options, and simple ways to save or open the plan when it is time to go.
               </p>
+            </div>
 
-              <div className="mt-8 grid gap-4 md:grid-cols-2">
-                {[
-                  'Smooth transition into a dedicated planner surface',
-                  'Question-driven flow with tap-to-select answers',
-                  'Route suggestion and trip card generated from preferences',
-                  'Save, export, and phone-friendly sharing at the end',
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="rounded-2xl border border-gray-100 bg-[#FAFAF9] px-4 py-4 text-sm font-semibold text-gray-600"
+            <button
+              type="button"
+              onClick={() => openPlanner('pch')}
+              className="inline-flex w-fit items-center gap-2 rounded-full px-5 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
+              style={{ backgroundColor: '#1B2D45' }}
+            >
+              Try Roady
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                <path d="M5 12h14" />
+                <path d="m13 6 6 6-6 6" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  title: 'Preference-aware routes',
+                  body: 'Roady uses your starting point, drive distance, group type, interests, and hotel budget to shape the trip.',
+                  accent: '#13A85B',
+                  icon: (
+                    <path d="M12 3v18M5 8h14M7 16h10" />
+                  ),
+                },
+                {
+                  title: 'Handpicked stops',
+                  body: 'Get ordered food, nature, culture, scenic, and adventure stops that fit the route instead of a generic list.',
+                  accent: '#D85A30',
+                  icon: (
+                    <>
+                      <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
+                      <circle cx="12" cy="10" r="2.5" />
+                    </>
+                  ),
+                },
+                {
+                  title: 'Interactive map preview',
+                  body: 'See the route line, numbered stops, and selected stay destination before committing to the plan.',
+                  accent: '#378ADD',
+                  icon: (
+                    <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" />
+                  ),
+                },
+                {
+                  title: 'Stay recommendations',
+                  body: 'Compare stay picks for the final stop, select one, and route the trip directly to that hotel.',
+                  accent: '#EF9F27',
+                  icon: (
+                    <>
+                      <path d="M4 20V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12" />
+                      <path d="M4 12h16M8 20v-4h8v4" />
+                    </>
+                  ),
+                },
+                {
+                  title: 'Save and reopen',
+                  body: 'Keep the itinerary in your Roady account so the route, stops, and selected stay are ready later.',
+                  accent: '#1B2D45',
+                  icon: (
+                    <>
+                      <path d="M6 21V5a2 2 0 0 1 2-2h9l3 3v15l-7-4-7 4Z" />
+                      <path d="M14 3v5h5" />
+                    </>
+                  ),
+                },
+                {
+                  title: 'Maps handoff',
+                  body: 'Open the finished route in Google Maps or Apple Maps, or copy a shareable route link.',
+                  accent: '#7C3AED',
+                  icon: (
+                    <>
+                      <path d="M14 3h7v7" />
+                      <path d="M10 14 21 3" />
+                      <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+                    </>
+                  ),
+                },
+              ].map((feature) => (
+                <div
+                  key={feature.title}
+                  className="rounded-[26px] border border-white/80 bg-white p-5 shadow-[0_14px_36px_rgba(27,45,69,0.06)]"
+                >
+                  <span
+                    className="flex h-11 w-11 items-center justify-center rounded-[16px]"
+                    style={{ backgroundColor: `${feature.accent}14`, color: feature.accent }}
                   >
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-[30px] border border-white/80 p-8 shadow-[0_18px_48px_rgba(27,45,69,0.08)]" style={{ backgroundColor: '#1B2D45' }}>
-              <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#F8C9B8' }}>
-                Quick preview
-              </p>
-              <div className="mt-6 space-y-5">
-                {[
-                  { title: 'Live starting point', body: 'Autofill, current location, and popular launch cities reduce friction instantly.' },
-                  { title: 'Preference-first suggestions', body: 'Roady learns who is coming, what you like, and how you want the trip to feel.' },
-                  { title: 'Trip card on the right', body: 'The suggested route lands visually, with a map, summary, and a simple way to ask for another one.' },
-                ].map((item) => (
-                  <div key={item.title} className="rounded-2xl bg-white/8 px-5 py-5">
-                    <p className="font-extrabold text-base text-white">{item.title}</p>
-                    <p className="mt-2 text-sm leading-relaxed text-white/72">{item.body}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                      {feature.icon}
+                    </svg>
+                  </span>
+                  <p className="mt-5 text-lg font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                    {feature.title}
+                  </p>
+                  <p className="mt-3 text-sm leading-relaxed text-gray-500">{feature.body}</p>
+                </div>
+              ))}
           </div>
         </div>
       </section>
@@ -2326,30 +2525,31 @@ function HomeContent() {
           <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
             <div className="rounded-[30px] p-8 shadow-[0_18px_48px_rgba(27,45,69,0.08)]" style={{ backgroundColor: '#1B2D45' }}>
               <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#F8C9B8' }}>
-                Save and share
+                Pricing
               </p>
               <h2 className="mt-3 text-3xl font-extrabold text-white">
-                Save the trip once and keep moving.
+                Roady is free to start.
               </h2>
               <p className="mt-4 text-base leading-relaxed text-white/75">
-                The planner ends where growth happens: save your trip, copy a shareable route
-                link, or open it directly in your maps app.
+                Roady is a well-trained AI trip planner that understands your vibe and suggests
+                trips that become real experiences. You can use the core planner for free, with
+                premium features available for subscribers.
               </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
               {[
                 {
-                  title: 'Save your trip',
-                  body: 'One-click Google sign-in keeps the whole itinerary attached to your account.',
+                  title: 'Free trip planning',
+                  body: 'Start with your vibe, route preferences, and travel style, then let Roady build a trip you can actually take.',
                 },
                 {
-                  title: 'Copy the link',
-                  body: 'Grab a shareable route link instantly when you want to send the trip somewhere else.',
+                  title: 'AI that gets the mood',
+                  body: 'Roady turns interests like wine, beaches, food, nature, or family-friendly stops into a tailored route.',
                 },
                 {
-                  title: 'Open in Maps',
-                  body: 'Jump straight into Google Maps or Apple Maps when it is time to go.',
+                  title: 'Premium coming next',
+                  body: 'Subscribers will unlock deeper customization, saved trip tools, and more advanced Roady planning features.',
                 },
               ].map((item) => (
                 <div
