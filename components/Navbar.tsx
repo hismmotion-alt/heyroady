@@ -70,16 +70,17 @@ export default function Navbar({
   const positionClass = fixed ? 'fixed top-0 left-0 right-0 z-50' : '';
   const isFigmaWeb = variant === 'figmaWeb';
   const standardLinks = [
-    { label: 'Destinations', href: '/destinations' },
+    { label: 'Where to go', href: '/where-to-go' },
+    { label: 'Blog', href: '/blog' },
     { label: 'How it works', href: '/#how-it-works' },
     ...(user ? [{ label: 'My Trips', href: '/my-trips' }] : []),
   ];
   const figmaLinks = [
     { label: 'Features', href: '/#features' },
-    { label: 'Destinations', href: '/destinations' },
+    { label: 'Where to go', href: '/where-to-go' },
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#save-share' },
-    { label: 'Blog', href: '/#stories' },
+    { label: 'Blog', href: '/blog' },
   ];
   const resolvedLinks = navLinks ?? (isFigmaWeb ? figmaLinks : standardLinks);
 
@@ -91,7 +92,7 @@ export default function Navbar({
     router.push(primaryHref);
   };
 
-  const figmaNavWidths = [80, 114, 113, 62, 40];
+  const figmaNavWidths = [80, 112, 113, 62, 40];
 
   const renderNavLink = (link: { label: string; href: string }) => {
     const classes = 'text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors';
@@ -110,7 +111,7 @@ export default function Navbar({
   };
 
   const renderFigmaNavLink = (link: { label: string; href: string }, index: number) => {
-    const classes = 'block h-[25px] shrink-0 text-[18px] font-normal leading-[normal] text-[#141046] transition-colors hover:text-[#25AB45]';
+    const classes = 'block h-[25px] shrink-0 whitespace-nowrap text-[18px] font-normal leading-[normal] text-[#141046] transition-colors hover:text-[#25AB45]';
     const linkStyle = { width: figmaNavWidths[index] ?? 'auto' };
     if (link.href.startsWith('/#') || link.href.startsWith('#')) {
       return (

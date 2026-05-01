@@ -2060,10 +2060,10 @@ function HomeContent() {
 
   const navLinks = [
     { label: 'Features', href: '/#features' },
-    { label: 'Destinations', href: '/destinations' },
+    { label: 'Where to go', href: '/where-to-go' },
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#save-share' },
-    { label: 'Blog', href: '/#stories' },
+    { label: 'Blog', href: '/blog' },
   ];
   const heroAvatarImages = [
     '/hero-avatar-1.jpg',
