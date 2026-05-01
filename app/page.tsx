@@ -89,6 +89,27 @@ type ChoiceCardItem = {
   emoji: string;
 };
 
+function HowItWorksIcon({ icon }: { icon: string }) {
+  const iconSrcByType: Record<string, string> = {
+    start: '/how-it-works-icon-1.svg',
+    crew: '/how-it-works-icon-2.svg',
+    vibe: '/how-it-works-icon-3.svg',
+    suggests: '/how-it-works-icon-4.svg',
+    save: '/how-it-works-icon-5.svg',
+  };
+
+  return (
+    <img
+      src={iconSrcByType[icon] ?? iconSrcByType.start}
+      alt=""
+      width={89}
+      height={89}
+      className="roady-how-icon h-[89px] w-[89px]"
+      aria-hidden="true"
+    />
+  );
+}
+
 const DEFAULT_PREFS: PlannerPreferences = {
   travelGroup: '',
   kidsAges: [],
@@ -1301,7 +1322,6 @@ function HomeContent() {
   const tripDaysLabel = estimateTripDaysLabel(prefs, stops.length, fallbackRoute.durationLabel);
   const googleMapsUrl = startInput ? buildGoogleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
   const appleMapsUrl = startInput ? buildAppleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
-  const greenButtonStyle = { backgroundColor: '#58CC02', boxShadow: '0 18px 44px rgba(88,204,2,0.22)' };
 
   function resetSuggestedTrip(clearMessages = true) {
     setTripData(null);
@@ -2045,6 +2065,44 @@ function HomeContent() {
     { label: 'Pricing', href: '/#save-share' },
     { label: 'Blog', href: '/#stories' },
   ];
+  const heroAvatarImages = [
+    '/hero-avatar-1.jpg',
+    '/hero-avatar-2.jpg',
+    '/hero-avatar-3.jpg',
+    '/hero-avatar-4.jpg',
+  ];
+  const howItWorksSteps = [
+    {
+      title: 'Starting point',
+      body: 'Set where the drive begins',
+      icon: 'start',
+      left: 95.7617,
+    },
+    {
+      title: 'Travel crew',
+      body: "Tell Roady who's coming along",
+      icon: 'crew',
+      left: 384.084,
+    },
+    {
+      title: 'Trip vibe',
+      body: 'Pick interests and hotel style',
+      icon: 'vibe',
+      left: 672.4063,
+    },
+    {
+      title: 'Roady suggests',
+      body: 'Get a custom route built by AI',
+      icon: 'suggests',
+      left: 960.7285,
+    },
+    {
+      title: 'Save or export',
+      body: 'Keep it, share it, or open it in Maps',
+      icon: 'save',
+      left: 1249.0508,
+    },
+  ];
 
   return (
     <div
@@ -2059,271 +2117,301 @@ function HomeContent() {
         onPrimaryAction={() => openPlanner('pch')}
         primaryLabel="Start planning"
         signedInPrimaryLabel="Start planning"
-        style={{ backgroundColor: 'rgba(255,255,255,0.92)' }}
       />
 
-      <section
-        className="relative overflow-hidden pt-28 pb-14 sm:pt-32 lg:pt-36 lg:pb-20"
-        style={{ backgroundColor: '#ffffff' }}
-      >
-        <div
-          className="absolute pointer-events-none"
-          style={{
-            inset: 0,
-            background:
-              'radial-gradient(circle at 12% 18%, rgba(216,90,48,0.08) 0%, transparent 32%), radial-gradient(circle at 52% 44%, rgba(255,209,115,0.08) 0%, transparent 32%), radial-gradient(circle at 84% 80%, rgba(88,204,2,0.05) 0%, transparent 24%)',
-          }}
-        />
+      <section className="relative mt-16 overflow-hidden bg-white min-[1220px]:h-[844px]">
+        <div className="relative mx-auto hidden h-full max-w-[1440px] min-[1220px]:block">
+          <div
+            className="absolute flex h-[40.14px] w-[338.78px] items-center rounded-[20px]"
+            style={{
+              left: 49,
+              top: 144,
+              backgroundColor: '#fff0e9',
+              color: '#ec501e',
+              fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif',
+            }}
+          >
+            <svg className="absolute left-[21.09px] top-[11.37px] h-[16.43px] w-[17.21px]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.75l2.3 6.05 6.45.32-5.02 4.08 1.7 6.23L12 15.92 6.57 19.43l1.7-6.23-5.02-4.08 6.45-.32z" />
+            </svg>
+            <span className="absolute left-[43.09px] top-[11.37px] h-[18px] w-[278px] text-[15px] font-medium leading-[normal]">
+              The easiest way to plan epic road trips
+            </span>
+          </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row items-center gap-14 lg:gap-12">
-            <div className="flex-1 max-w-xl">
-              <div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold mb-8"
-                style={{
-                  backgroundColor: 'rgba(216,90,48,0.08)',
-                  color: '#D85A30',
-                  border: '1px solid rgba(216,90,48,0.16)',
-                }}
-              >
-                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l1.5 4.5H18l-3.75 2.7 1.5 4.5L12 11.25 8.25 13.7l1.5-4.5L6 6.5h4.5z" />
-                </svg>
-                The easiest way to plan epic road trips
-              </div>
+          <h1
+            className="absolute whitespace-nowrap text-[80px] font-bold leading-[90px]"
+            style={{
+              left: 49,
+              top: 201.37,
+              fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif',
+            }}
+          >
+            <span className="block text-[#141046]">Let Roady plan</span>
+            <span className="block text-[#141046]">your next</span>
+            <span className="block text-[#ec501e]">adventure</span>
+          </h1>
 
-              <h1
-                className="font-extrabold leading-[1.02] tracking-tight"
-                style={{ color: '#1B2D45', fontSize: 'clamp(2.9rem, 7vw, 5.1rem)' }}
-              >
-                Plan your trip
-                <br />
-                right now
-                <br />
-                <span
-                  style={{
-                    color: '#D85A30',
-                    fontStyle: 'italic',
-                    fontWeight: 800,
-                    fontSize: '0.9em',
-                  }}
-                >
-                  in 30 seconds
-                </span>
-              </h1>
+          <p
+            className="absolute w-[471px] text-[19px] font-medium leading-[normal] text-[#818395]"
+            style={{
+              left: 49,
+              top: 476.37,
+              fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif',
+            }}
+          >
+            Tell Roady what you love, and get a personalized road trip in less than 30 seconds
+          </p>
 
-              <p className="mt-7 max-w-lg text-lg leading-relaxed" style={{ color: '#6B7280' }}>
-                Create the perfect road trip in minutes. Roady asks a few smart questions, then
-                suggests a trip that already feels tailored to you.
-              </p>
+          <button
+            onClick={() => openPlanner('pch')}
+            className="roady-cta-shadow absolute h-[58.15px] w-[301.5px] rounded-[18px] bg-[#25AB45] text-left text-[17px] font-medium leading-[normal] text-white transition-opacity hover:opacity-90"
+            style={{
+              left: 49,
+              top: 553.82,
+              fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif',
+            }}
+          >
+            <span className="absolute left-[25.19px] top-[16.55px] whitespace-nowrap">
+              Start planning with Roady
+            </span>
+            <svg className="absolute left-[258.19px] top-[23.55px] h-[11.79px] w-[15.73px]" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 16 12">
+              <path d="M1 6h13" strokeLinecap="round" />
+              <path d="m9.5 1 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
 
-              <div className="mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-                <button
-                  onClick={() => openPlanner('pch')}
-                  className="inline-flex items-center gap-3 px-8 py-4 rounded-full font-bold text-lg text-white transition-all hover:opacity-90"
-                  style={greenButtonStyle}
-                >
-                  Plan my trip now
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
-                    <path d="M5 12h14" />
-                    <path d="m12 5 7 7-7 7" />
-                  </svg>
-                </button>
+          <div className="absolute flex -space-x-[10px]" style={{ left: 49, top: 635.84 }}>
+            {heroAvatarImages.map((src, index) => (
+              <img
+                key={src}
+                src={src}
+                alt=""
+                className="h-[52px] w-[52px] rounded-full border border-[#141046]/70 object-cover"
+                style={{ zIndex: heroAvatarImages.length - index }}
+              />
+            ))}
+          </div>
+          <div
+            className="absolute whitespace-nowrap text-[17px] leading-[normal]"
+            style={{
+              left: 252,
+              top: 638.37,
+              fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif',
+            }}
+          >
+            <p className="mb-0 font-bold text-[#141046]">Join 20,000+</p>
+            <p className="font-medium text-[#818395]">happy road trippers</p>
+          </div>
+          <img
+            src="/figma-hero-underline.svg"
+            alt=""
+            className="absolute h-[11px] w-[78px]"
+            style={{ left: 251.78, top: 693.29 }}
+          />
 
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-2">
-                    {['#D85A30', '#378ADD', '#58CC02', '#EF9F27'].map((color, index) => (
-                      <div
-                        key={color}
-                        className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-[11px] font-bold text-white"
-                        style={{ backgroundColor: color, zIndex: 4 - index }}
-                      >
-                        {['J', 'M', 'S', 'A'][index]}
-                      </div>
-                    ))}
-                  </div>
-                  <p className="text-sm font-semibold" style={{ color: '#6B7280' }}>
-                    Join <span style={{ color: '#1B2D45' }}>20,000+</span> happy road trippers
-                  </p>
-                </div>
-              </div>
+          <img
+            src="/figma-hero-art.svg"
+            alt="Roady planning a trip"
+            className="absolute h-[546px] w-[748px]"
+            style={{ left: 643.92, top: 148.06 }}
+          />
+        </div>
+
+        <div className="px-6 pb-16 pt-12 min-[1220px]:hidden">
+          <div
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
+            style={{
+              backgroundColor: '#fff0e9',
+              color: '#ec501e',
+              fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif',
+            }}
+          >
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2.75l2.3 6.05 6.45.32-5.02 4.08 1.7 6.23L12 15.92 6.57 19.43l1.7-6.23-5.02-4.08 6.45-.32z" />
+            </svg>
+            The easiest way to plan epic road trips
+          </div>
+
+          <h1
+            className="mt-8 text-[48px] font-bold leading-[1.05] text-[#141046] sm:text-[64px]"
+            style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+          >
+            Let Roady plan your next <span className="text-[#ec501e]">adventure</span>
+          </h1>
+
+          <p
+            className="mt-5 max-w-[330px] text-[19px] font-medium leading-[normal] text-[#818395] sm:max-w-xl"
+            style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+          >
+            Tell Roady what you love, and get a personalized road trip in less than 30 seconds
+          </p>
+
+          <button
+            onClick={() => openPlanner('pch')}
+            className="roady-cta-shadow mt-8 inline-flex h-[58px] items-center gap-5 rounded-[18px] bg-[#25AB45] px-7 text-[17px] font-medium text-white transition-opacity hover:opacity-90"
+            style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+          >
+            Start planning with Roady
+            <svg className="h-3 w-4" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 16 12">
+              <path d="M1 6h13" strokeLinecap="round" />
+              <path d="m9.5 1 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+
+          <div className="mt-8 flex items-center gap-3">
+            <div className="flex shrink-0 -space-x-2 sm:-space-x-[10px]">
+              {heroAvatarImages.map((src, index) => (
+                <img
+                  key={src}
+                  src={src}
+                  alt=""
+                  className="h-11 w-11 rounded-full border border-[#141046]/70 object-cover sm:h-[52px] sm:w-[52px]"
+                  style={{ zIndex: heroAvatarImages.length - index }}
+                />
+              ))}
             </div>
-
-            <div className="w-full max-w-[920px] flex-1">
-              <button
-                type="button"
-                onClick={() => openPlanner('pch')}
-                aria-label="Open Roady planner"
-                className="group relative block w-full text-left transition-transform duration-300 hover:-translate-y-1"
-              >
-                <div className="relative min-h-[380px] sm:min-h-[480px] lg:min-h-[620px]">
-                  <img
-                    src="/roady%2Bbg-clean.png"
-                    alt="Roady hero artwork"
-                    className="absolute inset-0 h-full w-full object-contain object-center transition-transform duration-500 group-hover:scale-[1.03] lg:object-right"
-                  />
-                </div>
-              </button>
+            <div
+              className="shrink-0 text-[16px] leading-[normal] sm:text-[17px]"
+              style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+            >
+              <p className="font-bold text-[#141046]">Join 20,000+</p>
+              <p className="font-medium text-[#818395]">happy road trippers</p>
             </div>
+          </div>
+
+          <div className="relative mt-10 min-h-[330px] sm:min-h-[430px]">
+            <img
+              src="/figma-hero-art.svg"
+              alt="Roady planning a trip"
+              className="absolute left-1/2 top-[-120px] w-[720px] max-w-none -translate-x-1/2 sm:top-[-72px]"
+            />
           </div>
         </div>
       </section>
 
-      <section id="how-it-works" className="px-6 py-16 lg:py-20" style={{ backgroundColor: '#ffffff' }}>
+      <section id="how-it-works" className="relative scroll-mt-16 overflow-hidden bg-white">
         <div
           ref={howFade.ref}
-          className="mx-auto max-w-[1320px] transition-all duration-700"
+          className="mx-auto max-w-[1440px] transition-all duration-700"
           style={{
             opacity: howFade.visible ? 1 : 0,
             transform: howFade.visible ? 'none' : 'translateY(24px)',
           }}
         >
-          <div>
-            <div className="text-center">
-              <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#D85A30' }}>
-                How it works
-              </p>
-              <h2 className="mt-3 text-4xl font-extrabold leading-tight sm:text-5xl" style={{ color: '#080D45' }}>
-                How Roady works
-              </h2>
-            </div>
+          <div className="relative hidden h-[500px] min-[1220px]:block">
+            <h2
+              className="absolute left-1/2 top-[56px] w-[360px] -translate-x-1/2 text-center text-[40px] font-bold leading-[42px] text-[#141046]"
+              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+            >
+              How Roady works
+            </h2>
 
-            <div className="mt-10 grid gap-8 md:grid-cols-5 md:gap-6 lg:mt-12">
-              {[
-                {
-                  number: '1',
-                  title: 'Starting point',
-                  body: 'Set where the drive begins',
-                  accent: '#FF4E18',
-                  bg: '#FFF0E9',
-                  icon: (
-                    <>
-                      <path d="M12 21s6-4.7 6-10a6 6 0 1 0-12 0c0 5.3 6 10 6 10Z" />
-                      <circle cx="12" cy="11" r="2.3" />
-                    </>
-                  ),
-                },
-                {
-                  number: '2',
-                  title: 'Travel crew',
-                  body: "Tell Roady who's coming along",
-                  accent: '#6946E8',
-                  bg: '#F0EBFF',
-                  icon: (
-                    <>
-                      <circle cx="9" cy="8.5" r="3" />
-                      <path d="M3.5 19a5.5 5.5 0 0 1 11 0" />
-                      <path d="M16 11a3 3 0 1 0-1.8-5.4" />
-                      <path d="M15.5 14.5a5 5 0 0 1 5 4.5" />
-                    </>
-                  ),
-                },
-                {
-                  number: '3',
-                  title: 'Trip vibe',
-                  body: 'Pick interests and hotel style',
-                  accent: '#F3B300',
-                  bg: '#FFF1B8',
-                  icon: (
-                    <>
-                      <path d="M4 7h9" />
-                      <path d="M17 7h3" />
-                      <circle cx="15" cy="7" r="2" />
-                      <path d="M4 17h3" />
-                      <path d="M11 17h9" />
-                      <circle cx="9" cy="17" r="2" />
-                    </>
-                  ),
-                },
-                {
-                  number: '4',
-                  title: 'Roady suggests',
-                  body: 'Get a custom route built by AI',
-                  accent: '#22B95B',
-                  bg: '#DFF8E6',
-                  icon: (
-                    <>
-                      <path d="M5 18c3.5-7 10.5 0 14-7" />
-                      <circle cx="5" cy="18" r="2" />
-                      <circle cx="19" cy="11" r="2" />
-                      <path d="M8 4v4M6 6h4" />
-                    </>
-                  ),
-                },
-                {
-                  number: '5',
-                  title: 'Save or export',
-                  body: 'Keep it, share it, or open it in Maps',
-                  accent: '#EF5E9C',
-                  bg: '#FDEAF2',
-                  icon: (
-                    <>
-                      <path d="M6 20V5a2 2 0 0 1 2-2h9l3 3v14l-7-4-7 4Z" />
-                      <path d="M14 3v5h5" />
-                    </>
-                  ),
-                },
-              ].map((step, index, steps) => (
-                <div key={step.title} className="relative text-center">
-                  {index < steps.length - 1 && (
-                    <div className="pointer-events-none absolute left-[calc(50%+48px)] top-[50px] hidden w-[calc(100%-56px)] items-center md:flex">
-                      <span className="h-0.5 flex-1 border-t-4 border-dotted border-[#080D45]" />
-                      <svg className="ml-2 h-4 w-4 flex-shrink-0 text-[#080D45]" fill="none" stroke="currentColor" strokeWidth="2.6" viewBox="0 0 24 24">
-                        <path d="M5 12h14" />
-                        <path d="m13 6 6 6-6 6" />
-                      </svg>
-                    </div>
-                  )}
+            {howItWorksSteps.map((step) => {
+              const textLeft = step.left + 44.16 - 105;
 
-                  <div className="relative mx-auto h-28 w-28">
-                    <div
-                      className="absolute -left-2 -top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full text-base font-extrabold text-white shadow-[0_8px_18px_rgba(27,45,69,0.16)]"
-                      style={{ backgroundColor: step.accent }}
-                    >
-                      {step.number}
-                    </div>
-                    <div
-                      className="flex h-full w-full items-center justify-center rounded-[30px]"
-                      style={{ backgroundColor: step.bg }}
-                    >
-                      <svg
-                        className="h-12 w-12"
-                        fill="none"
-                        stroke="#080D45"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2.3"
-                        viewBox="0 0 24 24"
-                      >
-                        {step.icon}
-                      </svg>
-                    </div>
+              return (
+                <div key={step.title}>
+                  <div className="group absolute top-[172px] h-[89px] w-[89px]" style={{ left: `${step.left}px` }}>
+                    <HowItWorksIcon icon={step.icon} />
                   </div>
+                  <div
+                    className="absolute top-[289px] w-[210px] text-center"
+                    style={{
+                      left: `${textLeft}px`,
+                      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                    }}
+                  >
+                    <p className="text-[18px] font-extrabold leading-[22px] text-[#141046]">{step.title}</p>
+                    <p className="mx-auto mt-[7px] max-w-[190px] text-[14px] font-medium leading-[20px] text-[#818395]">
+                      {step.body}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
 
-                  <p className="mt-5 text-xl font-extrabold leading-tight" style={{ color: '#080D45' }}>
+            <button
+              type="button"
+              onClick={() => openPlanner('pch')}
+              className="roady-cta-shadow absolute left-[605px] top-[392px] inline-flex h-[58px] w-[229px] items-center justify-center gap-[10px] rounded-[13px] bg-[#25AB45] text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+            >
+              Generate my trip
+              <svg className="h-[16px] w-[16px]" fill="none" viewBox="0 0 24 24">
+                <path
+                  d="m8 3 1.5 4L13 8.5 9.5 10 8 14l-1.5-4L3 8.5 6.5 7 8 3Z"
+                  fill="currentColor"
+                />
+                <path
+                  d="m17 11 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+            <p
+              className="absolute left-[636px] top-[462px] w-[169px] text-center text-[10px] font-medium leading-[12px] text-[#818395]"
+              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+            >
+              Takes less than 30 seconds
+            </p>
+          </div>
+
+          <div className="px-6 py-12 min-[1220px]:hidden">
+            <h2
+              className="text-center text-[34px] font-bold leading-[1.12] text-[#141046] sm:text-[40px]"
+              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+            >
+              How Roady works
+            </h2>
+
+            <div className="mt-9 grid gap-8 sm:grid-cols-2">
+              {howItWorksSteps.map((step) => (
+                <div key={step.title} className="text-center">
+                  <div className="group mx-auto h-[89px] w-[89px]">
+                    <HowItWorksIcon icon={step.icon} />
+                  </div>
+                  <p
+                    className="mt-5 text-[18px] font-extrabold leading-[22px] text-[#141046]"
+                    style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+                  >
                     {step.title}
                   </p>
-                  <p className="mx-auto mt-2 max-w-[180px] text-sm font-medium leading-relaxed text-gray-500">
+                  <p
+                    className="mx-auto mt-2 max-w-[230px] text-[14px] font-medium leading-[20px] text-[#818395]"
+                    style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+                  >
                     {step.body}
                   </p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-10 flex flex-col items-center lg:mt-12">
+            <div className="mt-10 flex flex-col items-center">
               <button
                 type="button"
                 onClick={() => openPlanner('pch')}
-                className="inline-flex items-center gap-3 rounded-full px-8 py-4 text-lg font-extrabold text-white shadow-[0_18px_42px_rgba(19,168,91,0.24)] transition-opacity hover:opacity-90"
-                style={{ backgroundColor: '#13A85B' }}
+                className="roady-cta-shadow inline-flex h-[58px] w-full max-w-[229px] items-center justify-center gap-[10px] rounded-[13px] bg-[#25AB45] text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+                style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
               >
                 Generate my trip
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path d="m8 3 1.5 4L13 8.5 9.5 10 8 14l-1.5-4L3 8.5 6.5 7 8 3Z" />
-                  <path d="m17 11 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z" />
+                <svg className="h-[16px] w-[16px]" fill="none" viewBox="0 0 24 24">
+                  <path
+                    d="m8 3 1.5 4L13 8.5 9.5 10 8 14l-1.5-4L3 8.5 6.5 7 8 3Z"
+                    fill="currentColor"
+                  />
+                  <path
+                    d="m17 11 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"
+                    fill="currentColor"
+                  />
                 </svg>
               </button>
-              <p className="mt-4 text-base font-medium text-gray-500">Takes less than 30 seconds</p>
+              <p
+                className="mt-3 text-center text-[10px] font-medium leading-[12px] text-[#818395]"
+                style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+              >
+                Takes less than 30 seconds
+              </p>
             </div>
           </div>
         </div>

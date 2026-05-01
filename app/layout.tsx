@@ -1,7 +1,22 @@
 import type { Metadata } from 'next';
+import { Inter, Poppins } from 'next/font/google';
 import Script from 'next/script';
 import '@/styles/globals.css';
 import 'mapbox-gl/dist/mapbox-gl.css';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-poppins',
+  display: 'swap',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['500', '700'],
+  variable: '--font-inter',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Roady — Your California Road Trip, Reimagined',
@@ -29,7 +44,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
       <head>
         <link rel="icon" href="/roady-icon.png" />
       </head>
