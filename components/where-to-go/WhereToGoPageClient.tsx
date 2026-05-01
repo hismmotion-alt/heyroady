@@ -140,7 +140,7 @@ export default function WhereToGoPageClient() {
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
-      <Navbar />
+      <Navbar primaryLabel="Start planning" signedInPrimaryLabel="Start planning" />
 
       <main className="overflow-hidden pt-16">
         <section className="relative bg-white px-6 py-12 sm:py-16 lg:min-h-[720px] lg:px-10 xl:px-12">
