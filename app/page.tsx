@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
@@ -17,6 +17,10 @@ import {
   type PlannerStop,
   type StartRegion,
 } from '@/components/home/plannerData';
+import {
+  getWhereToGoDestination,
+  type WhereToGoDestination,
+} from '@/lib/where-to-go';
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
 const RouteMap = dynamic(() => import('@/components/RouteMap'), {
@@ -69,6 +73,7 @@ type SuggestedRouteOption = {
 type PersistedPlannerState = {
   step: PlannerStep;
   seedRouteId: PlannerRouteKey;
+  destinationPreset?: WhereToGoDestination | null;
   startInput: string;
   startCoords: [number, number] | null;
   prefs: PlannerPreferences;
@@ -1131,9 +1136,15 @@ async function reverseGeocodeLabel(lng: number, lat: number): Promise<string | n
   }
 }
 
-function buildQuestionSteps(prefs: PlannerPreferences): PlannerStep[] {
+function buildQuestionSteps(prefs: PlannerPreferences, hasDestinationPreset = false): PlannerStep[] {
   const steps: PlannerStep[] = ['start', 'group'];
-  if (prefs.travelGroup === 'family-kids') steps.push('kids');
+  if (!hasDestinationPreset && prefs.travelGroup === 'family-kids') steps.push('kids');
+  if (hasDestinationPreset) {
+    steps.push('hotelBudget');
+    if (prefs.hotelPreference && prefs.hotelPreference !== 'none') steps.push('hotelDetails');
+    steps.push('enroute', 'spots');
+    return steps;
+  }
   steps.push('distance', 'interests', 'hotelBudget');
   if (prefs.hotelPreference && prefs.hotelPreference !== 'none') steps.push('hotelDetails');
   steps.push('enroute', 'spots');
@@ -1245,6 +1256,7 @@ function stripPlannerStop(stop: PlannerStop): Stop {
 
 function HomeContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const howFade = useFadeIn(0.08);
   const routesFade = useFadeIn(0.08);
   const saveFade = useFadeIn(0.08);
@@ -1259,6 +1271,7 @@ function HomeContent() {
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
   const [prefs, setPrefs] = useState<PlannerPreferences>(DEFAULT_PREFS);
+  const [destinationPreset, setDestinationPreset] = useState<WhereToGoDestination | null>(null);
   const [routeOptions, setRouteOptions] = useState<SuggestedRouteOption[]>([]);
   const [routeOptionIndex, setRouteOptionIndex] = useState(0);
   const [tripData, setTripData] = useState<TripData | null>(null);
@@ -1283,11 +1296,11 @@ function HomeContent() {
   const routeRegion = getStartRegion(startInput, startCoords);
   const fallbackRoute = PLANNER_ROUTE_DEFINITIONS[seedRouteId][routeRegion];
   const activeRouteOption = routeOptions[routeOptionIndex] ?? null;
-  const routeDestination = activeRouteOption?.destination ?? fallbackRoute.destination;
+  const routeDestination = activeRouteOption?.destination ?? destinationPreset?.name ?? fallbackRoute.destination;
   const routeName = tripData?.routeName ?? activeRouteOption?.name ?? fallbackRoute.routeName;
   const routeTagline = tripData?.tagline ?? activeRouteOption?.tagline ?? fallbackRoute.tagline;
-  const routeSummary = tripData?.destinationDescription ?? fallbackRoute.summary;
-  const questionSteps = buildQuestionSteps(prefs);
+  const routeSummary = tripData?.destinationDescription ?? destinationPreset?.description ?? fallbackRoute.summary;
+  const questionSteps = buildQuestionSteps(prefs, Boolean(destinationPreset));
   const mapStops = useMemo(() => stops.map(stripPlannerStop), [stops]);
   const progressSteps =
     plannerStep === 'generating' || plannerStep === 'results' || plannerStep === 'save' || plannerStep === 'saved'
@@ -1299,7 +1312,20 @@ function HomeContent() {
       : plannerStep === 'generating'
         ? Math.max(questionSteps.length - 1, 0)
         : Math.max(progressSteps.indexOf(plannerStep), 0);
-  const currentPlannerMeta = PLANNER_META[plannerStep];
+  const currentPlannerMeta =
+    destinationPreset && plannerStep === 'generating'
+      ? {
+          ...PLANNER_META.generating,
+          title: `Roady is building your ${destinationPreset.name} trip.`,
+          description: 'Using your starting point, crew, hotel preference, and stop counts to shape the route.',
+        }
+      : destinationPreset && plannerStep === 'results'
+        ? {
+            ...PLANNER_META.results,
+            title: `${destinationPreset.name} is ready.`,
+            description: 'Review the route, browse stay picks, and save or open the trip.',
+          }
+        : PLANNER_META[plannerStep];
   const previewInterests = prefs.interests.slice(0, 4).map((interest) => INTEREST_LABELS[interest] ?? interest);
   const previewHotel = prefs.hotelPreference ? HOTEL_LABELS[prefs.hotelPreference] : '';
   const previewDistance =
@@ -1386,6 +1412,7 @@ function HomeContent() {
       requestAnimationFrame(() => setPlannerVisible(true));
       setPlannerStep(parsed.step);
       setSeedRouteId(parsed.seedRouteId);
+      setDestinationPreset(parsed.destinationPreset ?? null);
       setStartInput(parsed.startInput);
       setStartCoords(parsed.startCoords);
       setPrefs(parsed.prefs);
@@ -1401,6 +1428,20 @@ function HomeContent() {
       window.localStorage.removeItem(PLANNER_STORAGE_KEY);
     }
   }, []);
+
+  useEffect(() => {
+    const source = searchParams.get('source');
+    const destinationSlug = searchParams.get('destination');
+    if (source !== 'where-to-go' || !destinationSlug) return;
+
+    const destination = getWhereToGoDestination(destinationSlug);
+    if (!destination) return;
+
+    openPlannerForDestination(destination);
+    router.replace('/', { scroll: false });
+    // This intentionally runs when the URL changes into the where-to-go launch state.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, router]);
 
   useEffect(() => {
     if (!plannerOpen || plannerStep !== 'start' || didTryAutoLocate) return;
@@ -1623,6 +1664,7 @@ function HomeContent() {
 
   function openPlanner(routeId: PlannerRouteKey = 'pch') {
     setSeedRouteId(routeId);
+    setDestinationPreset(null);
     setPlannerStep('start');
     setPlannerOpen(true);
     setPlannerVisible(false);
@@ -1632,6 +1674,42 @@ function HomeContent() {
     setPrefs(DEFAULT_PREFS);
     setTripData(null);
     setRouteOptions([]);
+    setRouteOptionIndex(0);
+    setStops([]);
+    setMapEndCoords(null);
+    setActiveStop(-1);
+    setSelectedHotelIndex(0);
+    setHotelCarouselIndex(0);
+    setPlannerError('');
+    setSaveMessage('');
+    setShareMessage('');
+    setSavedTripId(null);
+    setDidTryAutoLocate(false);
+    requestAnimationFrame(() => setPlannerVisible(true));
+  }
+
+  function openPlannerForDestination(destination: WhereToGoDestination) {
+    setSeedRouteId(destination.fallbackRouteId);
+    setDestinationPreset(destination);
+    setPlannerStep('start');
+    setPlannerOpen(true);
+    setPlannerVisible(false);
+    setStartInput('');
+    setStartCoords(null);
+    setStartSuggestions([]);
+    setPrefs(DEFAULT_PREFS);
+    setTripData(null);
+    setRouteOptions([
+      {
+        id: destination.slug,
+        name: `${destination.name} Road Trip`,
+        tagline: destination.description,
+        via: destination.region,
+        destination: destination.name,
+        icon: '📍',
+        fallbackRouteId: destination.fallbackRouteId,
+      },
+    ]);
     setRouteOptionIndex(0);
     setStops([]);
     setMapEndCoords(null);
@@ -1657,6 +1735,7 @@ function HomeContent() {
     const state: PersistedPlannerState = {
       step: plannerStep === 'saved' ? 'save' : plannerStep,
       seedRouteId,
+      destinationPreset,
       startInput,
       startCoords,
       prefs,
@@ -1768,6 +1847,8 @@ function HomeContent() {
       return;
     } catch {
       const fallbackStops = cloneStops(fallbackVariant.stops);
+      const fallbackDestination = destinationPreset?.name ?? fallbackVariant.destination;
+      const fallbackSummary = destinationPreset?.description ?? fallbackVariant.summary;
       const fallbackHotelNames =
         prefs.hotelPreference === '$$$'
           ? ['Grand Hotel', 'Resort & Spa', 'Historic Suites', 'Coastal House']
@@ -1777,21 +1858,21 @@ function HomeContent() {
       const fallbackTrip: TripData = {
         routeName: option.name || fallbackVariant.routeName,
         tagline: option.tagline || fallbackVariant.tagline,
-        totalMiles: estimateTripMiles(startCoords, fallbackStops, fallbackVariant.destinationCoords),
+        totalMiles: estimateTripMiles(startCoords, fallbackStops, endPoint),
         stops: fallbackStops.map(stripPlannerStop),
         hotels:
           prefs.hotelPreference && prefs.hotelPreference !== 'none'
             ? fallbackHotelNames.map((suffix) => ({
-                name: `${fallbackVariant.destination} ${suffix}`,
-                city: fallbackVariant.destination,
+                name: `${fallbackDestination} ${suffix}`,
+                city: fallbackDestination,
                 priceRange: prefs.hotelPreference as '$' | '$$' | '$$$',
                 bookingUrl: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
-                  `${fallbackVariant.destination} ${suffix} ${fallbackVariant.destination}`
+                  `${fallbackDestination} ${suffix} ${fallbackDestination}`
                 )}&dest_type=hotel&is_hotel=1&lang=en-us`,
               }))
             : undefined,
         completed: true,
-        destinationDescription: fallbackVariant.summary,
+        destinationDescription: fallbackSummary,
         funFacts: [fallbackVariant.estimateNote],
         tripChecklist: [
           'Download offline maps before you leave.',
@@ -1807,7 +1888,7 @@ function HomeContent() {
       setActiveStop(-1);
       setSelectedHotelIndex(0);
       setHotelCarouselIndex(0);
-      setMapEndCoords(fallbackVariant.destinationCoords);
+      setMapEndCoords(endPoint);
       setPlannerError('Roady is showing a curated route while live suggestions warm up.');
       setPlannerStep('results');
     }
@@ -1816,6 +1897,20 @@ function HomeContent() {
   async function generateSuggestedTrip(excludeDestinations: string[] = []) {
     if (!startInput.trim()) {
       setPlannerStep('start');
+      return;
+    }
+
+    if (destinationPreset) {
+      const option: SuggestedRouteOption = routeOptions[0] ?? {
+        id: destinationPreset.slug,
+        name: `${destinationPreset.name} Road Trip`,
+        tagline: destinationPreset.description,
+        via: destinationPreset.region,
+        destination: destinationPreset.name,
+        icon: '📍',
+        fallbackRouteId: destinationPreset.fallbackRouteId,
+      };
+      await loadTripForRoute(option, [option], 0);
       return;
     }
 
@@ -1870,6 +1965,14 @@ function HomeContent() {
     setPlannerError('');
     setSaveMessage('');
     setShareMessage('');
+
+    if (destinationPreset) {
+      const option = routeOptions[0];
+      if (option) {
+        await loadTripForRoute(option, [option], 0);
+      }
+      return;
+    }
 
     if (routeOptions.length > routeOptionIndex + 1) {
       const nextIndex = routeOptionIndex + 1;
@@ -2063,7 +2166,6 @@ function HomeContent() {
     { label: 'Where to go', href: '/where-to-go' },
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#save-share' },
-    { label: 'Blog', href: '/blog' },
   ];
   const heroAvatarImages = [
     '/hero-avatar-1.jpg',

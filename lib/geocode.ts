@@ -4,6 +4,7 @@ export const LOCATION_OVERRIDES: Record<string, [number, number]> = {
   'Berkeley': [-122.2727, 37.8715],
   'Beverly Hills': [-118.4065, 34.0901],
   'Big Sur': [-121.4247, 36.2704],
+  'Cambria': [-121.0808, 35.5641],
   'Carmel-by-the-Sea': [-121.9225, 36.5526],
   'Carmel': [-121.9225, 36.5526],
   'Catalina Island': [-118.3220, 33.3850],
@@ -69,6 +70,7 @@ export const LOCATION_OVERRIDES: Record<string, [number, number]> = {
   'Ventura': [-119.2919, 34.2805],
   'Visalia': [-119.2805, 36.3305],
   'Yosemite': [-119.5783, 37.8715],
+  'Yosemite National Park': [-119.5383, 37.8651],
   'Yountville': [-122.3687, 38.2975],
 };
 

@@ -39,7 +39,8 @@ export default function Navbar({
 }: NavbarProps) {
   const [user, setUser] = useState<User | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const figmaDropdownRef = useRef<HTMLDivElement>(null);
+  const compactDropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -53,7 +54,11 @@ export default function Navbar({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const isInsideFigmaMenu = figmaDropdownRef.current?.contains(target);
+      const isInsideCompactMenu = compactDropdownRef.current?.contains(target);
+
+      if (!isInsideFigmaMenu && !isInsideCompactMenu) {
         setDropdownOpen(false);
       }
     };
@@ -64,14 +69,15 @@ export default function Navbar({
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    setUser(null);
     router.push('/');
+    router.refresh();
   };
 
   const positionClass = fixed ? 'fixed top-0 left-0 right-0 z-50' : '';
   const isFigmaWeb = variant === 'figmaWeb';
   const standardLinks = [
     { label: 'Where to go', href: '/where-to-go' },
-    { label: 'Blog', href: '/blog' },
     { label: 'How it works', href: '/#how-it-works' },
     ...(user ? [{ label: 'My Trips', href: '/my-trips' }] : []),
   ];
@@ -80,7 +86,6 @@ export default function Navbar({
     { label: 'Where to go', href: '/where-to-go' },
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#save-share' },
-    { label: 'Blog', href: '/blog' },
   ];
   const resolvedLinks = navLinks ?? (isFigmaWeb ? figmaLinks : standardLinks);
 
@@ -92,7 +97,7 @@ export default function Navbar({
     router.push(primaryHref);
   };
 
-  const figmaNavWidths = [80, 112, 113, 62, 40];
+  const figmaNavWidths = [80, 112, 113, 62];
 
   const renderNavLink = (link: { label: string; href: string }) => {
     const classes = 'text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors';
@@ -201,7 +206,7 @@ export default function Navbar({
           <div className="absolute right-[52px] top-[6px] flex h-[52.43px] w-[296.13px] items-center gap-[19px]">
             {user ? (
               <>
-                <div className="relative" ref={dropdownRef}>
+                <div className="relative" ref={figmaDropdownRef}>
                   <button
                     onClick={() => setDropdownOpen((o) => !o)}
                     title="Account"
@@ -275,7 +280,7 @@ export default function Navbar({
         <div className={`flex items-center gap-3 flex-shrink-0 ${isFigmaWeb ? 'absolute right-6 top-1/2 -translate-y-1/2' : ''}`}>
           {user ? (
             <>
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={compactDropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((o) => !o)}
                   title="Account"
