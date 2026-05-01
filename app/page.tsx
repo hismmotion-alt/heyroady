@@ -1263,6 +1263,7 @@ function HomeContent() {
   const faqFade = useFadeIn(0.08);
 
   const [mapAnimation, setMapAnimation] = useState<object | null>(null);
+  const [heroAnimation, setHeroAnimation] = useState<object | null>(null);
   const [plannerOpen, setPlannerOpen] = useState(false);
   const [plannerVisible, setPlannerVisible] = useState(false);
   const [plannerStep, setPlannerStep] = useState<PlannerStep>('start');
@@ -1369,6 +1370,13 @@ function HomeContent() {
     fetch('/map-search.json')
       .then((response) => response.json())
       .then((data) => setMapAnimation(data))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch('/roady-hero.json')
+      .then((response) => response.json())
+      .then((data) => setHeroAnimation(data))
       .catch(() => {});
   }, []);
 
@@ -2312,12 +2320,27 @@ function HomeContent() {
             style={{ left: 251.78, top: 693.29 }}
           />
 
-          <img
-            src="/figma-hero-art.svg"
-            alt="Roady planning a trip"
+          <div
+            role="img"
+            aria-label="Roady planning a trip"
             className="absolute h-[546px] w-[748px]"
             style={{ left: 643.92, top: 148.06 }}
-          />
+          >
+            {heroAnimation ? (
+              <Lottie
+                animationData={heroAnimation}
+                loop
+                className="h-full w-full"
+                style={{ width: '100%', height: '100%' }}
+              />
+            ) : (
+              <img
+                src="/figma-hero-art.svg"
+                alt=""
+                className="h-full w-full"
+              />
+            )}
+          </div>
         </div>
 
         <div className="px-6 pb-16 pt-12 min-[1220px]:hidden">
@@ -2383,11 +2406,26 @@ function HomeContent() {
           </div>
 
           <div className="relative mt-10 min-h-[330px] sm:min-h-[430px]">
-            <img
-              src="/figma-hero-art.svg"
-              alt="Roady planning a trip"
-              className="absolute left-1/2 top-[-120px] w-[720px] max-w-none -translate-x-1/2 sm:top-[-72px]"
-            />
+            <div
+              role="img"
+              aria-label="Roady planning a trip"
+              className="absolute left-1/2 top-[-120px] h-[526px] w-[720px] max-w-none -translate-x-1/2 sm:top-[-72px]"
+            >
+              {heroAnimation ? (
+                <Lottie
+                  animationData={heroAnimation}
+                  loop
+                  className="h-full w-full"
+                  style={{ width: '100%', height: '100%' }}
+                />
+              ) : (
+                <img
+                  src="/figma-hero-art.svg"
+                  alt=""
+                  className="h-full w-full"
+                />
+              )}
+            </div>
           </div>
         </div>
       </section>
