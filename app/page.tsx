@@ -18,8 +18,11 @@ import {
   type StartRegion,
 } from '@/components/home/plannerData';
 import {
+  WHERE_TO_GO_DESTINATIONS,
+  WHERE_TO_GO_TAGS,
   getWhereToGoDestination,
   type WhereToGoDestination,
+  type WhereToGoTag,
 } from '@/lib/where-to-go';
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false });
@@ -70,6 +73,15 @@ type SuggestedRouteOption = {
   fallbackRouteId?: PlannerRouteKey;
 };
 
+type HomeDestinationFilter = 'all' | WhereToGoTag;
+
+const WHERE_TO_GO_CATEGORY_CLASSES: Record<WhereToGoDestination['categoryColor'], string> = {
+  coral: 'bg-[#EC501E] text-white',
+  green: 'bg-[#35BA54] text-white',
+  gold: 'bg-[#F5A400] text-white',
+  purple: 'bg-[#7B5AC8] text-white',
+};
+
 type PersistedPlannerState = {
   step: PlannerStep;
   seedRouteId: PlannerRouteKey;
@@ -94,7 +106,7 @@ type ChoiceCardItem = {
   emoji: string;
 };
 
-function HowItWorksIcon({ icon }: { icon: string }) {
+function HowItWorksIcon({ icon, className = 'roady-how-icon h-[89px] w-[89px]' }: { icon: string; className?: string }) {
   const iconSrcByType: Record<string, string> = {
     start: '/how-it-works-icon-1.svg',
     crew: '/how-it-works-icon-2.svg',
@@ -109,7 +121,7 @@ function HowItWorksIcon({ icon }: { icon: string }) {
       alt=""
       width={89}
       height={89}
-      className="roady-how-icon h-[89px] w-[89px]"
+      className={className}
       aria-hidden="true"
     />
   );
@@ -1289,6 +1301,7 @@ function HomeContent() {
   const [saving, setSaving] = useState(false);
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState('');
+  const [homeDestinationFilter, setHomeDestinationFilter] = useState<HomeDestinationFilter>('all');
 
   const suggestionRef = useRef<HTMLDivElement>(null);
   const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2168,6 +2181,11 @@ function HomeContent() {
     const definition = PLANNER_ROUTE_DEFINITIONS[routeId][routeRegion];
     return { routeId, definition };
   });
+  const mobileWhereToGoDestinations = (
+    homeDestinationFilter === 'all'
+      ? WHERE_TO_GO_DESTINATIONS
+      : WHERE_TO_GO_DESTINATIONS.filter((destination) => destination.tags.includes(homeDestinationFilter))
+  ).slice(0, 3);
 
   const navLinks = [
     { label: 'Features', href: '/#features' },
@@ -2343,23 +2361,9 @@ function HomeContent() {
           </div>
         </div>
 
-        <div className="px-6 pb-16 pt-12 min-[1220px]:hidden">
-          <div
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium"
-            style={{
-              backgroundColor: '#fff0e9',
-              color: '#ec501e',
-              fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif',
-            }}
-          >
-            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2.75l2.3 6.05 6.45.32-5.02 4.08 1.7 6.23L12 15.92 6.57 19.43l1.7-6.23-5.02-4.08 6.45-.32z" />
-            </svg>
-            The easiest way to plan epic road trips
-          </div>
-
+        <div className="px-6 pb-8 pt-10 min-[1220px]:hidden">
           <h1
-            className="mt-8 text-[48px] font-bold leading-[1.05] text-[#141046] sm:text-[64px]"
+            className="text-[48px] font-bold leading-[1.04] text-[#141046] sm:text-[64px]"
             style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
           >
             Let Roady plan your next <span className="text-[#ec501e]">adventure</span>
@@ -2374,7 +2378,7 @@ function HomeContent() {
 
           <button
             onClick={() => openPlanner('pch')}
-            className="roady-cta-shadow mt-8 inline-flex h-[58px] items-center gap-5 rounded-[18px] bg-[#25AB45] px-7 text-[17px] font-medium text-white transition-opacity hover:opacity-90"
+            className="roady-cta-shadow mt-8 inline-flex h-[58px] w-full max-w-[330px] items-center justify-center gap-5 rounded-[18px] bg-[#25AB45] px-7 text-[17px] font-medium text-white transition-opacity hover:opacity-90"
             style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
           >
             Start planning with Roady
@@ -2384,32 +2388,11 @@ function HomeContent() {
             </svg>
           </button>
 
-          <div className="mt-8 flex items-center gap-3">
-            <div className="flex shrink-0 -space-x-2 sm:-space-x-[10px]">
-              {heroAvatarImages.map((src, index) => (
-                <img
-                  key={src}
-                  src={src}
-                  alt=""
-                  className="h-11 w-11 rounded-full border border-[#141046]/70 object-cover sm:h-[52px] sm:w-[52px]"
-                  style={{ zIndex: heroAvatarImages.length - index }}
-                />
-              ))}
-            </div>
-            <div
-              className="shrink-0 text-[16px] leading-[normal] sm:text-[17px]"
-              style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
-            >
-              <p className="font-bold text-[#141046]">Join 20,000+</p>
-              <p className="font-medium text-[#818395]">happy road trippers</p>
-            </div>
-          </div>
-
-          <div className="relative mt-10 min-h-[330px] sm:min-h-[430px]">
+          <div className="relative mt-8 h-[360px] overflow-hidden sm:h-[430px]">
             <div
               role="img"
               aria-label="Roady planning a trip"
-              className="absolute left-1/2 top-[-120px] h-[526px] w-[720px] max-w-none -translate-x-1/2 sm:top-[-72px]"
+              className="absolute left-1/2 top-0 h-[360px] w-[493px] max-w-none -translate-x-1/2 sm:h-[430px] sm:w-[589px]"
             >
               {heroAnimation ? (
                 <Lottie
@@ -2499,65 +2482,168 @@ function HomeContent() {
 
           <div className="px-6 py-12 min-[1220px]:hidden">
             <h2
-              className="text-center text-[34px] font-bold leading-[1.12] text-[#141046] sm:text-[40px]"
+              className="text-[34px] font-bold leading-[1.12] text-[#141046] sm:text-[40px]"
               style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
             >
               How Roady works
             </h2>
 
-            <div className="mt-9 grid gap-8 sm:grid-cols-2">
-              {howItWorksSteps.map((step) => (
-                <div key={step.title} className="text-center">
-                  <div className="group mx-auto h-[89px] w-[89px]">
-                    <HowItWorksIcon icon={step.icon} />
+            <div className="mt-8 space-y-5">
+              {howItWorksSteps.map((step, index) => (
+                <div
+                  key={step.title}
+                  className="flex items-center gap-4 rounded-[24px] border border-[#E7EAF2] bg-white p-4 shadow-[0_12px_30px_rgba(20,16,70,0.06)]"
+                >
+                  <div className="group h-[58px] w-[58px] shrink-0">
+                    <HowItWorksIcon icon={step.icon} className="roady-how-icon h-[58px] w-[58px]" />
                   </div>
-                  <p
-                    className="mt-5 text-[18px] font-extrabold leading-[22px] text-[#141046]"
-                    style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
-                  >
-                    {step.title}
-                  </p>
-                  <p
-                    className="mx-auto mt-2 max-w-[230px] text-[14px] font-medium leading-[20px] text-[#818395]"
-                    style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
-                  >
-                    {step.body}
-                  </p>
+                  <div>
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#EC501E]">
+                      Step {index + 1}
+                    </p>
+                    <p
+                      className="mt-1 text-[18px] font-extrabold leading-[22px] text-[#141046]"
+                      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+                    >
+                      {step.title}
+                    </p>
+                    <p
+                      className="mt-1 text-[14px] font-medium leading-[20px] text-[#818395]"
+                      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+                    >
+                      {step.body}
+                    </p>
+                  </div>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-10 flex flex-col items-center">
-              <button
-                type="button"
-                onClick={() => openPlanner('pch')}
-                className="roady-cta-shadow inline-flex h-[58px] w-full max-w-[229px] items-center justify-center gap-[10px] rounded-[13px] bg-[#25AB45] text-[15px] font-medium text-white transition-opacity hover:opacity-90"
-                style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
-              >
-                Generate my trip
-                <svg className="h-[16px] w-[16px]" fill="none" viewBox="0 0 24 24">
-                  <path
-                    d="m8 3 1.5 4L13 8.5 9.5 10 8 14l-1.5-4L3 8.5 6.5 7 8 3Z"
-                    fill="currentColor"
-                  />
-                  <path
-                    d="m17 11 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"
-                    fill="currentColor"
-                  />
-                </svg>
-              </button>
-              <p
-                className="mt-3 text-center text-[10px] font-medium leading-[12px] text-[#818395]"
-                style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
-              >
-                Takes less than 30 seconds
-              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="features" className="py-20 px-6" style={{ backgroundColor: '#F7F8F6' }}>
+      <section className="bg-white px-6 py-12 min-[1220px]:hidden">
+        <div className="mx-auto max-w-md">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-extrabold uppercase tracking-[0.16em] text-[#EC501E]">
+                Roady picks
+              </p>
+              <h2
+                className="mt-2 text-[34px] font-bold leading-[1.08] text-[#141046]"
+                style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+              >
+                Where to go
+              </h2>
+            </div>
+            <a href="/where-to-go" className="shrink-0 text-sm font-extrabold text-[#25AB45]">
+              View all
+            </a>
+          </div>
+
+          <div className="-mx-6 mt-7 flex gap-3 overflow-x-auto px-6 pb-2">
+            <button
+              type="button"
+              onClick={() => setHomeDestinationFilter('all')}
+              className={`shrink-0 rounded-full border px-5 py-3 text-sm font-extrabold transition-colors ${
+                homeDestinationFilter === 'all'
+                  ? 'border-[#25AB45] bg-[#25AB45] text-white'
+                  : 'border-[#DDE1EA] bg-white text-[#141046]'
+              }`}
+            >
+              All
+            </button>
+            {WHERE_TO_GO_TAGS.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => setHomeDestinationFilter(tag.id)}
+                className={`shrink-0 rounded-full border px-5 py-3 text-sm font-extrabold transition-colors ${
+                  homeDestinationFilter === tag.id
+                    ? 'border-[#25AB45] bg-[#25AB45] text-white'
+                    : 'border-[#DDE1EA] bg-white text-[#141046]'
+                }`}
+              >
+                {tag.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-5 space-y-5">
+            {mobileWhereToGoDestinations.map((destination) => (
+              <button
+                key={destination.id}
+                type="button"
+                onClick={() => openPlannerForDestination(destination)}
+                className="group block w-full overflow-hidden rounded-[26px] border border-[#E6E8EF] bg-white text-left shadow-[0_14px_34px_rgba(20,16,70,0.08)] transition-all duration-300 active:scale-[0.99]"
+              >
+                <div className="relative h-[178px] overflow-hidden">
+                  <img
+                    src={destination.image}
+                    alt={destination.name}
+                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    loading="lazy"
+                  />
+                  <span
+                    className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-xs font-extrabold shadow-sm ${WHERE_TO_GO_CATEGORY_CLASSES[destination.categoryColor]}`}
+                  >
+                    {destination.category}
+                  </span>
+                </div>
+                <div className="p-5">
+                  <h3 className="text-[24px] font-extrabold leading-tight text-[#141046]">
+                    {destination.name}
+                  </h3>
+                  <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#6F7285]">
+                    <svg className="h-4 w-4 text-[#141046]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
+                      <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
+                      <circle cx="12" cy="10" r="2.5" />
+                    </svg>
+                    {destination.region}
+                  </p>
+                  <p className="mt-3 text-[15px] font-medium leading-7 text-[#6F7285]">
+                    {destination.description}
+                  </p>
+                  <div className="mt-5 flex items-center justify-between gap-4">
+                    <span className="text-sm font-extrabold text-[#EC501E]">
+                      {destination.stopCount} stops
+                    </span>
+                    <span className="rounded-full border border-[#DDE1EA] px-5 py-2.5 text-sm font-extrabold text-[#141046]">
+                      Plan this trip
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-6 pb-16 pt-6 min-[1220px]:hidden">
+        <div className="mx-auto max-w-md rounded-[30px] bg-[#141046] px-6 py-8 text-center shadow-[0_20px_52px_rgba(20,16,70,0.18)]">
+          <h2
+            className="text-[30px] font-bold leading-[1.12] text-white"
+            style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+          >
+            Ready to plan your trip?
+          </h2>
+          <p className="mx-auto mt-3 max-w-[280px] text-sm font-medium leading-6 text-[#D9D5F3]">
+            Tell Roady where you are starting, and your California route appears in seconds.
+          </p>
+          <button
+            type="button"
+            onClick={() => openPlanner('pch')}
+            className="roady-cta-shadow mt-6 inline-flex h-[56px] w-full max-w-[260px] items-center justify-center gap-3 rounded-[18px] bg-[#25AB45] text-[16px] font-extrabold text-white transition-opacity hover:opacity-90"
+          >
+            Start planning
+            <svg className="h-3 w-4" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 16 12">
+              <path d="M1 6h13" strokeLinecap="round" />
+              <path d="m9.5 1 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
+        </div>
+      </section>
+
+      <section id="features" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#F7F8F6' }}>
         <div className="max-w-6xl mx-auto">
           <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
@@ -2673,7 +2759,7 @@ function HomeContent() {
         </div>
       </section>
 
-      <section id="stories" className="py-20 px-6" style={{ backgroundColor: '#F9FAFB' }}>
+      <section id="stories" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#F9FAFB' }}>
         <div
           ref={routesFade.ref}
           className="max-w-6xl mx-auto transition-all duration-700"
@@ -2741,7 +2827,7 @@ function HomeContent() {
         </div>
       </section>
 
-      <section id="save-share" className="py-20 px-6" style={{ backgroundColor: '#ffffff' }}>
+      <section id="save-share" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }}>
         <div
           ref={saveFade.ref}
           className="max-w-6xl mx-auto transition-all duration-700"
@@ -2795,7 +2881,7 @@ function HomeContent() {
         </div>
       </section>
 
-      <section className="py-20 px-6" style={{ backgroundColor: '#ffffff' }} id="faq">
+      <section className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }} id="faq">
         <div
           ref={faqFade.ref}
           className="max-w-3xl mx-auto transition-all duration-700"
