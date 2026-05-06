@@ -2504,10 +2504,10 @@ function HomeContent() {
               return (
                 <svg
                   key={`${step.title}-${nextStep.title}`}
-                  className="absolute top-[202px] h-[28px] text-[#EC501E]/45"
+                  className="absolute top-[202px] h-[28px] text-black"
                   style={{
-                    left: `${step.left + 126}px`,
-                    width: `${nextStep.left - step.left - 163}px`,
+                    left: `${step.left + 146}px`,
+                    width: `${nextStep.left - step.left - 203}px`,
                   }}
                   viewBox="0 0 140 28"
                   preserveAspectRatio="none"
