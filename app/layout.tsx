@@ -37,8 +37,9 @@ export const metadata: Metadata = {
     images: ['/roady-logo.png'],
   },
   icons: {
-    icon: '/roady-icon.png',
-    apple: '/roady-icon.png',
+    icon: [{ url: '/Browser%20tab%20icon.svg', type: 'image/svg+xml' }],
+    shortcut: ['/Browser%20tab%20icon.svg'],
+    apple: [{ url: '/roady-icon.png' }],
   },
 };
 
@@ -46,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${poppins.variable} ${inter.variable}`}>
       <head>
-        <link rel="icon" href="/roady-icon.png" />
+        <link rel="icon" href="/Browser%20tab%20icon.svg" type="image/svg+xml" />
       </head>
       <body>
         {children}
