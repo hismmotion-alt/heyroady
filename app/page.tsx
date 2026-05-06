@@ -2416,7 +2416,7 @@ function HomeContent() {
       <section id="stories" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }}>
         <div
           ref={routesFade.ref}
-          className="max-w-6xl mx-auto transition-all duration-700"
+          className="mx-auto max-w-[1440px] transition-all duration-700"
           style={{
             opacity: routesFade.visible ? 1 : 0,
             transform: routesFade.visible ? 'none' : 'translateY(24px)',
@@ -2746,7 +2746,7 @@ function HomeContent() {
       </section>
 
       <section id="features" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }}>
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto max-w-[1440px]">
           <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#D85A30' }}>
@@ -2864,7 +2864,7 @@ function HomeContent() {
       <section id="save-share" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }}>
         <div
           ref={saveFade.ref}
-          className="max-w-6xl mx-auto transition-all duration-700"
+          className="mx-auto max-w-[1440px] transition-all duration-700"
           style={{
             opacity: saveFade.visible ? 1 : 0,
             transform: saveFade.visible ? 'none' : 'translateY(24px)',
@@ -2957,7 +2957,7 @@ function HomeContent() {
       </section>
 
       <footer className="py-8 px-6 border-t border-gray-100" style={{ backgroundColor: '#ffffff' }}>
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-gray-400">© {new Date().getFullYear()} Roady. All rights reserved.</p>
           <div className="flex items-center gap-6">
             <a href="/privacy" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">
