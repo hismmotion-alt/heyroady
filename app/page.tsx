@@ -56,6 +56,7 @@ type PlannerPreferences = {
   distancePreference: string;
   interests: string[];
   hotelPreference: string;
+  hotelRooms: string;
   hotelGuests: string;
   hotelCheckin: string;
   hotelNights: string;
@@ -133,6 +134,7 @@ const DEFAULT_PREFS: PlannerPreferences = {
   distancePreference: '',
   interests: [],
   hotelPreference: '',
+  hotelRooms: '1',
   hotelGuests: '',
   hotelCheckin: '',
   hotelNights: '',
@@ -227,8 +229,7 @@ const DESTINATION_SPOT_COUNTS: ChoiceCardItem[] = [
   { id: 'auto', label: 'Choose for me', desc: 'Let Roady decide the best number', emoji: '✨' },
 ];
 
-const HOTEL_GUEST_OPTIONS = ['1', '2', '3', '4', '5', '6+'];
-const HOTEL_NIGHT_OPTIONS = ['1', '2', '3', '4', '5', '6', '7+'];
+const HOTEL_NIGHT_OPTIONS = ['1', '2', '3', '4', '5', '6+'];
 
 const INTEREST_LABELS: Record<string, string> = Object.fromEntries(
   INTEREST_GROUPS.flatMap((group) => group.items.map((item) => [item.id, item.label]))
@@ -471,28 +472,108 @@ function InterestChip({
   );
 }
 
-function NumberPill({
-  value,
-  selected,
-  onClick,
+function HotelDetailIcon({
+  kind,
+  className = 'h-6 w-6',
 }: {
+  kind: 'calendar' | 'bed' | 'guests' | 'moon' | 'sparkles';
+  className?: string;
+}) {
+  if (kind === 'calendar') {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+        <path d="M7 3v4M17 3v4M4 9h16" strokeLinecap="round" />
+        <rect x="4" y="5" width="16" height="16" rx="3" />
+        <path d="M8 13h3M14 13h2M8 17h2M13 17h3" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (kind === 'bed') {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+        <path d="M4 11V6M20 18v-5a2 2 0 0 0-2-2H4v7M4 15h16M7 11V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (kind === 'guests') {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+        <circle cx="9" cy="8" r="3" />
+        <path d="M3.5 19a5.5 5.5 0 0 1 11 0" strokeLinecap="round" />
+        <circle cx="17" cy="9" r="2.5" />
+        <path d="M15.5 14.5A5 5 0 0 1 20.5 19" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (kind === 'moon') {
+    return (
+      <svg className={className} fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+        <path d="M20 15.5A8.5 8.5 0 0 1 8.5 4a7.2 7.2 0 1 0 11.5 11.5Z" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className={className} fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+      <path d="m8 3 1.6 4.4L14 9l-4.4 1.6L8 15l-1.6-4.4L2 9l4.4-1.6L8 3Z" strokeLinejoin="round" />
+      <path d="m17 12 1 2.7 2.7 1-2.7 1-1 2.8-1-2.8-2.7-1 2.7-1 1-2.7Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function HotelDetailStepper({
+  label,
+  icon,
+  value,
+  onDecrement,
+  onIncrement,
+  decrementDisabled,
+  incrementDisabled,
+}: {
+  label: string;
+  icon: 'bed' | 'guests';
   value: string;
-  selected: boolean;
-  onClick: () => void;
+  onDecrement: () => void;
+  onIncrement: () => void;
+  decrementDisabled?: boolean;
+  incrementDisabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="h-20 w-20 rounded-[24px] border-2 text-2xl font-extrabold transition-all"
-      style={{
-        borderColor: selected ? '#1B2D45' : '#E5E7EB',
-        backgroundColor: selected ? 'rgba(27,45,69,0.06)' : '#ffffff',
-        color: '#1B2D45',
-      }}
-    >
-      {value}
-    </button>
+    <div className="flex items-center justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-[#EFFFF4] text-[#13A85B]">
+          <HotelDetailIcon kind={icon} />
+        </span>
+        <span className="text-base font-bold text-[#061C55] sm:text-lg">{label}</span>
+      </div>
+
+      <div className="grid h-11 w-[168px] grid-cols-3 overflow-hidden rounded-[16px] border border-[#DDE3EA] bg-white shadow-[0_8px_18px_rgba(27,45,69,0.04)] max-[520px]:w-[150px]">
+        <button
+          type="button"
+          onClick={onDecrement}
+          disabled={decrementDisabled}
+          className="flex items-center justify-center border-r border-[#E3E7EF] text-2xl font-bold text-[#061C55] transition-colors hover:bg-[#F8FAFC] disabled:text-[#B8C1D0]"
+          aria-label={`Decrease ${label.toLowerCase()}`}
+        >
+          -
+        </button>
+        <div className="flex items-center justify-center text-2xl font-extrabold text-[#061C55]">
+          {value}
+        </div>
+        <button
+          type="button"
+          onClick={onIncrement}
+          disabled={incrementDisabled}
+          className="flex items-center justify-center border-l border-[#E3E7EF] text-2xl font-bold text-[#061C55] transition-colors hover:bg-[#F8FAFC] disabled:text-[#B8C1D0]"
+          aria-label={`Increase ${label.toLowerCase()}`}
+        >
+          +
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -513,6 +594,25 @@ function getStartRegion(startInput: string, coords: [number, number] | null): St
 
 function formatMiles(miles: number) {
   return `${miles.toLocaleString()} miles`;
+}
+
+function formatHotelCheckinDate(value: string) {
+  if (!value) return 'Select check-in date';
+
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return 'Select check-in date';
+
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
+function getCountValue(value: string, fallback: number) {
+  const count = Number.parseInt(value.replace('+', ''), 10);
+  return Number.isNaN(count) ? fallback : count;
 }
 
 function normalizeHotelQueryText(value: string) {
@@ -1436,7 +1536,7 @@ function HomeContent() {
       setDestinationPreset(parsed.destinationPreset ?? null);
       setStartInput(parsed.startInput);
       setStartCoords(parsed.startCoords);
-      setPrefs(parsed.prefs);
+      setPrefs({ ...DEFAULT_PREFS, ...parsed.prefs });
       setRouteOptions(parsed.routeOptions);
       setRouteOptionIndex(parsed.routeOptionIndex);
       setTripData(parsed.tripData);
@@ -1789,6 +1889,7 @@ function HomeContent() {
         distancePreference: prefs.distancePreference,
         interests: prefs.interests,
         hotelPreference: prefs.hotelPreference,
+        hotelRooms: prefs.hotelRooms,
         hotelGuests: prefs.hotelGuests,
         hotelCheckin: prefs.hotelCheckin,
         hotelNights: prefs.hotelNights,
@@ -1839,6 +1940,7 @@ function HomeContent() {
           distance: prefs.distancePreference === 'surprise' ? '' : prefs.distancePreference,
           interests: prefs.interests.join(','),
           hotelPreference: prefs.hotelPreference,
+          hotelRooms: prefs.hotelRooms,
           hotelGuests: prefs.hotelGuests,
           hotelCheckin: prefs.hotelCheckin,
           hotelNights: prefs.hotelNights,
@@ -2097,10 +2199,29 @@ function HomeContent() {
     setPrefs((currentPrefs) => ({
       ...currentPrefs,
       hotelPreference,
-      hotelGuests: hotelPreference === 'none' ? '' : currentPrefs.hotelGuests,
+      hotelRooms: hotelPreference === 'none' ? '1' : currentPrefs.hotelRooms || '1',
+      hotelGuests: hotelPreference === 'none' ? '' : currentPrefs.hotelGuests || '2',
       hotelCheckin: hotelPreference === 'none' ? '' : currentPrefs.hotelCheckin,
       hotelNights: hotelPreference === 'none' ? '' : currentPrefs.hotelNights,
     }));
+  }
+
+  function setHotelRoomsFromDelta(delta: number) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => {
+      const currentRooms = getCountValue(currentPrefs.hotelRooms, 1);
+      const nextRooms = Math.max(1, Math.min(4, currentRooms + delta));
+      return { ...currentPrefs, hotelRooms: String(nextRooms) };
+    });
+  }
+
+  function setHotelGuestsFromDelta(delta: number) {
+    resetSuggestedTrip();
+    setPrefs((currentPrefs) => {
+      const currentGuests = getCountValue(currentPrefs.hotelGuests, 2);
+      const nextGuests = Math.max(1, Math.min(6, currentGuests + delta));
+      return { ...currentPrefs, hotelGuests: nextGuests >= 6 ? '6+' : String(nextGuests) };
+    });
   }
 
   function setEnrouteStops(numberOfEnrouteStops: string) {
@@ -2128,7 +2249,7 @@ function HomeContent() {
       case 'hotelBudget':
         return Boolean(prefs.hotelPreference);
       case 'hotelDetails':
-        return Boolean(prefs.hotelGuests && prefs.hotelCheckin && prefs.hotelNights);
+        return Boolean(prefs.hotelRooms && prefs.hotelGuests && prefs.hotelCheckin && prefs.hotelNights);
       case 'enroute':
         return Boolean(prefs.numberOfEnrouteStops);
       case 'spots':
@@ -3219,7 +3340,11 @@ function HomeContent() {
                 </div>
               ) : (
               <div className="flex h-full min-h-0 flex-col lg:flex-row">
-                <aside className="w-full min-h-0 border-b border-gray-200 bg-white lg:h-full lg:w-[430px] lg:flex-shrink-0 lg:border-b-0 lg:border-r">
+                <aside
+                  className={`w-full min-h-0 border-b border-gray-200 bg-white lg:h-full lg:flex-shrink-0 lg:border-b-0 lg:border-r ${
+                    plannerStep === 'hotelDetails' ? 'lg:w-[600px]' : 'lg:w-[430px]'
+                  }`}
+                >
                   <div className="flex h-full min-h-0 flex-col">
                     <div className="flex items-center justify-between px-6 pt-6 pb-4 sm:px-8">
                       <img src="/roady-logo.png" alt="Roady" style={{ height: 38, width: 'auto' }} />
@@ -3260,15 +3385,22 @@ function HomeContent() {
                     </div>
 
                     <div className="px-6 sm:px-8">
-                      <h2 className="text-3xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                      <h2
+                        className={`${plannerStep === 'hotelDetails' ? 'text-2xl' : 'text-3xl'} font-extrabold leading-tight`}
+                        style={{ color: '#1B2D45' }}
+                      >
                         {currentPlannerMeta.title}
                       </h2>
-                      <p className="mt-3 text-base leading-relaxed text-gray-400">
+                      <p
+                        className={`${plannerStep === 'hotelDetails' ? 'mt-2 text-sm leading-snug' : 'mt-3 text-base leading-relaxed'} text-gray-400`}
+                      >
                         {currentPlannerMeta.description}
                       </p>
                     </div>
 
-                    <div className="mt-8 min-h-0 flex-1 overflow-y-auto px-6 pb-8 sm:px-8">
+                    <div
+                      className={`${plannerStep === 'hotelDetails' ? 'mt-4 pb-4' : 'mt-8 pb-8'} min-h-0 flex-1 overflow-y-auto px-6 sm:px-8`}
+                    >
                       {plannerStep === 'start' && (
                         <div ref={suggestionRef}>
                           <div className="rounded-[26px] border border-gray-200 bg-[#FAFAF9] p-4">
@@ -3419,31 +3551,27 @@ function HomeContent() {
                       )}
 
                       {plannerStep === 'hotelDetails' && (
-                        <div className="space-y-10">
+                        <div className="rounded-[24px] border border-[#E6EAF1] bg-white p-4 shadow-[0_14px_36px_rgba(27,45,69,0.06)] sm:p-5">
                           <div>
-                            <p className="text-[15px] font-bold mb-5" style={{ color: '#1B2D45' }}>
-                              How many guests?
-                            </p>
-                            <div className="flex gap-3 flex-wrap">
-                              {HOTEL_GUEST_OPTIONS.map((value) => (
-                                <NumberPill
-                                  key={value}
-                                  value={value}
-                                  selected={prefs.hotelGuests === value}
-                                  onClick={() => {
-                                    resetSuggestedTrip();
-                                    setPrefs((currentPrefs) => ({ ...currentPrefs, hotelGuests: value }));
-                                  }}
-                                />
-                              ))}
+                            <div className="flex items-center gap-3">
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EFFFF4] text-[#13A85B]">
+                                <HotelDetailIcon kind="calendar" />
+                              </span>
+                              <p className="text-lg font-extrabold text-[#061C55] sm:text-xl">
+                                Check-in date
+                              </p>
                             </div>
-                          </div>
 
-                          <div>
-                            <p className="text-[15px] font-bold mb-5" style={{ color: '#1B2D45' }}>
-                              Check-in date
-                            </p>
-                            <div className="relative">
+                            <label className="relative mt-3 flex min-h-[54px] cursor-pointer items-center rounded-[16px] border border-[#DDE3EA] bg-white px-4 shadow-[0_8px_18px_rgba(27,45,69,0.04)]">
+                              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center text-[#061C55]">
+                                <HotelDetailIcon kind="calendar" className="h-5 w-5" />
+                              </span>
+                              <span className="ml-3 min-w-0 flex-1 text-base font-bold text-[#061C55] sm:text-lg">
+                                {formatHotelCheckinDate(prefs.hotelCheckin)}
+                              </span>
+                              <svg className="h-5 w-5 flex-shrink-0 text-[#061C55]" fill="none" stroke="currentColor" strokeWidth="2.7" viewBox="0 0 24 24">
+                                <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
                               <input
                                 type="date"
                                 value={prefs.hotelCheckin}
@@ -3452,32 +3580,100 @@ function HomeContent() {
                                   resetSuggestedTrip();
                                   setPrefs((currentPrefs) => ({ ...currentPrefs, hotelCheckin: event.target.value }));
                                 }}
-                                className="w-full rounded-[28px] border-2 bg-white px-8 py-6 text-2xl font-extrabold outline-none transition-all"
-                                style={{
-                                  borderColor: prefs.hotelCheckin ? '#1B2D45' : '#E5E7EB',
-                                  color: '#1B2D45',
-                                }}
+                                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                                aria-label="Check-in date"
                               />
+                            </label>
+
+                            <p className="mt-2 text-sm font-medium leading-snug text-[#71809A]">
+                              We'll search for hotels with availability on this date.
+                            </p>
+                          </div>
+
+                          <div className="my-4 h-px bg-[#E6EAF1]" />
+
+                          <div>
+                            <p className="text-lg font-extrabold text-[#061C55] sm:text-xl">
+                              Rooms & guests
+                            </p>
+
+                            <div className="mt-4 space-y-3">
+                              <HotelDetailStepper
+                                label="Rooms"
+                                icon="bed"
+                                value={prefs.hotelRooms || '1'}
+                                onDecrement={() => setHotelRoomsFromDelta(-1)}
+                                onIncrement={() => setHotelRoomsFromDelta(1)}
+                                decrementDisabled={getCountValue(prefs.hotelRooms, 1) <= 1}
+                                incrementDisabled={getCountValue(prefs.hotelRooms, 1) >= 4}
+                              />
+
+                              <HotelDetailStepper
+                                label="Guests"
+                                icon="guests"
+                                value={prefs.hotelGuests || '2'}
+                                onDecrement={() => setHotelGuestsFromDelta(-1)}
+                                onIncrement={() => setHotelGuestsFromDelta(1)}
+                                decrementDisabled={getCountValue(prefs.hotelGuests, 2) <= 1}
+                                incrementDisabled={getCountValue(prefs.hotelGuests, 2) >= 6}
+                              />
+                            </div>
+
+                            <p className="mt-3 text-sm font-medium leading-snug text-[#71809A]">
+                              Including adults and children.
+                            </p>
+                          </div>
+
+                          <div className="my-4 h-px bg-[#E6EAF1]" />
+
+                          <div>
+                            <div className="flex items-center gap-3">
+                              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#EFFFF4] text-[#13A85B]">
+                                <HotelDetailIcon kind="moon" />
+                              </span>
+                              <div>
+                                <p className="text-lg font-extrabold text-[#061C55] sm:text-xl">Nights</p>
+                                <p className="mt-0.5 text-sm font-medium text-[#71809A]">
+                                  How long will you be staying?
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                              {HOTEL_NIGHT_OPTIONS.map((value) => {
+                                const selected = prefs.hotelNights === value;
+                                const label = `${value} night${value === '1' ? '' : 's'}`;
+
+                                return (
+                                  <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => {
+                                      resetSuggestedTrip();
+                                      setPrefs((currentPrefs) => ({ ...currentPrefs, hotelNights: value }));
+                                    }}
+                                    className="h-12 rounded-[14px] border text-sm font-bold transition-all sm:text-base"
+                                    style={{
+                                      borderColor: selected ? '#13A85B' : '#DDE3EA',
+                                      backgroundColor: selected ? '#F3FFF6' : '#FFFFFF',
+                                      color: selected ? '#13A85B' : '#061C55',
+                                      boxShadow: selected ? '0 10px 24px rgba(19,168,91,0.08)' : '0 8px 18px rgba(27,45,69,0.03)',
+                                    }}
+                                  >
+                                    {label}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
 
-                          <div>
-                            <p className="text-[15px] font-bold mb-5" style={{ color: '#1B2D45' }}>
-                              How many nights?
+                          <div className="mt-4 flex items-center gap-3 rounded-[16px] bg-[#F1F8F3] px-4 py-3">
+                            <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center text-[#13A85B]">
+                              <HotelDetailIcon kind="sparkles" className="h-6 w-6" />
+                            </span>
+                            <p className="text-sm font-medium leading-snug text-[#71809A]">
+                              Roady will use this to search real availability on Booking.com.
                             </p>
-                            <div className="flex gap-3 flex-wrap">
-                              {HOTEL_NIGHT_OPTIONS.map((value) => (
-                                <NumberPill
-                                  key={value}
-                                  value={value}
-                                  selected={prefs.hotelNights === value}
-                                  onClick={() => {
-                                    resetSuggestedTrip();
-                                    setPrefs((currentPrefs) => ({ ...currentPrefs, hotelNights: value }));
-                                  }}
-                                />
-                              ))}
-                            </div>
                           </div>
                         </div>
                       )}
@@ -3662,13 +3858,21 @@ function HomeContent() {
                     </div>
 
                     {plannerStep !== 'generating' && plannerStep !== 'save' && plannerStep !== 'saved' && (
-                      <div className="border-t border-gray-100 px-6 py-5 sm:px-8">
+                      <div
+                        className={`${plannerStep === 'hotelDetails' ? 'py-3' : 'py-5'} border-t border-gray-100 px-6 sm:px-8`}
+                      >
                         <div className="flex items-center gap-3">
                           <button
                             type="button"
                             onClick={handleBack}
-                            className="rounded-full border border-gray-200 px-5 py-3 text-sm font-bold text-gray-500 transition-colors hover:text-[#1B2D45]"
+                            className="inline-flex items-center justify-center gap-3 rounded-full border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-500 transition-colors hover:text-[#1B2D45]"
                           >
+                            {plannerStep === 'hotelDetails' && (
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.6" viewBox="0 0 24 24">
+                                <path d="M19 12H5" strokeLinecap="round" />
+                                <path d="m12 5-7 7 7 7" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
                             Back
                           </button>
 
@@ -3676,10 +3880,20 @@ function HomeContent() {
                             type="button"
                             onClick={() => void handleContinue()}
                             disabled={!canProceed(plannerStep)}
-                            className="flex-1 rounded-full px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-                            style={{ backgroundColor: '#58CC02' }}
+                            className="inline-flex flex-1 items-center justify-center gap-3 rounded-full px-5 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                            style={{ backgroundColor: plannerStep === 'hotelDetails' ? '#13A85B' : '#58CC02' }}
                           >
-                            {plannerStep === 'spots' ? 'Suggest my trip' : 'Next'}
+                            {plannerStep === 'spots'
+                              ? 'Suggest my trip'
+                              : plannerStep === 'hotelDetails'
+                                ? 'Next: choose stops'
+                                : 'Next'}
+                            {plannerStep === 'hotelDetails' && (
+                              <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.6" viewBox="0 0 24 24">
+                                <path d="M5 12h14" strokeLinecap="round" />
+                                <path d="m12 5 7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
                           </button>
                         </div>
                       </div>

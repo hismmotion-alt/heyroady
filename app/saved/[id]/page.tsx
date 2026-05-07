@@ -85,6 +85,7 @@ function derivePlannerAnswers(trip: TripData): PlannerAnswersSnapshot {
     distancePreference: trip.totalMiles <= 150 ? 'under-150' : '150-plus',
     interests,
     hotelPreference: trip.hotels?.[0]?.priceRange ?? '',
+    hotelRooms: '1',
     hotelGuests: '',
     hotelCheckin: '',
     hotelNights: '',

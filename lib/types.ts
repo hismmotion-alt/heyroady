@@ -22,6 +22,7 @@ export interface PlannerAnswersSnapshot {
   distancePreference: string;
   interests: string[];
   hotelPreference: string;
+  hotelRooms: string;
   hotelGuests: string;
   hotelCheckin: string;
   hotelNights: string;
@@ -71,6 +72,7 @@ export interface TripPreferences {
   numberOfStops: string;
   stopDuration: string;
   hotelPreference?: string;
+  hotelRooms?: string;
   hotelGuests?: string;
   hotelCheckin?: string;
   hotelNights?: string;

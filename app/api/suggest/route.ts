@@ -332,7 +332,10 @@ function buildPreferenceContext(body: Record<string, string>): string {
     };
     const hotelParts: string[] = [];
     if (hotelLabels[body.hotelPreference]) hotelParts.push(hotelLabels[body.hotelPreference]);
-    if (body.hotelGuests) hotelParts.push(`accommodating ${body.hotelGuests.replace('+', ' or more')} guest${body.hotelGuests === '1' ? '' : 's'}`);
+    if (body.hotelGuests) {
+      const guestText = `accommodating ${body.hotelGuests.replace('+', ' or more')} guest${body.hotelGuests === '1' ? '' : 's'}`;
+      hotelParts.push(body.hotelRooms ? `${guestText} across ${body.hotelRooms} room${body.hotelRooms === '1' ? '' : 's'}` : guestText);
+    }
     if (hotelParts.length) {
       parts.push(`Suggest ${hotelParts.join(', ')} hotels. CRITICAL: Every suggested hotel MUST be physically located in or immediately adjacent to the final destination city. Do NOT suggest hotels in other cities, regions, or states.`);
     }
