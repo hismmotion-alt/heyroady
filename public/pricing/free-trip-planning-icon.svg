@@ -1,0 +1,31 @@
+<svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 86.9798 86.9798" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Layer_1" clip-path="url(#clip0_0_11)">
+<path id="Vector" d="M65.3959 0H21.5839C9.66342 0 0 9.66342 0 21.5839V65.3959C0 77.3164 9.66342 86.9798 21.5839 86.9798H65.3959C77.3164 86.9798 86.9798 77.3164 86.9798 65.3959V21.5839C86.9798 9.66342 77.3164 0 65.3959 0Z" fill="var(--fill-0, #C7FBD6)"/>
+<g id="Group">
+<path id="Vector_2" d="M59.468 67.3559C64.9151 67.3559 69.3309 62.9402 69.3309 57.493C69.3309 52.0459 64.9151 47.6302 59.468 47.6302C54.0209 47.6302 49.6051 52.0459 49.6051 57.493C49.6051 62.9402 54.0209 67.3559 59.468 67.3559Z" stroke="var(--stroke-0, #35BA54)" stroke-width="4" stroke-miterlimit="10" stroke-linecap="round"/>
+<path id="Vector_3" d="M66.5857 64.32L72.169 69.6755" stroke="var(--stroke-0, #35BA54)" stroke-width="4" stroke-miterlimit="10" stroke-linecap="round"/>
+<path id="Vector_4" d="M54.6969 56.558L58.6139 60.1064L64.1492 54.1545" stroke="var(--stroke-0, #35BA54)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_5" d="M68.7525 27.1342V34.9711H20.9245V27.1342C20.9245 24.4729 23.0823 22.3151 25.7436 22.3151H63.9364C66.5977 22.3151 68.7555 24.4729 68.7555 27.1342H68.7525Z" fill="var(--fill-0, #35BA54)" stroke="var(--stroke-0, #35BA54)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_6" d="M68.7525 44.4504V34.9711" stroke="var(--stroke-0, #35BA54)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_7" d="M20.9245 34.9711V59.504C20.9245 62.1653 23.0823 64.317 25.7436 64.317H45.3645" stroke="var(--stroke-0, #35BA54)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<g id="Group_2">
+<path id="Vector_8" d="M32.5167 22.3151V17.3013" stroke="var(--stroke-0, #35BA54)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Vector_9" d="M57.3702 22.3151V17.3013" stroke="var(--stroke-0, #35BA54)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<g id="Group_3">
+<circle id="Ellipse" cx="31.4048" cy="42.9639" r="1.948" fill="var(--fill-0, #35BA54)"/>
+<circle id="Ellipse_2" cx="41.6033" cy="42.9639" r="1.948" fill="var(--fill-0, #35BA54)"/>
+<circle id="Ellipse_3" cx="51.7989" cy="42.9639" r="1.948" fill="var(--fill-0, #35BA54)"/>
+</g>
+<g id="Group_4">
+<circle id="Ellipse_4" cx="31.4048" cy="53.5221" r="1.948" fill="var(--fill-0, #35BA54)"/>
+<circle id="Ellipse_5" cx="41.6033" cy="53.5221" r="1.948" fill="var(--fill-0, #35BA54)"/>
+</g>
+</g>
+</g>
+<defs>
+<clipPath id="clip0_0_11">
+<rect width="86.9798" height="86.9798" fill="white"/>
+</clipPath>
+</defs>
+</svg>

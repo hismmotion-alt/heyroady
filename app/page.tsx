@@ -128,6 +128,267 @@ function HowItWorksIcon({ icon, className = 'roady-how-icon h-[89px] w-[89px]' }
   );
 }
 
+const PRICING_ASSETS = {
+  hero: '/pricing/roady-pricing-hero.png',
+  tag: '/pricing/tag-icon.svg',
+  chipCircle: '/pricing/chip-icon-circle.svg',
+  noCreditCard: '/pricing/no-credit-card-icon.svg',
+  noHiddenFees: '/pricing/no-hidden-fees-icon.svg',
+  tripsBuiltInSeconds: '/pricing/trips-built-in-seconds-icon.svg',
+  ctaArrow: '/pricing/cta-arrow.svg',
+  freePlanning: '/pricing/free-trip-planning-icon.svg',
+  aiMood: '/pricing/ai-mood-icon.svg',
+  premium: '/pricing/premium-icon.svg',
+  divider: '/pricing/pricing-divider.svg',
+};
+
+const PRICING_CHIPS = [
+  {
+    label: 'No credit card',
+    icon: PRICING_ASSETS.noCreditCard,
+  },
+  {
+    label: 'No hidden fees',
+    icon: PRICING_ASSETS.noHiddenFees,
+  },
+  {
+    label: 'Trips built in seconds',
+    icon: PRICING_ASSETS.tripsBuiltInSeconds,
+  },
+];
+
+const PRICING_FEATURES = [
+  {
+    title: 'Free trip planning',
+    body: 'Pick your vibe, route preferences, and travel style, then let Roady build a trip you can actually take.',
+    icon: PRICING_ASSETS.freePlanning,
+  },
+  {
+    title: 'AI that gets the mood',
+    body: 'Roady turns your interests like wine, beaches, food, nature, or family-friendly stops into a tailored route.',
+    icon: PRICING_ASSETS.aiMood,
+  },
+  {
+    title: 'Premium coming next',
+    body: 'Subscribers will unlock deeper customization, saved trip tools, offline access, and more advanced planning features.',
+    icon: PRICING_ASSETS.premium,
+  },
+];
+
+function PricingChip({
+  label,
+  icon,
+  className = '',
+}: {
+  label: string;
+  icon: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex h-[58px] items-center gap-[15px] rounded-[29px] bg-[rgba(243,246,239,0.82)] py-[14px] pl-4 pr-5 ${className}`}
+      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+    >
+      <span className="relative h-[30px] w-[30px] shrink-0">
+        <img src={PRICING_ASSETS.chipCircle} alt="" className="absolute inset-0 h-full w-full" aria-hidden="true" />
+        <img src={icon} alt="" className="absolute left-1.5 top-1.5 h-[18px] w-[18px]" aria-hidden="true" />
+      </span>
+      <span className="whitespace-nowrap text-[17px] font-bold leading-6 text-[#061c55]">{label}</span>
+    </span>
+  );
+}
+
+function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
+  return (
+    <section id="pricing" className="scroll-mt-16 bg-white">
+      <div className="relative mx-auto hidden h-[1022px] max-w-[1440px] min-[1220px]:block">
+        <div className="absolute left-[51px] top-[61px] flex h-[26px] items-center gap-3">
+          <img src={PRICING_ASSETS.tag} alt="" className="h-[26px] w-[26px]" aria-hidden="true" />
+          <p
+            className="text-[19px] font-bold leading-6 text-[#ff4e18]"
+            style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+          >
+            PRICING
+          </p>
+        </div>
+
+        <h2
+          className="absolute left-[48px] top-[118px] w-[532px] text-[76px] font-extrabold leading-[82px] text-[#061c55]"
+          style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+        >
+          <span className="block">
+            Roady is <span className="text-[#fc4d19]">free</span>
+          </span>
+          <span className="block">
+            to start - <span className="text-[#07905c]">$0</span>
+          </span>
+        </h2>
+
+        <div
+          className="absolute left-[48px] top-[294px] w-[612px] text-[20px] font-medium leading-[28px] text-[#8184a1]"
+          style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+        >
+          <p>Plan your California road trip in minutes with Roady&apos;s</p>
+          <p>AI-powered planner. Start with the core features for free,</p>
+          <p>then unlock more advanced planning tools when</p>
+          <p>Premium is ready.</p>
+        </div>
+
+        <div className="absolute left-[48px] top-[422px] h-[58px] w-[661px]">
+          <PricingChip label="No credit card" icon={PRICING_ASSETS.noCreditCard} className="absolute left-0 top-0 w-[198px]" />
+          <PricingChip label="No hidden fees" icon={PRICING_ASSETS.noHiddenFees} className="absolute left-[191px] top-0 w-[210px]" />
+          <PricingChip
+            label="Trips built in seconds"
+            icon={PRICING_ASSETS.tripsBuiltInSeconds}
+            className="absolute left-[386px] top-0 w-[275px]"
+          />
+        </div>
+
+        <button
+          type="button"
+          onClick={onStartPlanning}
+          className="absolute left-[48px] top-[526px] h-[56px] w-[357px] rounded-[37px] bg-[#061c55] text-white shadow-[0_14px_14px_rgba(6,28,85,0.18)] transition-opacity hover:opacity-90"
+          style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+        >
+          <span className="absolute left-2 top-3 w-[295px] text-center text-[21px] font-extrabold leading-[31px]">
+            Start planning your trip
+          </span>
+          <img src={PRICING_ASSETS.ctaArrow} alt="" className="absolute left-[288px] top-5 h-[19px] w-6" aria-hidden="true" />
+        </button>
+
+        <img
+          src={PRICING_ASSETS.hero}
+          alt="Roady driving a green SUV along a coastal road"
+          className="absolute left-[738px] top-[99px] h-[483px] w-[624px] rounded-[39px] object-cover"
+        />
+
+        <div className="absolute left-[48px] top-[657px] h-[183px] w-[1314px]">
+          <div className="absolute left-0 top-0 h-[154px] w-[393px]">
+            <img src={PRICING_ASSETS.freePlanning} alt="" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" aria-hidden="true" />
+            <div className="absolute left-[113px] top-0 w-[280px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+              <h3 className="w-[260px] text-[23px] font-extrabold leading-[30px] text-[#061c55]">
+                Free trip planning
+              </h3>
+              <div className="mt-2 w-[280px] text-[19px] font-medium leading-[29px] text-[#8184a1]">
+                <p>Pick your vibe, route</p>
+                <p>preferences, and travel</p>
+                <p>style, then let Roady build</p>
+                <p>a trip you can actually take.</p>
+              </div>
+            </div>
+          </div>
+
+          <img src={PRICING_ASSETS.divider} alt="" className="absolute left-[417px] top-0 h-[174.5px] w-[3px]" aria-hidden="true" />
+
+          <div className="absolute left-[475px] top-0 h-[154px] w-[393px]">
+            <img src={PRICING_ASSETS.aiMood} alt="" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" aria-hidden="true" />
+            <div className="absolute left-[113px] top-0 w-[280px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+              <h3 className="w-[260px] text-[23px] font-extrabold leading-[30px] text-[#061c55]">
+                AI that gets the mood
+              </h3>
+              <div className="mt-2 w-[280px] text-[19px] font-medium leading-[29px] text-[#8184a1]">
+                <p>Roady turns your interests</p>
+                <p>like wine, beaches, food,</p>
+                <p>nature, or family-friendly</p>
+                <p>stops into a tailored route.</p>
+              </div>
+            </div>
+          </div>
+
+          <img src={PRICING_ASSETS.divider} alt="" className="absolute left-[874px] top-0 h-[174.5px] w-[3px]" aria-hidden="true" />
+
+          <div className="absolute left-[921px] top-0 h-[183px] w-[393px]">
+            <img src={PRICING_ASSETS.premium} alt="" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" aria-hidden="true" />
+            <div className="absolute left-[113px] top-0 w-[280px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+              <h3 className="w-[280px] text-[23px] font-extrabold leading-[30px] text-[#061c55]">
+                Premium coming next
+              </h3>
+              <div className="mt-2 w-[280px] text-[19px] font-medium leading-[29px] text-[#8184a1]">
+                <p>Subscribers will unlock deeper</p>
+                <p>customization, saved trip</p>
+                <p>tools,</p>
+                <p>offline access, and more</p>
+                <p>advanced planning features.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-6 py-14 min-[1220px]:hidden">
+        <div className="mx-auto max-w-md">
+          <div className="flex items-center gap-3">
+            <img src={PRICING_ASSETS.tag} alt="" className="h-[26px] w-[26px]" aria-hidden="true" />
+            <p
+              className="text-[17px] font-bold leading-6 text-[#ff4e18]"
+              style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+            >
+              PRICING
+            </p>
+          </div>
+
+          <h2
+            className="mt-7 text-[40px] font-extrabold leading-[1.08] text-[#061c55] min-[380px]:text-[46px] sm:text-[58px]"
+            style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+          >
+            <span className="block">
+              Roady is <span className="text-[#fc4d19]">free</span>
+            </span>
+            <span className="block">
+              to start - <span className="text-[#07905c]">$0</span>
+            </span>
+          </h2>
+          <p
+            className="mt-5 text-[18px] font-medium leading-7 text-[#8184a1]"
+            style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+          >
+            Plan your California road trip in minutes with Roady&apos;s AI-powered planner. Start with the core
+            features for free, then unlock more advanced planning tools when Premium is ready.
+          </p>
+
+          <img
+            src={PRICING_ASSETS.hero}
+            alt="Roady driving a green SUV along a coastal road"
+            className="mt-8 aspect-[624/483] w-full rounded-[28px] object-cover"
+          />
+
+          <div className="mt-8 flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap">
+            {PRICING_CHIPS.map((chip) => (
+              <PricingChip key={chip.label} label={chip.label} icon={chip.icon} className="h-[50px] gap-3 px-3 py-2" />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={onStartPlanning}
+            className="mt-8 inline-flex h-[56px] w-full items-center justify-center gap-3 rounded-[37px] bg-[#061c55] px-6 text-[18px] font-extrabold text-white shadow-[0_14px_14px_rgba(6,28,85,0.18)] transition-opacity hover:opacity-90"
+            style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+          >
+            Start planning your trip
+            <img src={PRICING_ASSETS.ctaArrow} alt="" className="h-[16px] w-[21px]" aria-hidden="true" />
+          </button>
+
+          <div className="mt-12 space-y-8">
+            {PRICING_FEATURES.map((feature) => (
+              <div key={feature.title} className="flex gap-5">
+                <img src={feature.icon} alt="" className="h-[72px] w-[72px] shrink-0" aria-hidden="true" />
+                <div style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+                  <h3 className="text-[22px] font-extrabold leading-[28px] text-[#061c55]">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-2 text-[17px] font-medium leading-7 text-[#8184a1]">
+                    {feature.body}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 const DEFAULT_PREFS: PlannerPreferences = {
   travelGroup: '',
   kidsAges: [],
@@ -1371,7 +1632,6 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const howFade = useFadeIn(0.08);
   const routesFade = useFadeIn(0.08);
-  const saveFade = useFadeIn(0.08);
   const faqFade = useFadeIn(0.08);
 
   const [mapAnimation, setMapAnimation] = useState<object | null>(null);
@@ -2312,7 +2572,7 @@ function HomeContent() {
     { label: 'Features', href: '/#features' },
     { label: 'Where to go', href: '/where-to-go' },
     { label: 'How it works', href: '/#how-it-works' },
-    { label: 'Pricing', href: '/#save-share' },
+    { label: 'Pricing', href: '/#pricing' },
   ];
   const heroAvatarImages = [
     '/hero-avatar-1.jpg',
@@ -2744,6 +3004,8 @@ function HomeContent() {
         </div>
       </section>
 
+      <PricingSection onStartPlanning={() => openPlanner('pch')} />
+
       <section className="bg-white px-6 py-12 min-[1220px]:hidden">
         <div className="mx-auto max-w-md">
           <div className="flex items-end justify-between gap-4">
@@ -2978,60 +3240,6 @@ function HomeContent() {
                   <p className="mt-3 text-sm leading-relaxed text-gray-500">{feature.body}</p>
                 </div>
               ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="save-share" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }}>
-        <div
-          ref={saveFade.ref}
-          className="mx-auto max-w-[1440px] transition-all duration-700"
-          style={{
-            opacity: saveFade.visible ? 1 : 0,
-            transform: saveFade.visible ? 'none' : 'translateY(24px)',
-          }}
-        >
-          <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-            <div className="rounded-[30px] p-8 shadow-[0_18px_48px_rgba(27,45,69,0.08)]" style={{ backgroundColor: '#1B2D45' }}>
-              <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#F8C9B8' }}>
-                Pricing
-              </p>
-              <h2 className="mt-3 text-3xl font-extrabold text-white">
-                Roady is free to start.
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-white/75">
-                Roady is a well-trained AI trip planner that understands your vibe and suggests
-                trips that become real experiences. You can use the core planner for free, with
-                premium features available for subscribers.
-              </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-3">
-              {[
-                {
-                  title: 'Free trip planning',
-                  body: 'Start with your vibe, route preferences, and travel style, then let Roady build a trip you can actually take.',
-                },
-                {
-                  title: 'AI that gets the mood',
-                  body: 'Roady turns interests like wine, beaches, food, nature, or family-friendly stops into a tailored route.',
-                },
-                {
-                  title: 'Premium coming next',
-                  body: 'Subscribers will unlock deeper customization, saved trip tools, and more advanced Roady planning features.',
-                },
-              ].map((item) => (
-                <div
-                  key={item.title}
-                  className="rounded-[26px] border border-gray-100 bg-[#FAFAF9] p-6 shadow-sm"
-                >
-                  <p className="font-extrabold text-lg" style={{ color: '#1B2D45' }}>
-                    {item.title}
-                  </p>
-                  <p className="mt-3 text-sm leading-relaxed text-gray-500">{item.body}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>

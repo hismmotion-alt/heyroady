@@ -85,7 +85,7 @@ export default function Navbar({
     { label: 'Features', href: '/#features' },
     { label: 'Where to go', href: '/where-to-go' },
     { label: 'How it works', href: '/#how-it-works' },
-    { label: 'Pricing', href: '/#save-share' },
+    { label: 'Pricing', href: '/#pricing' },
   ];
   const resolvedLinks = navLinks ?? (isFigmaWeb ? figmaLinks : standardLinks);
 
