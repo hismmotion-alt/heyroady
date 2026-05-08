@@ -2862,150 +2862,6 @@ function HomeContent() {
         </div>
       </section>
 
-      <section id="how-it-works" className="relative scroll-mt-16 overflow-hidden bg-white">
-        <div
-          ref={howFade.ref}
-          className="mx-auto max-w-[1440px] transition-all duration-700"
-          style={{
-            opacity: howFade.visible ? 1 : 0,
-            transform: howFade.visible ? 'none' : 'translateY(24px)',
-          }}
-        >
-          <div className="relative hidden h-[500px] min-[1220px]:block">
-            <h2
-              className="absolute left-1/2 top-[56px] w-[360px] -translate-x-1/2 text-center text-[40px] font-bold leading-[42px] text-[#141046]"
-              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
-            >
-              How Roady works
-            </h2>
-
-            {howItWorksSteps.slice(0, -1).map((step, index) => {
-              const nextStep = howItWorksSteps[index + 1];
-
-              return (
-                <svg
-                  key={`${step.title}-${nextStep.title}`}
-                  className="absolute top-[202px] h-[28px] text-black"
-                  style={{
-                    left: `${step.left + 146}px`,
-                    width: `${nextStep.left - step.left - 203}px`,
-                  }}
-                  viewBox="0 0 140 28"
-                  preserveAspectRatio="none"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 14H129"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeDasharray="9 10"
-                  />
-                  <path
-                    d="M124 7L137 14L124 21"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              );
-            })}
-
-            {howItWorksSteps.map((step) => {
-              const textLeft = step.left + 44.16 - 105;
-
-              return (
-                <div key={step.title}>
-                  <div className="group absolute top-[172px] h-[89px] w-[89px]" style={{ left: `${step.left}px` }}>
-                    <HowItWorksIcon icon={step.icon} />
-                  </div>
-                  <div
-                    className="absolute top-[289px] w-[210px] text-center"
-                    style={{
-                      left: `${textLeft}px`,
-                      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
-                    }}
-                  >
-                    <p className="text-[18px] font-extrabold leading-[22px] text-[#141046]">{step.title}</p>
-                    <p className="mx-auto mt-[7px] max-w-[190px] text-[14px] font-medium leading-[20px] text-[#818395]">
-                      {step.body}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-
-            <button
-              type="button"
-              onClick={() => openPlanner('pch')}
-              className="roady-cta-shadow absolute left-[605px] top-[392px] inline-flex h-[58px] w-[229px] items-center justify-center gap-[10px] rounded-[13px] bg-[#25AB45] text-[15px] font-medium text-white transition-opacity hover:opacity-90"
-              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
-            >
-              Generate my trip
-              <svg className="h-[16px] w-[16px]" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="m8 3 1.5 4L13 8.5 9.5 10 8 14l-1.5-4L3 8.5 6.5 7 8 3Z"
-                  fill="currentColor"
-                />
-                <path
-                  d="m17 11 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"
-                  fill="currentColor"
-                />
-              </svg>
-            </button>
-            <p
-              className="absolute left-[636px] top-[462px] w-[169px] text-center text-[10px] font-medium leading-[12px] text-[#818395]"
-              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
-            >
-              Takes less than 30 seconds
-            </p>
-          </div>
-
-          <div className="px-6 py-12 min-[1220px]:hidden">
-            <h2
-              className="text-[34px] font-bold leading-[1.12] text-[#141046] sm:text-[40px]"
-              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
-            >
-              How Roady works
-            </h2>
-
-            <div className="mt-8 space-y-5">
-              {howItWorksSteps.map((step, index) => (
-                <div
-                  key={step.title}
-                  className="flex items-center gap-4 rounded-[24px] border border-[#E7EAF2] bg-white p-4 shadow-[0_12px_30px_rgba(20,16,70,0.06)]"
-                >
-                  <div className="group h-[58px] w-[58px] shrink-0">
-                    <HowItWorksIcon icon={step.icon} className="roady-how-icon h-[58px] w-[58px]" />
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#EC501E]">
-                      Step {index + 1}
-                    </p>
-                    <p
-                      className="mt-1 text-[18px] font-extrabold leading-[22px] text-[#141046]"
-                      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
-                    >
-                      {step.title}
-                    </p>
-                    <p
-                      className="mt-1 text-[14px] font-medium leading-[20px] text-[#818395]"
-                      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
-                    >
-                      {step.body}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <PricingSection onStartPlanning={() => openPlanner('pch')} />
-
       <section className="bg-white px-6 py-12 min-[1220px]:hidden">
         <div className="mx-auto max-w-md">
           <div className="flex items-end justify-between gap-4">
@@ -3243,6 +3099,150 @@ function HomeContent() {
           </div>
         </div>
       </section>
+
+      <section id="how-it-works" className="relative scroll-mt-16 overflow-hidden bg-white">
+        <div
+          ref={howFade.ref}
+          className="mx-auto max-w-[1440px] transition-all duration-700"
+          style={{
+            opacity: howFade.visible ? 1 : 0,
+            transform: howFade.visible ? 'none' : 'translateY(24px)',
+          }}
+        >
+          <div className="relative hidden h-[500px] min-[1220px]:block">
+            <h2
+              className="absolute left-1/2 top-[56px] w-[360px] -translate-x-1/2 text-center text-[40px] font-bold leading-[42px] text-[#141046]"
+              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+            >
+              How Roady works
+            </h2>
+
+            {howItWorksSteps.slice(0, -1).map((step, index) => {
+              const nextStep = howItWorksSteps[index + 1];
+
+              return (
+                <svg
+                  key={`${step.title}-${nextStep.title}`}
+                  className="absolute top-[202px] h-[28px] text-black"
+                  style={{
+                    left: `${step.left + 146}px`,
+                    width: `${nextStep.left - step.left - 203}px`,
+                  }}
+                  viewBox="0 0 140 28"
+                  preserveAspectRatio="none"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3 14H129"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeDasharray="9 10"
+                  />
+                  <path
+                    d="M124 7L137 14L124 21"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              );
+            })}
+
+            {howItWorksSteps.map((step) => {
+              const textLeft = step.left + 44.16 - 105;
+
+              return (
+                <div key={step.title}>
+                  <div className="group absolute top-[172px] h-[89px] w-[89px]" style={{ left: `${step.left}px` }}>
+                    <HowItWorksIcon icon={step.icon} />
+                  </div>
+                  <div
+                    className="absolute top-[289px] w-[210px] text-center"
+                    style={{
+                      left: `${textLeft}px`,
+                      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                    }}
+                  >
+                    <p className="text-[18px] font-extrabold leading-[22px] text-[#141046]">{step.title}</p>
+                    <p className="mx-auto mt-[7px] max-w-[190px] text-[14px] font-medium leading-[20px] text-[#818395]">
+                      {step.body}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => openPlanner('pch')}
+              className="roady-cta-shadow absolute left-[605px] top-[392px] inline-flex h-[58px] w-[229px] items-center justify-center gap-[10px] rounded-[13px] bg-[#25AB45] text-[15px] font-medium text-white transition-opacity hover:opacity-90"
+              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+            >
+              Generate my trip
+              <svg className="h-[16px] w-[16px]" fill="none" viewBox="0 0 24 24">
+                <path
+                  d="m8 3 1.5 4L13 8.5 9.5 10 8 14l-1.5-4L3 8.5 6.5 7 8 3Z"
+                  fill="currentColor"
+                />
+                <path
+                  d="m17 11 1 2.5 2.5 1-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1 1-2.5Z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+            <p
+              className="absolute left-[636px] top-[462px] w-[169px] text-center text-[10px] font-medium leading-[12px] text-[#818395]"
+              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+            >
+              Takes less than 30 seconds
+            </p>
+          </div>
+
+          <div className="px-6 py-12 min-[1220px]:hidden">
+            <h2
+              className="text-[34px] font-bold leading-[1.12] text-[#141046] sm:text-[40px]"
+              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+            >
+              How Roady works
+            </h2>
+
+            <div className="mt-8 space-y-5">
+              {howItWorksSteps.map((step, index) => (
+                <div
+                  key={step.title}
+                  className="flex items-center gap-4 rounded-[24px] border border-[#E7EAF2] bg-white p-4 shadow-[0_12px_30px_rgba(20,16,70,0.06)]"
+                >
+                  <div className="group h-[58px] w-[58px] shrink-0">
+                    <HowItWorksIcon icon={step.icon} className="roady-how-icon h-[58px] w-[58px]" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#EC501E]">
+                      Step {index + 1}
+                    </p>
+                    <p
+                      className="mt-1 text-[18px] font-extrabold leading-[22px] text-[#141046]"
+                      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+                    >
+                      {step.title}
+                    </p>
+                    <p
+                      className="mt-1 text-[14px] font-medium leading-[20px] text-[#818395]"
+                      style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+                    >
+                      {step.body}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <PricingSection onStartPlanning={() => openPlanner('pch')} />
 
       <section className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }} id="faq">
         <div
