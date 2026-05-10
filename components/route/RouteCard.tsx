@@ -9,7 +9,7 @@ interface RouteCardProps {
 export default function RouteCard({ route }: RouteCardProps) {
   return (
     <Link
-      href={`/destinations/${route.slug}`}
+      href={`/blog/${route.slug}`}
       className="block rounded-2xl overflow-hidden relative group h-[220px]"
     >
       <img

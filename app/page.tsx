@@ -2570,6 +2570,7 @@ function HomeContent() {
 
   const navLinks = [
     { label: 'Where to go', href: '/where-to-go' },
+    { label: 'Blog', href: '/blog' },
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#pricing' },
   ];

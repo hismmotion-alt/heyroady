@@ -78,11 +78,13 @@ export default function Navbar({
   const isFigmaWeb = variant === 'figmaWeb';
   const standardLinks = [
     { label: 'Where to go', href: '/where-to-go' },
+    { label: 'Blog', href: '/blog' },
     { label: 'How it works', href: '/#how-it-works' },
     ...(user ? [{ label: 'My Trips', href: '/my-trips' }] : []),
   ];
   const figmaLinks = [
     { label: 'Where to go', href: '/where-to-go' },
+    { label: 'Blog', href: '/blog' },
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#pricing' },
   ];
@@ -192,7 +194,7 @@ export default function Navbar({
           </a>
 
           <div
-            className="absolute flex w-[545px] items-center gap-[58px]"
+            className="absolute flex w-[545px] items-center gap-[44px]"
             style={{ left: 'calc(50% - 290px)', top: 20, lineHeight: 'normal' }}
           >
             {extraLinks}

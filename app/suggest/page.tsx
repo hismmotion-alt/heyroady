@@ -500,8 +500,8 @@ function SuggestContent() {
             <a href="/#how-it-works" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
               How It Works
             </a>
-            <a href="/destinations" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
-              Destinations
+            <a href="/blog" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
+              Blog
             </a>
             <a href="/my-trips" className="text-xs font-semibold whitespace-nowrap transition-colors text-gray-400 hover:text-[#46a302]">
               My Trips
