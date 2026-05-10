@@ -2569,7 +2569,6 @@ function HomeContent() {
   ).slice(0, 3);
 
   const navLinks = [
-    { label: 'Features', href: '/#features' },
     { label: 'Where to go', href: '/where-to-go' },
     { label: 'How it works', href: '/#how-it-works' },
     { label: 'Pricing', href: '/#pricing' },
@@ -2981,122 +2980,6 @@ function HomeContent() {
               <path d="m9.5 1 5 5-5 5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-        </div>
-      </section>
-
-      <section id="features" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }}>
-        <div className="mx-auto max-w-[1440px]">
-          <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <p className="text-sm font-bold uppercase tracking-[0.16em]" style={{ color: '#D85A30' }}>
-                Roady features
-              </p>
-              <h2 className="mt-3 text-3xl font-extrabold leading-tight sm:text-4xl" style={{ color: '#1B2D45' }}>
-                A trip planner that gives you the route, stops, stay, and next move.
-              </h2>
-              <p className="mt-4 text-base leading-relaxed text-gray-500">
-                Roady turns a few quick preferences into a complete California road trip: a mapped route,
-                handpicked stops, stay options, and simple ways to save or open the plan when it is time to go.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => openPlanner('pch')}
-              className="inline-flex w-fit items-center gap-2 rounded-full px-5 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
-              style={{ backgroundColor: '#1B2D45' }}
-            >
-              Try Roady
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
-                <path d="M5 12h14" />
-                <path d="m13 6 6 6-6 6" />
-              </svg>
-            </button>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  title: 'Preference-aware routes',
-                  body: 'Roady uses your starting point, drive distance, group type, interests, and hotel budget to shape the trip.',
-                  accent: '#13A85B',
-                  icon: (
-                    <path d="M12 3v18M5 8h14M7 16h10" />
-                  ),
-                },
-                {
-                  title: 'Handpicked stops',
-                  body: 'Get ordered food, nature, culture, scenic, and adventure stops that fit the route instead of a generic list.',
-                  accent: '#D85A30',
-                  icon: (
-                    <>
-                      <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
-                      <circle cx="12" cy="10" r="2.5" />
-                    </>
-                  ),
-                },
-                {
-                  title: 'Interactive map preview',
-                  body: 'See the route line, numbered stops, and selected stay destination before committing to the plan.',
-                  accent: '#378ADD',
-                  icon: (
-                    <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z" />
-                  ),
-                },
-                {
-                  title: 'Stay recommendations',
-                  body: 'Compare stay picks for the final stop, select one, and route the trip directly to that hotel.',
-                  accent: '#EF9F27',
-                  icon: (
-                    <>
-                      <path d="M4 20V8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12" />
-                      <path d="M4 12h16M8 20v-4h8v4" />
-                    </>
-                  ),
-                },
-                {
-                  title: 'Save and reopen',
-                  body: 'Keep the itinerary in your Roady account so the route, stops, and selected stay are ready later.',
-                  accent: '#1B2D45',
-                  icon: (
-                    <>
-                      <path d="M6 21V5a2 2 0 0 1 2-2h9l3 3v15l-7-4-7 4Z" />
-                      <path d="M14 3v5h5" />
-                    </>
-                  ),
-                },
-                {
-                  title: 'Maps handoff',
-                  body: 'Open the finished route in Google Maps or Apple Maps, or copy a shareable route link.',
-                  accent: '#7C3AED',
-                  icon: (
-                    <>
-                      <path d="M14 3h7v7" />
-                      <path d="M10 14 21 3" />
-                      <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
-                    </>
-                  ),
-                },
-              ].map((feature) => (
-                <div
-                  key={feature.title}
-                  className="rounded-[26px] border border-white/80 bg-white p-5 shadow-[0_14px_36px_rgba(27,45,69,0.06)]"
-                >
-                  <span
-                    className="flex h-11 w-11 items-center justify-center rounded-[16px]"
-                    style={{ backgroundColor: `${feature.accent}14`, color: feature.accent }}
-                  >
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                      {feature.icon}
-                    </svg>
-                  </span>
-                  <p className="mt-5 text-lg font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
-                    {feature.title}
-                  </p>
-                  <p className="mt-3 text-sm leading-relaxed text-gray-500">{feature.body}</p>
-                </div>
-              ))}
-          </div>
         </div>
       </section>
 
