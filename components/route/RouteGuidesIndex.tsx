@@ -10,7 +10,7 @@ export default function RouteGuidesIndex() {
       className="min-h-screen"
       style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
-      <Navbar primaryLabel="Start Planning" signedInPrimaryLabel="Start Planning" />
+      <Navbar primaryHref="/?plan=1" primaryLabel="Start Planning" signedInPrimaryLabel="Start Planning" />
 
       <div className="max-w-6xl mx-auto px-6 pt-28 pb-16">
         <div className="mb-10">

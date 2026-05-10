@@ -1811,6 +1811,12 @@ function HomeContent() {
   }, []);
 
   useEffect(() => {
+    if (searchParams.get('plan') === '1') {
+      openPlanner('pch');
+      router.replace('/', { scroll: false });
+      return;
+    }
+
     const source = searchParams.get('source');
     const destinationSlug = searchParams.get('destination');
     if (source !== 'where-to-go' || !destinationSlug) return;
