@@ -1664,6 +1664,7 @@ function HomeContent() {
   const [homeDestinationFilter, setHomeDestinationFilter] = useState<HomeDestinationFilter>('all');
 
   const suggestionRef = useRef<HTMLDivElement>(null);
+  const hotelCheckinInputRef = useRef<HTMLInputElement>(null);
   const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveOnRestoreRef = useRef(false);
 
@@ -2109,6 +2110,23 @@ function HomeContent() {
     setSavedTripId(null);
     setDidTryAutoLocate(false);
     requestAnimationFrame(() => setPlannerVisible(true));
+  }
+
+  function openHotelCheckinPicker() {
+    const input = hotelCheckinInputRef.current;
+    if (!input) return;
+
+    if (typeof input.showPicker === 'function') {
+      try {
+        input.showPicker();
+        return;
+      } catch {
+        // Fall through to focus/click for browsers that reject showPicker in this layout.
+      }
+    }
+
+    input.focus();
+    input.click();
   }
 
   function closePlanner() {
@@ -3660,7 +3678,18 @@ function HomeContent() {
                               </p>
                             </div>
 
-                            <label className="relative mt-3 flex min-h-[54px] cursor-pointer items-center rounded-[16px] border border-[#DDE3EA] bg-white px-4 shadow-[0_8px_18px_rgba(27,45,69,0.04)]">
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              onClick={openHotelCheckinPicker}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  openHotelCheckinPicker();
+                                }
+                              }}
+                              className="relative mt-3 flex min-h-[54px] w-full cursor-pointer items-center rounded-[16px] border border-[#DDE3EA] bg-white px-4 text-left shadow-[0_8px_18px_rgba(27,45,69,0.04)]"
+                            >
                               <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center text-[#061C55]">
                                 <HotelDetailIcon kind="calendar" className="h-5 w-5" />
                               </span>
@@ -3671,6 +3700,7 @@ function HomeContent() {
                                 <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
                               </svg>
                               <input
+                                ref={hotelCheckinInputRef}
                                 type="date"
                                 value={prefs.hotelCheckin}
                                 min={new Date().toISOString().split('T')[0]}
@@ -3681,7 +3711,7 @@ function HomeContent() {
                                 className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
                                 aria-label="Check-in date"
                               />
-                            </label>
+                            </div>
 
                             <p className="mt-2 text-sm font-medium leading-snug text-[#71809A]">
                               We'll search for hotels with availability on this date.
