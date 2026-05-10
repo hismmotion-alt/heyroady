@@ -91,7 +91,7 @@ export default async function RouteDetailPage({ params }: PageProps) {
       className="min-h-screen"
       style={{ backgroundColor: '#ffffff', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
     >
-      <Navbar />
+      <Navbar primaryLabel="Start Planning" signedInPrimaryLabel="Start Planning" />
 
       {/* Hero */}
       <div className="relative w-full" style={{ height: '420px' }}>
