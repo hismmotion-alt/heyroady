@@ -1631,7 +1631,6 @@ function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const howFade = useFadeIn(0.08);
-  const routesFade = useFadeIn(0.08);
   const faqFade = useFadeIn(0.08);
 
   const [mapAnimation, setMapAnimation] = useState<object | null>(null);
@@ -2582,10 +2581,6 @@ function HomeContent() {
     setPlannerStep(questionSteps[currentIndex - 1]);
   }
 
-  const routeCards = PLANNER_ROUTE_ORDER.map((routeId) => {
-    const definition = PLANNER_ROUTE_DEFINITIONS[routeId][routeRegion];
-    return { routeId, definition };
-  });
   const mobileWhereToGoDestinations = (
     homeDestinationFilter === 'all'
       ? WHERE_TO_GO_DESTINATIONS
@@ -2818,74 +2813,6 @@ function HomeContent() {
         </div>
       </section>
 
-      <section id="stories" className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }}>
-        <div
-          ref={routesFade.ref}
-          className="mx-auto max-w-[1440px] transition-all duration-700"
-          style={{
-            opacity: routesFade.visible ? 1 : 0,
-            transform: routesFade.visible ? 'none' : 'translateY(24px)',
-          }}
-        >
-          <div className="mb-12">
-            <h2 className="text-3xl font-extrabold mb-3" style={{ color: '#1B2D45' }}>
-              Pick your road trip vibe
-            </h2>
-            <p className="text-gray-500 text-lg">
-              These route families still seed the planner and help Roady recover gracefully when needed.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {routeCards.map(({ routeId, definition }) => (
-              <div
-                key={routeId}
-                className="overflow-hidden rounded-[28px] border border-white/80 bg-white shadow-[0_14px_40px_rgba(27,45,69,0.08)]"
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={definition.image}
-                    alt={definition.routeName}
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-black/0 to-black/0" />
-                  <div className="absolute left-4 top-4 rounded-full bg-white/90 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500">
-                    {definition.durationLabel}
-                  </div>
-                  <div className="absolute left-4 right-4 bottom-4">
-                    <p className="text-xl font-extrabold text-white">{PLANNER_ROUTE_DEFINITIONS[routeId].label}</p>
-                    <p className="mt-1 text-sm text-white/80">{definition.vibe}</p>
-                  </div>
-                </div>
-
-                <div className="p-5">
-                  <p className="text-sm leading-relaxed text-gray-500">{definition.tagline}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {definition.highlights.map((highlight) => (
-                      <span
-                        key={highlight}
-                        className="rounded-full px-3 py-1 text-xs font-semibold"
-                        style={{ backgroundColor: 'rgba(216,90,48,0.1)', color: '#D85A30' }}
-                      >
-                        {highlight}
-                      </span>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => openPlanner(routeId)}
-                    className="mt-5 w-full rounded-2xl px-4 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: '#1B2D45' }}
-                  >
-                    Plan this route
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       <section className="bg-white px-6 py-12 min-[1220px]:hidden">
         <div className="mx-auto max-w-md">
           <div className="flex items-end justify-between gap-4">
@@ -3007,8 +2934,6 @@ function HomeContent() {
           </button>
         </div>
       </section>
-
-      <PricingSection onStartPlanning={() => openPlanner('pch')} />
 
       <section id="how-it-works" className="relative scroll-mt-16 overflow-hidden bg-white">
         <div
@@ -3151,6 +3076,8 @@ function HomeContent() {
           </div>
         </div>
       </section>
+
+      <PricingSection onStartPlanning={() => openPlanner('pch')} />
 
       <section className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }} id="faq">
         <div
