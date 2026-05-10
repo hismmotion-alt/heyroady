@@ -2984,6 +2984,8 @@ function HomeContent() {
         </div>
       </section>
 
+      <PricingSection onStartPlanning={() => openPlanner('pch')} />
+
       <section id="how-it-works" className="relative scroll-mt-16 overflow-hidden bg-white">
         <div
           ref={howFade.ref}
@@ -3125,8 +3127,6 @@ function HomeContent() {
           </div>
         </div>
       </section>
-
-      <PricingSection onStartPlanning={() => openPlanner('pch')} />
 
       <section className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }} id="faq">
         <div
