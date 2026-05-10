@@ -96,8 +96,6 @@ export default function Navbar({
     router.push(primaryHref);
   };
 
-  const figmaNavWidths = [80, 112, 113, 62];
-
   const renderNavLink = (link: { label: string; href: string }) => {
     const classes = 'text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors';
     if (link.href.startsWith('/#') || link.href.startsWith('#')) {
@@ -114,18 +112,17 @@ export default function Navbar({
     );
   };
 
-  const renderFigmaNavLink = (link: { label: string; href: string }, index: number) => {
+  const renderFigmaNavLink = (link: { label: string; href: string }) => {
     const classes = 'block h-[25px] shrink-0 whitespace-nowrap text-[18px] font-normal leading-[normal] text-[#141046] transition-colors hover:text-[#25AB45]';
-    const linkStyle = { width: figmaNavWidths[index] ?? 'auto' };
     if (link.href.startsWith('/#') || link.href.startsWith('#')) {
       return (
-        <a key={link.label} href={link.href} className={classes} style={linkStyle}>
+        <a key={link.label} href={link.href} className={classes}>
           {link.label}
         </a>
       );
     }
     return (
-      <Link key={link.label} href={link.href} className={classes} style={linkStyle}>
+      <Link key={link.label} href={link.href} className={classes}>
         {link.label}
       </Link>
     );
@@ -195,7 +192,7 @@ export default function Navbar({
           </a>
 
           <div
-            className="absolute flex w-[545px] items-center gap-[30px]"
+            className="absolute flex w-[545px] items-center gap-[58px]"
             style={{ left: 'calc(50% - 290px)', top: 20, lineHeight: 'normal' }}
           >
             {extraLinks}
