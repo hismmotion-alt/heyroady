@@ -671,7 +671,7 @@ function SelectionCard({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-[24px] border-2 bg-white px-5 py-4 text-left transition-all duration-150"
+      className="w-full rounded-[18px] border-2 bg-white px-4 py-3 text-left transition-all duration-150 sm:rounded-[24px] sm:px-5 sm:py-4"
       style={{
         borderColor: selected ? '#58CC02' : '#E5E7EB',
         backgroundColor: selected ? 'rgba(88,204,2,0.05)' : '#ffffff',
@@ -679,12 +679,12 @@ function SelectionCard({
       }}
     >
       <div className="flex items-center gap-4">
-        <div className="text-2xl">{item.emoji}</div>
+        <div className="text-xl sm:text-2xl">{item.emoji}</div>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-[15px]" style={{ color: '#1B2D45' }}>
             {item.label}
           </p>
-          <p className="mt-1 text-sm text-gray-400">{item.desc}</p>
+          <p className="mt-1 hidden text-sm text-gray-400 sm:block">{item.desc}</p>
         </div>
         <div
           className="h-6 w-6 flex-shrink-0 border-2 flex items-center justify-center"
@@ -1277,6 +1277,7 @@ function RouteAtGlance({
 }) {
   const finalLabel = selectedHotel?.city || fallbackDestination;
   const finalSubLabel = selectedHotel ? selectedHotel.name : 'Final stop';
+  const finalIcon = selectedHotel ? '🏨' : '🏁';
 
   return (
     <div className="rounded-[26px] border border-[#DDE3EA] bg-white p-5 shadow-[0_10px_30px_rgba(27,45,69,0.05)]">
@@ -1294,13 +1295,13 @@ function RouteAtGlance({
         </div>
       </div>
 
-      <div className="mt-6 overflow-x-auto pb-1">
+      <div className="mt-6 pb-1 sm:overflow-x-auto">
         <div
-          className="grid min-w-[760px] items-start gap-3"
-          style={{ gridTemplateColumns: `repeat(${stops.length + 2}, minmax(100px, 1fr))` }}
+          className="grid items-start gap-4 sm:min-w-[760px] sm:gap-3"
+          style={{ gridTemplateColumns: `repeat(auto-fit, minmax(96px, 1fr))` }}
         >
           <div className="relative flex flex-col items-center text-center">
-            <div className="absolute left-1/2 top-8 h-0.5 w-full border-t-2 border-dashed border-[#C6CED8]" />
+            <div className="absolute left-1/2 top-8 hidden h-0.5 w-full border-t-2 border-dashed border-[#C6CED8] sm:block" />
             <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#13A85B] bg-[#EFFFF4] text-2xl">
               🚩
             </span>
@@ -1324,7 +1325,7 @@ function RouteAtGlance({
                 onClick={() => onStopClick(index)}
                 className="relative flex flex-col items-center text-center"
               >
-                <div className="absolute left-1/2 top-8 h-0.5 w-full border-t-2 border-dashed border-[#C6CED8]" />
+                <div className="absolute left-1/2 top-8 hidden h-0.5 w-full border-t-2 border-dashed border-[#C6CED8] sm:block" />
                 <span
                   className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 bg-white text-2xl transition-transform"
                   style={{
@@ -1361,7 +1362,7 @@ function RouteAtGlance({
 
           <div className="relative flex flex-col items-center text-center">
             <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#1B66D2] bg-white text-2xl">
-              🏨
+              {finalIcon}
             </span>
             <span className="mt-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B66D2] text-[11px] font-extrabold text-white">
               {stops.length + 2}
@@ -1708,7 +1709,8 @@ function HomeContent() {
       : prefs.distancePreference === 'surprise'
         ? 'Roady picks the distance'
         : '';
-  const visibleHotels = tripData?.hotels?.slice(0, 4) ?? [];
+  const shouldShowStayPicker = prefs.hotelPreference !== 'none';
+  const visibleHotels = shouldShowStayPicker ? tripData?.hotels?.slice(0, 4) ?? [] : [];
   const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
   const selectedHotelDestination = selectedHotel ? getHotelDestinationLabel(selectedHotel) : '';
   const tripDestinationDisplay = selectedHotel ? getHotelDestinationDisplay(selectedHotel) : routeDestination;
@@ -3199,7 +3201,7 @@ function HomeContent() {
                   </header>
 
                   <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F8F6] px-4 py-4 sm:px-5">
-                    <div className="mx-auto grid max-w-[1400px] gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(390px,0.95fr)]">
+                    <div className={`mx-auto grid max-w-[1400px] gap-4 ${shouldShowStayPicker ? 'xl:grid-cols-[minmax(0,1.5fr)_minmax(390px,0.95fr)]' : ''}`}>
                       <div className="flex min-w-0 flex-col gap-4">
                         <div className="relative min-h-[430px] overflow-hidden rounded-[28px] border border-[#DDE3EA] bg-white shadow-[0_16px_42px_rgba(27,45,69,0.08)] lg:min-h-[560px]">
                           {HAS_MAPBOX && startCoords && stops.length > 0 ? (
@@ -3276,8 +3278,37 @@ function HomeContent() {
                           activeStop={activeStop}
                           onStopClick={setActiveStop}
                         />
+
+                        {!shouldShowStayPicker && (
+                          <div className="rounded-[24px] border border-[#DDE3EA] bg-white p-4 shadow-[0_10px_30px_rgba(27,45,69,0.05)]">
+                            <div className="grid grid-cols-[0.7fr_1.3fr] gap-3">
+                              <button
+                                type="button"
+                                onClick={handleBack}
+                                className="rounded-[14px] border border-gray-200 bg-white px-4 py-3 text-sm font-extrabold transition-colors hover:text-[#1B2D45]"
+                                style={{ color: '#1B2D45' }}
+                              >
+                                Back
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPlannerStep('save')}
+                                disabled={!canProceed('results')}
+                                className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                                style={{ backgroundColor: '#FF4E18' }}
+                              >
+                                Continue
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                                  <path d="M5 12h14" />
+                                  <path d="m13 6 6 6-6 6" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
+                      {shouldShowStayPicker && (
                       <aside className="flex min-h-0 flex-col rounded-[28px] border border-[#DDE3EA] bg-white p-4 shadow-[0_16px_42px_rgba(27,45,69,0.06)] sm:p-5">
                         <div className="flex items-center gap-4">
                           <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-[20px] bg-[#EFFFF4]">
@@ -3296,7 +3327,7 @@ function HomeContent() {
                         </div>
 
                         <div className="mt-5 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1">
-                          {prefs.hotelPreference !== 'none' && visibleHotels.length > 0 ? (
+                          {visibleHotels.length > 0 ? (
                             visibleHotels.map((hotel, index) => (
                               <ResultStayCard
                                 key={`${hotel.name}-${hotel.city}-${index}`}
@@ -3311,9 +3342,7 @@ function HomeContent() {
                             ))
                           ) : (
                             <div className="rounded-[22px] border border-dashed border-gray-200 bg-[#FAFAF9] px-4 py-5 text-sm leading-relaxed text-gray-500">
-                              {prefs.hotelPreference === 'none'
-                                ? 'You chose to sort accommodation separately, so Roady kept the stay step optional.'
-                                : 'Roady is still lining up hotel matches for this destination.'}
+                              Roady is still lining up hotel matches for this destination.
                             </div>
                           )}
                         </div>
@@ -3378,6 +3407,7 @@ function HomeContent() {
                           You can change this later
                         </p>
                       </aside>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -3389,7 +3419,7 @@ function HomeContent() {
                   }`}
                 >
                   <div className="flex h-full min-h-0 flex-col">
-                    <div className="flex items-center justify-between px-6 pt-6 pb-4 sm:px-8">
+                    <div className="flex items-center justify-between px-4 pt-4 pb-3 sm:px-8 sm:pt-6 sm:pb-4">
                       <img src="/roady-logo.png" alt="Roady" style={{ height: 38, width: 'auto' }} />
                       <button
                         type="button"
@@ -3405,8 +3435,8 @@ function HomeContent() {
                       </button>
                     </div>
 
-                    <div className="px-6 pb-5 sm:px-8">
-                      <div className="flex gap-1.5 mb-3">
+                    <div className="px-4 pb-3 sm:px-8 sm:pb-5">
+                      <div className="flex gap-1.5 mb-2 sm:mb-3">
                         {progressSteps.map((step, index) => (
                           <div
                             key={`${step}-${index}`}
@@ -3427,22 +3457,22 @@ function HomeContent() {
                       </p>
                     </div>
 
-                    <div className="px-6 sm:px-8">
+                    <div className="px-4 sm:px-8">
                       <h2
-                        className={`${plannerStep === 'hotelDetails' ? 'text-2xl' : 'text-3xl'} font-extrabold leading-tight`}
+                        className={`${plannerStep === 'hotelDetails' ? 'text-xl sm:text-2xl' : 'text-2xl sm:text-3xl'} font-extrabold leading-tight`}
                         style={{ color: '#1B2D45' }}
                       >
                         {currentPlannerMeta.title}
                       </h2>
                       <p
-                        className={`${plannerStep === 'hotelDetails' ? 'mt-2 text-sm leading-snug' : 'mt-3 text-base leading-relaxed'} text-gray-400`}
+                        className={`${plannerStep === 'hotelDetails' ? 'mt-1.5 text-sm leading-snug sm:mt-2' : 'mt-2 text-sm leading-snug sm:mt-3 sm:text-base sm:leading-relaxed'} text-gray-400`}
                       >
                         {currentPlannerMeta.description}
                       </p>
                     </div>
 
                     <div
-                      className={`${plannerStep === 'hotelDetails' ? 'mt-4 pb-4' : 'mt-8 pb-8'} min-h-0 flex-1 overflow-y-auto px-6 sm:px-8`}
+                      className={`${plannerStep === 'hotelDetails' ? 'mt-3 pb-3 sm:mt-4 sm:pb-4' : plannerStep === 'interests' ? 'mt-5 pb-5 sm:mt-8 sm:pb-8' : 'mt-4 pb-4 sm:mt-8 sm:pb-8'} min-h-0 flex-1 overflow-y-auto px-4 sm:px-8`}
                     >
                       {plannerStep === 'start' && (
                         <div ref={suggestionRef}>

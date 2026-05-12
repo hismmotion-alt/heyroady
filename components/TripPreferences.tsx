@@ -237,16 +237,16 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
     return (
       <button
         onClick={onClick}
-        className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl border-2 transition-all duration-150 text-left"
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border-2 transition-all duration-150 text-left sm:gap-4 sm:px-5 sm:py-4"
         style={{
           borderColor: selected ? '#58CC02' : '#E5E7EB',
           backgroundColor: selected ? 'rgba(88,204,2,0.04)' : '#ffffff',
         }}
       >
-        <span className="text-2xl flex-shrink-0">{item.emoji}</span>
+        <span className="text-xl flex-shrink-0 sm:text-2xl">{item.emoji}</span>
         <div className="flex-1 min-w-0">
           <p className="font-bold text-[15px]" style={{ color: '#1B2D45' }}>{item.label}</p>
-          <p className="text-sm text-gray-400">{item.desc}</p>
+          <p className="hidden text-sm text-gray-400 sm:block">{item.desc}</p>
         </div>
         <div
           className="w-6 h-6 flex-shrink-0 border-2 flex items-center justify-center transition-all flex-shrink-0"
@@ -275,10 +275,10 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
       style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", backgroundColor: '#F3F4F2' }}
     >
       {/* ── LEFT PANEL ── */}
-      <aside className="w-full lg:w-[420px] xl:w-[460px] flex-shrink-0 flex flex-col bg-white border-b lg:border-b-0 lg:border-r border-gray-200 lg:h-screen">
+      <aside className="w-full flex-shrink-0 flex flex-col bg-white border-b border-gray-200 max-lg:contents lg:w-[420px] lg:border-b-0 lg:border-r lg:h-screen xl:w-[460px]">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-8 pt-8 pb-5">
+        <div className="order-1 flex items-center justify-between px-4 pt-4 pb-3 sm:px-8 sm:pt-8 sm:pb-5">
           <div className="flex items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/roady-logo.png" alt="Roady" style={{ height: 36, width: 'auto' }} />
@@ -292,8 +292,8 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         </div>
 
         {/* Progress segments */}
-        <div className="px-8 pb-5">
-          <div className="flex gap-1.5 mb-3">
+        <div className="order-2 px-4 pb-3 sm:px-8 sm:pb-5">
+          <div className="flex gap-1.5 mb-2 sm:mb-3">
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div
                 key={i}
@@ -308,18 +308,18 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         </div>
 
         {/* Title + description (grows to fill space) */}
-        <div className="px-8 flex-1">
-          <h2 className="text-3xl xl:text-4xl font-extrabold mb-3 leading-tight" style={{ color: '#1B2D45' }}>
+        <div className="order-3 px-4 sm:px-8 lg:flex-1">
+          <h2 className="text-2xl xl:text-4xl font-extrabold mb-2 leading-tight sm:mb-3 sm:text-3xl" style={{ color: '#1B2D45' }}>
             {STEP_TITLES[currentStepId]}
           </h2>
-          <p className="text-base text-gray-400 leading-relaxed">
+          <p className="text-sm text-gray-400 leading-snug sm:text-base sm:leading-relaxed">
             {STEP_DESCRIPTIONS[currentStepId]}
           </p>
         </div>
 
         {/* Roady tip */}
         {tip && (
-          <div className="px-8 pt-4 pb-2">
+          <div className="order-4 px-4 pt-3 pb-1 sm:px-8 sm:pt-4 sm:pb-2">
             <div className="rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
               <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
                 <strong className="font-bold">Roady tip:</strong> {tip}
@@ -330,7 +330,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
 
         {/* numberOfStops inline tip (conditional on selection) */}
         {currentStepId === 'numberOfStops' && (numberOfStops === '3' || numberOfStops === '5') && !tip && (
-          <div className="px-8 pt-4 pb-2">
+          <div className="order-4 px-4 pt-3 pb-1 sm:px-8 sm:pt-4 sm:pb-2">
             <div className="rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
               <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
                 <strong className="font-bold">Roady tip:</strong>{' '}
@@ -343,7 +343,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         )}
 
         {/* Action buttons */}
-        <div className="px-8 py-6 border-t border-gray-100 flex items-center gap-2">
+        <div className="order-6 border-t border-gray-100 bg-white px-4 py-4 flex items-center gap-2 sm:px-8 sm:py-6 max-lg:sticky max-lg:bottom-0 max-lg:z-20">
           <button
             onClick={handleBack}
             className="px-4 py-3 rounded-2xl border-2 border-gray-200 font-semibold text-sm transition-all hover:border-gray-300"
@@ -375,7 +375,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
       </aside>
 
       {/* ── RIGHT PANEL ── */}
-      <main className="flex-1 lg:h-full lg:overflow-y-auto px-6 lg:px-12 py-8 lg:py-12">
+      <main className={`order-5 flex-1 px-4 py-5 sm:px-6 lg:h-full lg:overflow-y-auto lg:px-12 lg:py-12 ${currentStepId === 'stopTypes' ? '' : 'max-lg:overflow-visible'}`}>
 
         {/* ── Travel Group ── */}
         {currentStepId === 'group' && (
