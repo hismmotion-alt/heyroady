@@ -234,20 +234,20 @@ function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
           <p>Premium is ready.</p>
         </div>
 
-        <div className="absolute left-[48px] top-[422px] h-[58px] w-[661px]">
-          <PricingChip label="No credit card" icon={PRICING_ASSETS.noCreditCard} className="absolute left-0 top-0 w-[198px]" />
-          <PricingChip label="No hidden fees" icon={PRICING_ASSETS.noHiddenFees} className="absolute left-[191px] top-0 w-[210px]" />
+        <div className="absolute left-[48px] top-[422px] flex h-[58px] w-[690px] items-center gap-1">
+          <PricingChip label="No credit card" icon={PRICING_ASSETS.noCreditCard} className="w-[198px]" />
+          <PricingChip label="No hidden fees" icon={PRICING_ASSETS.noHiddenFees} className="w-[209px]" />
           <PricingChip
             label="Trips built in seconds"
             icon={PRICING_ASSETS.tripsBuiltInSeconds}
-            className="absolute left-[386px] top-0 w-[275px]"
+            className="w-[275px]"
           />
         </div>
 
         <button
           type="button"
           onClick={onStartPlanning}
-          className="absolute left-[48px] top-[526px] h-[56px] w-[357px] rounded-[37px] bg-[#061c55] text-white shadow-[0_14px_14px_rgba(6,28,85,0.18)] transition-opacity hover:opacity-90"
+          className="absolute left-[48px] top-[526px] h-[56px] w-[357px] rounded-[37px] bg-[#25AB45] text-white shadow-[0_14px_14px_rgba(37,171,69,0.18)] transition-opacity hover:opacity-90"
           style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
         >
           <span className="absolute left-2 top-3 w-[295px] text-center text-[21px] font-extrabold leading-[31px]">
@@ -259,7 +259,7 @@ function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
         <img
           src={PRICING_ASSETS.hero}
           alt="Roady driving a green SUV along a coastal road"
-          className="absolute left-[738px] top-[99px] h-[483px] w-[624px] rounded-[39px] object-cover"
+          className="absolute left-[770px] top-[99px] h-[483px] w-[624px] rounded-[39px] object-cover"
         />
 
         <div className="absolute left-[48px] top-[657px] h-[183px] w-[1314px]">
@@ -361,7 +361,7 @@ function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
           <button
             type="button"
             onClick={onStartPlanning}
-            className="mt-8 inline-flex h-[56px] w-full items-center justify-center gap-3 rounded-[37px] bg-[#061c55] px-6 text-[18px] font-extrabold text-white shadow-[0_14px_14px_rgba(6,28,85,0.18)] transition-opacity hover:opacity-90"
+            className="mt-8 inline-flex h-[56px] w-full items-center justify-center gap-3 rounded-[37px] bg-[#25AB45] px-6 text-[18px] font-extrabold text-white shadow-[0_14px_14px_rgba(37,171,69,0.18)] transition-opacity hover:opacity-90"
             style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
           >
             Start planning your trip
@@ -2956,14 +2956,16 @@ function HomeContent() {
 
             {howItWorksSteps.slice(0, -1).map((step, index) => {
               const nextStep = howItWorksSteps[index + 1];
+              const connectorWidth = nextStep.left - step.left - 203;
+              const shortenedConnectorWidth = connectorWidth * 0.8;
 
               return (
                 <svg
                   key={`${step.title}-${nextStep.title}`}
                   className="absolute top-[202px] h-[28px] text-black"
                   style={{
-                    left: `${step.left + 146}px`,
-                    width: `${nextStep.left - step.left - 203}px`,
+                    left: `${step.left + 146 + (connectorWidth - shortenedConnectorWidth) / 2}px`,
+                    width: `${shortenedConnectorWidth}px`,
                   }}
                   viewBox="0 0 140 28"
                   preserveAspectRatio="none"
@@ -2971,14 +2973,13 @@ function HomeContent() {
                   aria-hidden="true"
                 >
                   <path
-                    d="M3 14H129"
+                    d="M3 14H137"
                     stroke="currentColor"
                     strokeWidth="3"
                     strokeLinecap="round"
-                    strokeDasharray="9 10"
                   />
                   <path
-                    d="M124 7L137 14L124 21"
+                    d="M127 8.5L137 14L127 19.5"
                     stroke="currentColor"
                     strokeWidth="3"
                     strokeLinecap="round"
@@ -3081,6 +3082,10 @@ function HomeContent() {
 
       <PricingSection onStartPlanning={() => openPlanner('pch')} />
 
+      <div className="bg-white px-6 max-[1219px]:hidden">
+        <div className="mx-auto h-px max-w-[1440px] bg-gray-100" />
+      </div>
+
       <section className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }} id="faq">
         <div
           ref={faqFade.ref}
@@ -3122,16 +3127,74 @@ function HomeContent() {
         </div>
       </section>
 
-      <footer className="py-8 px-6 border-t border-gray-100" style={{ backgroundColor: '#ffffff' }}>
-        <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-4 sm:flex-row">
-          <p className="text-sm text-gray-400">© {new Date().getFullYear()} Roady. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <a href="/privacy" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">
-              Privacy Policy
-            </a>
-            <a href="/terms" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">
-              Terms of Service
-            </a>
+      <footer className="px-6 py-10 border-t border-gray-100" style={{ backgroundColor: '#ffffff' }}>
+        <div className="mx-auto flex max-w-[1440px] flex-col gap-8">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <h2 className="text-3xl font-extrabold" style={{ color: '#1B2D45' }}>
+              Contact
+            </h2>
+            <p className="text-sm text-gray-500">Questions? Write us anytime.</p>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
+              <a
+                href="mailto:hello@heyroady.com"
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#46a302] transition-colors"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-[#1B2D45]">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect width="20" height="16" x="2" y="4" rx="3" />
+                    <path d="m22 7-8.97 5.7a2 2 0 0 1-2.06 0L2 7" />
+                  </svg>
+                </span>
+                hello@heyroady.com
+              </a>
+              <a
+                href="https://www.instagram.com/heyroady"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-[#46a302] transition-colors"
+              >
+                <span className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-[#1B2D45]">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect width="20" height="20" x="2" y="2" rx="5" />
+                    <circle cx="12" cy="12" r="4" />
+                    <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
+                  </svg>
+                </span>
+                Instagram
+              </a>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <p className="text-sm text-gray-400">© {new Date().getFullYear()} Roady. All rights reserved.</p>
+            <div className="flex items-center gap-6">
+              <a href="/privacy" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">
+                Privacy Policy
+              </a>
+              <a href="/terms" className="text-sm text-gray-400 hover:text-[#46a302] transition-colors">
+                Terms of Service
+              </a>
+            </div>
           </div>
         </div>
       </footer>
