@@ -135,7 +135,7 @@ export default function Navbar({
       onClick={handlePrimaryAction}
       className={
         figma
-          ? 'roady-cta-shadow relative h-[52.43px] w-[199.13px] rounded-[18px] text-[18px] font-normal leading-[normal] text-white transition-all hover:opacity-90'
+          ? 'roady-cta-shadow relative h-[52.43px] w-[199.13px] rounded-[18px] text-[17px] font-medium leading-[normal] text-white transition-all hover:opacity-90'
           : `inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-bold text-white transition-all hover:opacity-90 ${
               isFigmaWeb ? 'max-[420px]:h-10 max-[420px]:w-10 max-[420px]:px-0' : ''
             }`
@@ -143,7 +143,7 @@ export default function Navbar({
       style={{ backgroundColor: figma ? '#25AB45' : '#1B2D45' }}
       aria-label={label}
     >
-      <span className={figma ? 'absolute left-[25px] top-[12px] h-[27px] w-[130px] whitespace-nowrap text-left' : isFigmaWeb ? 'max-[420px]:sr-only' : undefined}>
+      <span className={figma ? 'absolute left-[25px] top-[14px] h-[24px] w-[130px] whitespace-nowrap text-left' : isFigmaWeb ? 'max-[420px]:sr-only' : undefined}>
         {label}
       </span>
       {figma && (

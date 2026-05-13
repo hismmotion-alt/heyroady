@@ -3,6 +3,8 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import { geocode } from '@/lib/geocode';
@@ -161,19 +163,21 @@ const PRICING_FEATURES = [
   {
     title: 'Free trip planning',
     body: 'Pick your vibe, route preferences, and travel style, then let Roady build a trip you can actually take.',
-    icon: PRICING_ASSETS.freePlanning,
+    iconType: 'free',
   },
   {
     title: 'AI that gets the mood',
     body: 'Roady turns your interests like wine, beaches, food, nature, or family-friendly stops into a tailored route.',
-    icon: PRICING_ASSETS.aiMood,
+    iconType: 'mood',
   },
   {
     title: 'Premium coming next',
     body: 'Subscribers will unlock deeper customization, saved trip tools, offline access, and more advanced planning features.',
-    icon: PRICING_ASSETS.premium,
+    iconType: 'premium',
   },
-];
+] as const;
+
+type PricingFeatureIconType = (typeof PRICING_FEATURES)[number]['iconType'];
 
 function PricingChip({
   label,
@@ -198,9 +202,77 @@ function PricingChip({
   );
 }
 
+function PricingFeatureIcon({
+  type,
+  className = '',
+}: {
+  type: PricingFeatureIconType;
+  className?: string;
+}) {
+  const backgroundByType: Record<PricingFeatureIconType, string> = {
+    free: '#C7FBD6',
+    mood: '#FEE06F',
+    premium: '#D8D0FC',
+  };
+
+  return (
+    <svg
+      preserveAspectRatio="none"
+      viewBox="0 0 86.9798 86.9798"
+      fill="none"
+      className={className}
+      aria-hidden="true"
+    >
+      <path
+        d="M65.3959 0H21.5839C9.66342 0 0 9.66342 0 21.5839V65.3959C0 77.3164 9.66342 86.9798 21.5839 86.9798H65.3959C77.3164 86.9798 86.9798 77.3164 86.9798 65.3959V21.5839C86.9798 9.66342 77.3164 0 65.3959 0Z"
+        fill={backgroundByType[type]}
+      />
+
+      {type === 'free' && (
+        <g>
+          <path d="M68.7525 27.1342V34.9711H20.9245V27.1342C20.9245 24.4729 23.0823 22.3151 25.7436 22.3151H63.9364C66.5977 22.3151 68.7555 24.4729 68.7555 27.1342H68.7525Z" fill="#35BA54" stroke="#35BA54" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M68.7525 44.4504V34.9711" stroke="#35BA54" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M20.9245 34.9711V59.504C20.9245 62.1653 23.0823 64.317 25.7436 64.317H45.3645" stroke="#35BA54" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M32.5167 22.3151V17.3013" stroke="#35BA54" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M57.3702 22.3151V17.3013" stroke="#35BA54" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="31.4048" cy="42.9639" r="1.948" fill="#35BA54" />
+          <circle cx="41.6033" cy="42.9639" r="1.948" fill="#35BA54" />
+          <circle cx="51.7989" cy="42.9639" r="1.948" fill="#35BA54" />
+          <circle cx="31.4048" cy="53.5221" r="1.948" fill="#35BA54" />
+          <circle cx="41.6033" cy="53.5221" r="1.948" fill="#35BA54" />
+          <g data-gsap-magnifier>
+            <path d="M59.468 67.3559C64.9151 67.3559 69.3309 62.9402 69.3309 57.493C69.3309 52.0459 64.9151 47.6302 59.468 47.6302C54.0209 47.6302 49.6051 52.0459 49.6051 57.493C49.6051 62.9402 54.0209 67.3559 59.468 67.3559Z" stroke="#35BA54" strokeWidth="4" strokeMiterlimit="10" strokeLinecap="round" />
+            <path d="M66.5857 64.32L72.169 69.6755" stroke="#35BA54" strokeWidth="4" strokeMiterlimit="10" strokeLinecap="round" />
+            <path data-gsap-checkmark d="M54.6969 56.558L58.6139 60.1064L64.1492 54.1545" stroke="#35BA54" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          </g>
+        </g>
+      )}
+
+      {type === 'mood' && (
+        <g>
+          <path data-gsap-pop-star d="M35.9002 59.6209C34.7554 55.3652 31.183 47.3245 20.2742 44.4624C19.7378 44.3215 19.7378 43.5633 20.2742 43.4225C31.186 40.5604 34.7584 32.5197 35.9002 28.264C36.044 27.7276 36.7993 27.7276 36.9431 28.264C38.0879 32.5197 41.6603 40.5604 52.5691 43.4225C53.1055 43.5633 53.1055 44.3215 52.5691 44.4624C41.6573 47.3245 38.0849 55.3652 36.9431 59.6209C36.7993 60.1573 36.044 60.1573 35.9002 59.6209Z" fill="#F9510D" />
+          <path data-gsap-pop-star d="M52.1375 36.8083C51.5232 34.5216 49.6051 30.206 43.7461 28.6686C43.4584 28.5937 43.4584 28.1861 43.7461 28.1112C49.6051 26.5737 51.5232 22.2552 52.1375 19.9715C52.2154 19.6838 52.62 19.6838 52.698 19.9715C53.3123 22.2582 55.2304 26.5737 61.0893 28.1112C61.3771 28.1861 61.3771 28.5937 61.0893 28.6686C55.2304 30.206 53.3123 34.5246 52.698 36.8083C52.62 37.096 52.2154 37.096 52.1375 36.8083Z" fill="#F9510D" />
+          <path data-gsap-pop-star d="M54.9067 61.0654C54.4901 59.516 53.1895 56.585 49.2125 55.542C49.0177 55.4911 49.0177 55.2154 49.2125 55.1644C53.1865 54.1215 54.4901 51.1935 54.9067 49.6411C54.9576 49.4463 55.2334 49.4463 55.2873 49.6411C55.7039 51.1905 57.0045 54.1215 60.9815 55.1644C61.1763 55.2154 61.1763 55.4911 60.9815 55.542C57.0075 56.585 55.7039 59.513 55.2873 61.0654C55.2364 61.2602 54.9606 61.2602 54.9067 61.0654Z" fill="#F9510D" />
+        </g>
+      )}
+
+      {type === 'premium' && (
+        <g data-gsap-loop-icon>
+          <path d="M63.0463 36.7094L57.0315 55.0086H29.9333L23.9245 36.7153L25.4379 35.6275L33.3018 41.5164C34.0661 42.0888 35.1569 41.8581 35.6275 41.0279L41.963 29.8134H45.0018L51.3493 41.0939C51.8199 41.927 52.9167 42.1578 53.6809 41.5794L61.5479 35.6365L63.0463 36.7094Z" fill="#4A35EA" />
+          <path d="M22.9654 38.4686C24.6703 38.4686 26.0523 37.0865 26.0523 35.3817C26.0523 33.6769 24.6703 32.2949 22.9654 32.2949C21.2606 32.2949 19.8786 33.6769 19.8786 35.3817C19.8786 37.0865 21.2606 38.4686 22.9654 38.4686Z" fill="#4A35EA" />
+          <path d="M64.0114 38.4686C65.7162 38.4686 67.0982 37.0865 67.0982 35.3817C67.0982 33.6769 65.7162 32.2949 64.0114 32.2949C62.3065 32.2949 60.9245 33.6769 60.9245 35.3817C60.9245 37.0865 62.3065 38.4686 64.0114 38.4686Z" fill="#4A35EA" />
+          <path d="M43.4824 31.8184C45.1872 31.8184 46.5692 30.4363 46.5692 28.7315C46.5692 27.0267 45.1872 25.6447 43.4824 25.6447C41.7776 25.6447 40.3956 27.0267 40.3956 28.7315C40.3956 30.4363 41.7776 31.8184 43.4824 31.8184Z" fill="#4A35EA" />
+          <path d="M29.9333 55.0086V58.1703C29.9333 59.9176 31.3509 61.3351 33.0981 61.3351H53.8518C55.599 61.3351 57.0165 59.9176 57.0165 58.1703V55.0086H29.9333Z" fill="#4A35EA" />
+          <path d="M28.261 55.0086H58.6918" stroke="#D8D0FC" strokeWidth="4" strokeMiterlimit="10" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
 function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
   return (
-    <section id="pricing" className="scroll-mt-16 bg-white">
+    <section id="pricing" className="scroll-mt-16 bg-white" data-gsap-section>
       <div className="relative mx-auto hidden h-[1022px] max-w-[1440px] min-[1220px]:block">
         <div className="absolute left-[51px] top-[61px] flex h-[26px] items-center gap-3">
           <img src={PRICING_ASSETS.tag} alt="" className="h-[26px] w-[26px]" aria-hidden="true" />
@@ -260,11 +332,12 @@ function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
           src={PRICING_ASSETS.hero}
           alt="Roady driving a green SUV along a coastal road"
           className="absolute left-[770px] top-[99px] h-[483px] w-[624px] rounded-[39px] object-cover"
+          data-gsap-parallax="28"
         />
 
         <div className="absolute left-[48px] top-[657px] h-[183px] w-[1314px]">
           <div className="absolute left-0 top-0 h-[154px] w-[393px]">
-            <img src={PRICING_ASSETS.freePlanning} alt="" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" aria-hidden="true" />
+            <PricingFeatureIcon type="free" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" />
             <div className="absolute left-[113px] top-0 w-[280px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
               <h3 className="w-[260px] text-[23px] font-extrabold leading-[30px] text-[#061c55]">
                 Free trip planning
@@ -281,7 +354,7 @@ function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
           <img src={PRICING_ASSETS.divider} alt="" className="absolute left-[417px] top-0 h-[174.5px] w-[3px]" aria-hidden="true" />
 
           <div className="absolute left-[475px] top-0 h-[154px] w-[393px]">
-            <img src={PRICING_ASSETS.aiMood} alt="" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" aria-hidden="true" />
+            <PricingFeatureIcon type="mood" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" />
             <div className="absolute left-[113px] top-0 w-[280px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
               <h3 className="w-[260px] text-[23px] font-extrabold leading-[30px] text-[#061c55]">
                 AI that gets the mood
@@ -298,7 +371,7 @@ function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
           <img src={PRICING_ASSETS.divider} alt="" className="absolute left-[874px] top-0 h-[174.5px] w-[3px]" aria-hidden="true" />
 
           <div className="absolute left-[921px] top-0 h-[183px] w-[393px]">
-            <img src={PRICING_ASSETS.premium} alt="" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" aria-hidden="true" />
+            <PricingFeatureIcon type="premium" className="absolute left-0 top-0 h-[86.98px] w-[86.98px]" />
             <div className="absolute left-[113px] top-0 w-[280px]" style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
               <h3 className="w-[280px] text-[23px] font-extrabold leading-[30px] text-[#061c55]">
                 Premium coming next
@@ -350,6 +423,7 @@ function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
             src={PRICING_ASSETS.hero}
             alt="Roady driving a green SUV along a coastal road"
             className="mt-8 aspect-[624/483] w-full rounded-[28px] object-cover"
+            data-gsap-parallax="20"
           />
 
           <div className="mt-8 flex flex-col items-start gap-2 sm:flex-row sm:flex-wrap">
@@ -371,7 +445,7 @@ function PricingSection({ onStartPlanning }: { onStartPlanning: () => void }) {
           <div className="mt-12 space-y-8">
             {PRICING_FEATURES.map((feature) => (
               <div key={feature.title} className="flex gap-5">
-                <img src={feature.icon} alt="" className="h-[72px] w-[72px] shrink-0" aria-hidden="true" />
+                <PricingFeatureIcon type={feature.iconType} className="h-[72px] w-[72px] shrink-0" />
                 <div style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
                   <h3 className="text-[22px] font-extrabold leading-[28px] text-[#061c55]">
                     {feature.title}
@@ -1756,6 +1830,112 @@ function HomeContent() {
   }, []);
 
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    gsap.registerPlugin(ScrollTrigger);
+
+    const context = gsap.context(() => {
+      const sections = gsap.utils.toArray<HTMLElement>('[data-gsap-section]');
+      const parallaxItems = gsap.utils.toArray<HTMLElement>('[data-gsap-parallax]');
+      const loopIcons = gsap.utils.toArray<HTMLElement>('[data-gsap-loop-icon]');
+      const popStars = gsap.utils.toArray<SVGElement>('[data-gsap-pop-star]');
+      const magnifiers = gsap.utils.toArray<SVGGElement>('[data-gsap-magnifier]');
+      const checkmarks = gsap.utils.toArray<SVGPathElement>('[data-gsap-checkmark]');
+
+      sections.forEach((section, index) => {
+        gsap.fromTo(
+          section,
+          {
+            autoAlpha: index === 0 ? 1 : 0,
+            y: index === 0 ? 0 : 56,
+            scale: index === 0 ? 1 : 0.985,
+          },
+          {
+            autoAlpha: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.85,
+            ease: 'power3.out',
+            scrollTrigger:
+              index === 0
+                ? undefined
+                : {
+                    trigger: section,
+                    start: 'top 78%',
+                    toggleActions: 'play none none none',
+                  },
+          }
+        );
+      });
+
+      parallaxItems.forEach((item) => {
+        const speed = Number(item.dataset.gsapParallax || 36) * 2;
+
+        gsap.fromTo(
+          item,
+          { y: -speed },
+          {
+            y: speed,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: item,
+              start: 'top bottom',
+              end: 'bottom top',
+              scrub: 0.8,
+            },
+          }
+        );
+      });
+
+      loopIcons.forEach((icon, index) => {
+        gsap.set(icon, { transformOrigin: '50% 50%' });
+        gsap.to(icon, {
+          y: index % 2 === 0 ? -8 : 8,
+          rotate: index % 2 === 0 ? 2.5 : -2.5,
+          scale: 1.035,
+          duration: 2.4 + index * 0.18,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+          delay: index * 0.2,
+        });
+      });
+
+      popStars.forEach((star, index) => {
+        gsap.set(star, { scale: 0, transformOrigin: '50% 50%' });
+        gsap.to(star, {
+          scale: 1,
+          duration: 0.46,
+          ease: 'back.out(2.2)',
+          repeat: -1,
+          yoyo: true,
+          repeatDelay: 0.46,
+          delay: index * 0.46,
+        });
+      });
+
+      magnifiers.forEach((magnifier, index) => {
+        const checkmark = checkmarks[index];
+        if (!checkmark) return;
+
+        gsap.set(magnifier, { transformOrigin: '50% 50%' });
+        gsap.set(checkmark, { autoAlpha: 0, scale: 0, transformOrigin: '50% 50%' });
+
+        gsap
+          .timeline({ repeat: -1, repeatDelay: 0.35, delay: index * 0.18 })
+          .to(magnifier, { x: -5, y: -4, rotate: -5, duration: 0.55, ease: 'sine.inOut' })
+          .to(magnifier, { x: 3, y: 2, rotate: 3, duration: 0.55, ease: 'sine.inOut' })
+          .to(checkmark, { autoAlpha: 1, scale: 1.2, duration: 0.22, ease: 'back.out(2.4)' }, '-=0.08')
+          .to(checkmark, { scale: 1, duration: 0.16, ease: 'sine.out' })
+          .to(checkmark, { autoAlpha: 0, scale: 0.85, duration: 0.32, ease: 'sine.in' }, '+=0.35')
+          .to(magnifier, { x: 0, y: 0, rotate: 0, duration: 0.55, ease: 'sine.inOut' }, '-=0.2');
+      });
+    });
+
+    return () => context.revert();
+  }, []);
+
+  useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -2649,7 +2829,7 @@ function HomeContent() {
         signedInPrimaryLabel="Start planning"
       />
 
-      <section className="relative mt-16 overflow-hidden bg-white min-[1220px]:h-[844px]">
+      <section className="relative mt-16 overflow-hidden bg-white min-[1220px]:h-[844px]" data-gsap-section>
         <div className="relative mx-auto hidden h-full max-w-[1440px] min-[1220px]:block">
           <div
             className="absolute flex h-[40.14px] w-[338.78px] items-center rounded-[20px]"
@@ -2745,6 +2925,7 @@ function HomeContent() {
             aria-label="Roady planning a trip"
             className="absolute h-[546px] w-[748px]"
             style={{ left: 643.92, top: 148.06 }}
+            data-gsap-parallax="34"
           >
             {heroAnimation ? (
               <Lottie
@@ -2760,6 +2941,12 @@ function HomeContent() {
                 className="h-full w-full"
               />
             )}
+            <img
+              src="/bubble.svg"
+              alt=""
+              className="pointer-events-none absolute bottom-[64px] left-[28px] z-10 w-[202px]"
+              aria-hidden="true"
+            />
           </div>
         </div>
 
@@ -2795,6 +2982,7 @@ function HomeContent() {
               role="img"
               aria-label="Roady planning a trip"
               className="absolute left-1/2 top-0 h-[360px] w-[493px] max-w-none -translate-x-1/2 sm:h-[430px] sm:w-[589px]"
+              data-gsap-parallax="24"
             >
               {heroAnimation ? (
                 <Lottie
@@ -2810,12 +2998,18 @@ function HomeContent() {
                   className="h-full w-full"
                 />
               )}
+              <img
+                src="/bubble.svg"
+                alt=""
+                className="pointer-events-none absolute bottom-[40px] left-[12px] z-10 w-[132px] sm:w-[156px]"
+                aria-hidden="true"
+              />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-white px-6 py-12 min-[1220px]:hidden">
+      <section className="bg-white px-6 py-12 min-[1220px]:hidden" data-gsap-section>
         <div className="mx-auto max-w-md">
           <div className="flex items-end justify-between gap-4">
             <div>
@@ -2912,7 +3106,7 @@ function HomeContent() {
         </div>
       </section>
 
-      <section className="bg-white px-6 pb-16 pt-6 min-[1220px]:hidden">
+      <section className="bg-white px-6 pb-16 pt-6 min-[1220px]:hidden" data-gsap-section>
         <div className="mx-auto max-w-md rounded-[30px] bg-[#141046] px-6 py-8 text-center shadow-[0_20px_52px_rgba(20,16,70,0.18)]">
           <h2
             className="text-[30px] font-bold leading-[1.12] text-white"
@@ -2937,7 +3131,7 @@ function HomeContent() {
         </div>
       </section>
 
-      <section id="how-it-works" className="relative scroll-mt-16 overflow-hidden bg-white">
+      <section id="how-it-works" className="relative scroll-mt-16 overflow-hidden bg-white" data-gsap-section>
         <div
           ref={howFade.ref}
           className="mx-auto max-w-[1440px] transition-all duration-700"
@@ -2954,70 +3148,72 @@ function HomeContent() {
               How Roady works
             </h2>
 
-            {howItWorksSteps.slice(0, -1).map((step, index) => {
-              const nextStep = howItWorksSteps[index + 1];
-              const connectorWidth = nextStep.left - step.left - 203;
-              const shortenedConnectorWidth = connectorWidth * 0.8;
+            <div className="absolute inset-0" data-gsap-parallax="18">
+              {howItWorksSteps.slice(0, -1).map((step, index) => {
+                const nextStep = howItWorksSteps[index + 1];
+                const connectorWidth = nextStep.left - step.left - 203;
+                const shortenedConnectorWidth = connectorWidth * 0.8;
 
-              return (
-                <svg
-                  key={`${step.title}-${nextStep.title}`}
-                  className="absolute top-[202px] h-[28px] text-black"
-                  style={{
-                    left: `${step.left + 146 + (connectorWidth - shortenedConnectorWidth) / 2}px`,
-                    width: `${shortenedConnectorWidth}px`,
-                  }}
-                  viewBox="0 0 140 28"
-                  preserveAspectRatio="none"
-                  fill="none"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 14H137"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                  />
-                  <path
-                    d="M127 8.5L137 14L127 19.5"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              );
-            })}
-
-            {howItWorksSteps.map((step) => {
-              const textLeft = step.left + 44.16 - 105;
-
-              return (
-                <div key={step.title}>
-                  <div className="group absolute top-[172px] h-[89px] w-[89px]" style={{ left: `${step.left}px` }}>
-                    <HowItWorksIcon icon={step.icon} />
-                  </div>
-                  <div
-                    className="absolute top-[289px] w-[210px] text-center"
+                return (
+                  <svg
+                    key={`${step.title}-${nextStep.title}`}
+                    className="absolute top-[202px] h-[28px] text-black"
                     style={{
-                      left: `${textLeft}px`,
-                      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                      left: `${step.left + 146 + (connectorWidth - shortenedConnectorWidth) / 2}px`,
+                      width: `${shortenedConnectorWidth}px`,
                     }}
+                    viewBox="0 0 140 28"
+                    preserveAspectRatio="none"
+                    fill="none"
+                    aria-hidden="true"
                   >
-                    <p className="text-[18px] font-extrabold leading-[22px] text-[#141046]">{step.title}</p>
-                    <p className="mx-auto mt-[7px] max-w-[190px] text-[14px] font-medium leading-[20px] text-[#818395]">
-                      {step.body}
-                    </p>
+                    <path
+                      d="M3 14H137"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                    />
+                    <path
+                      d="M127 8.5L137 14L127 19.5"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                );
+              })}
+
+              {howItWorksSteps.map((step) => {
+                const textLeft = step.left + 44.16 - 105;
+
+                return (
+                  <div key={step.title}>
+                    <div className="group absolute top-[172px] h-[89px] w-[89px]" style={{ left: `${step.left}px` }}>
+                      <HowItWorksIcon icon={step.icon} />
+                    </div>
+                    <div
+                      className="absolute top-[289px] w-[210px] text-center"
+                      style={{
+                        left: `${textLeft}px`,
+                        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+                      }}
+                    >
+                      <p className="text-[18px] font-extrabold leading-[22px] text-[#141046]">{step.title}</p>
+                      <p className="mx-auto mt-[7px] max-w-[190px] text-[14px] font-medium leading-[20px] text-[#818395]">
+                        {step.body}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
 
             <button
               type="button"
               onClick={() => openPlanner('pch')}
-              className="roady-cta-shadow absolute left-[605px] top-[392px] inline-flex h-[58px] w-[229px] items-center justify-center gap-[10px] rounded-[13px] bg-[#25AB45] text-[15px] font-medium text-white transition-opacity hover:opacity-90"
-              style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+              className="roady-cta-shadow absolute left-[605px] top-[392px] inline-flex h-[58px] w-[229px] items-center justify-center gap-[10px] rounded-[13px] bg-[#25AB45] text-[17px] font-medium text-white transition-opacity hover:opacity-90"
+              style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
             >
               Generate my trip
               <svg className="h-[16px] w-[16px]" fill="none" viewBox="0 0 24 24">
@@ -3086,7 +3282,7 @@ function HomeContent() {
         <div className="mx-auto h-px max-w-[1440px] bg-gray-100" />
       </div>
 
-      <section className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }} id="faq">
+      <section className="px-6 py-20 max-[1219px]:hidden" style={{ backgroundColor: '#ffffff' }} id="faq" data-gsap-section>
         <div
           ref={faqFade.ref}
           className="max-w-3xl mx-auto transition-all duration-700"
