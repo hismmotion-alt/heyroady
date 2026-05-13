@@ -278,6 +278,15 @@ export default function Navbar({
         <div className={`flex items-center gap-3 flex-shrink-0 ${isFigmaWeb ? 'absolute right-6 top-1/2 -translate-y-1/2' : ''}`}>
           {user ? (
             <>
+              {isFigmaWeb && (
+                <a
+                  href="/my-trips"
+                  className="inline-flex h-10 items-center justify-center rounded-full border border-[#DDE6D8] bg-white px-4 text-[14px] font-medium text-[#141046] shadow-[0_8px_20px_rgba(20,16,70,0.06)] transition-colors hover:border-[#25AB45] hover:text-[#25AB45]"
+                  style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+                >
+                  Saved trips
+                </a>
+              )}
               <div className="relative" ref={compactDropdownRef}>
                 <button
                   onClick={() => setDropdownOpen((o) => !o)}
@@ -289,11 +298,11 @@ export default function Navbar({
                     <img
                       src={user.user_metadata.avatar_url}
                       alt="Profile"
-                      className="w-8 h-8 rounded-full border-2 border-gray-200 hover:border-[#58CC02] transition-colors"
+                      className="h-10 w-10 rounded-full border-2 border-gray-200 object-cover transition-colors hover:border-[#25AB45]"
                     />
                   ) : (
-                    <span className="text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors">
-                      Account
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-gray-200 bg-[#F4F7F2] text-sm font-semibold text-[#141046] transition-colors hover:border-[#25AB45]">
+                      {(user.email?.[0] ?? 'A').toUpperCase()}
                     </span>
                   )}
                 </button>
@@ -316,23 +325,37 @@ export default function Navbar({
                   </div>
                 )}
               </div>
-              <button
-                className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold text-white transition-all hover:opacity-90"
-                style={{ backgroundColor: '#1B2D45' }}
-                onClick={handlePrimaryAction}
-              >
-                {signedInPrimaryLabel}
-              </button>
+              {!isFigmaWeb && (
+                <button
+                  className="whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold text-white transition-all hover:opacity-90"
+                  style={{ backgroundColor: '#1B2D45' }}
+                  onClick={handlePrimaryAction}
+                >
+                  {signedInPrimaryLabel}
+                </button>
+              )}
             </>
           ) : (
             <>
-              <a
-                href="/login"
-                className={`${isFigmaWeb ? 'hidden sm:inline' : ''} text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors`}
-              >
-                Log in
-              </a>
-              {renderPrimaryButton(primaryLabel)}
+              {isFigmaWeb ? (
+                <a
+                  href="/login"
+                  className="inline-flex h-10 items-center justify-center rounded-full bg-[#25AB45] px-5 text-[15px] font-medium text-white shadow-[0_10px_24px_rgba(37,171,69,0.18)] transition-opacity hover:opacity-90"
+                  style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
+                >
+                  Sign in
+                </a>
+              ) : (
+                <>
+                  <a
+                    href="/login"
+                    className="text-sm font-semibold text-gray-500 hover:text-[#1B2D45] transition-colors"
+                  >
+                    Log in
+                  </a>
+                  {renderPrimaryButton(primaryLabel)}
+                </>
+              )}
             </>
           )}
         </div>

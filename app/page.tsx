@@ -2950,16 +2950,16 @@ function HomeContent() {
           </div>
         </div>
 
-        <div className="px-6 pb-8 pt-10 min-[1220px]:hidden">
+        <div className="px-6 pb-4 pt-6 min-[1220px]:hidden">
           <h1
-            className="text-[48px] font-bold leading-[1.04] text-[#141046] sm:text-[64px]"
+            className="text-[36px] font-bold leading-[1.04] text-[#141046] min-[380px]:text-[40px] sm:text-[52px]"
             style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
           >
             Let Roady plan your next <span className="text-[#ec501e]">adventure</span>
           </h1>
 
           <p
-            className="mt-5 max-w-[330px] text-[19px] font-medium leading-[normal] text-[#818395] sm:max-w-xl"
+            className="mt-3 max-w-[330px] text-[16px] font-medium leading-6 text-[#818395] sm:max-w-xl sm:text-[18px]"
             style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
           >
             Tell Roady what you love, and get a personalized road trip in less than 30 seconds
@@ -2967,7 +2967,7 @@ function HomeContent() {
 
           <button
             onClick={() => openPlanner('pch')}
-            className="roady-cta-shadow mt-8 inline-flex h-[58px] w-full max-w-[330px] items-center justify-center gap-5 rounded-[18px] bg-[#25AB45] px-7 text-[17px] font-medium text-white transition-opacity hover:opacity-90"
+            className="roady-cta-shadow mt-5 inline-flex h-[52px] w-full max-w-[315px] items-center justify-center gap-4 rounded-[18px] bg-[#25AB45] px-6 text-[17px] font-medium text-white transition-opacity hover:opacity-90"
             style={{ fontFamily: 'var(--font-poppins), Poppins, system-ui, sans-serif' }}
           >
             Start planning with Roady
@@ -2977,11 +2977,11 @@ function HomeContent() {
             </svg>
           </button>
 
-          <div className="relative mt-8 h-[360px] overflow-hidden sm:h-[430px]">
+          <div className="relative mt-5 h-[286px] overflow-visible min-[380px]:h-[318px] sm:h-[420px]">
             <div
               role="img"
               aria-label="Roady planning a trip"
-              className="absolute left-1/2 top-0 h-[360px] w-[493px] max-w-none -translate-x-1/2 sm:h-[430px] sm:w-[589px]"
+              className="absolute inset-x-0 top-0 mx-auto h-full w-full max-w-[430px] sm:max-w-[570px]"
               data-gsap-parallax="24"
             >
               {heroAnimation ? (
@@ -2995,16 +2995,57 @@ function HomeContent() {
                 <img
                   src="/figma-hero-art.svg"
                   alt=""
-                  className="h-full w-full"
+                  className="h-full w-full object-contain"
                 />
               )}
               <img
                 src="/bubble.svg"
                 alt=""
-                className="pointer-events-none absolute bottom-[40px] left-[12px] z-10 w-[132px] sm:w-[156px]"
+                className="pointer-events-none absolute bottom-[30px] left-[8px] z-10 w-[118px] min-[380px]:w-[132px] sm:w-[156px]"
                 aria-hidden="true"
               />
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white px-6 py-10 min-[1220px]:hidden" data-gsap-section>
+        <div className="mx-auto max-w-md">
+          <h2
+            className="text-[32px] font-bold leading-[1.12] text-[#141046]"
+            style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
+          >
+            How Roady works
+          </h2>
+
+          <div className="mt-7 space-y-4">
+            {howItWorksSteps.map((step, index) => (
+              <div
+                key={step.title}
+                className="flex items-center gap-4 rounded-[24px] border border-[#E7EAF2] bg-white p-4 shadow-[0_12px_30px_rgba(20,16,70,0.06)]"
+              >
+                <div className="group h-[58px] w-[58px] shrink-0">
+                  <HowItWorksIcon icon={step.icon} className="roady-how-icon h-[58px] w-[58px]" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#EC501E]">
+                    Step {index + 1}
+                  </p>
+                  <p
+                    className="mt-1 text-[18px] font-extrabold leading-[22px] text-[#141046]"
+                    style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+                  >
+                    {step.title}
+                  </p>
+                  <p
+                    className="mt-1 text-[14px] font-medium leading-[20px] text-[#818395]"
+                    style={{ fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}
+                  >
+                    {step.body}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -3235,7 +3276,7 @@ function HomeContent() {
             </p>
           </div>
 
-          <div className="px-6 py-12 min-[1220px]:hidden">
+          <div className="hidden px-6 py-12">
             <h2
               className="text-[34px] font-bold leading-[1.12] text-[#141046] sm:text-[40px]"
               style={{ fontFamily: 'var(--font-inter), Inter, system-ui, sans-serif' }}
@@ -3454,9 +3495,6 @@ function HomeContent() {
                       </button>
                     </div>
 
-                    <div className="mt-4">
-                      <ResultStepRail />
-                    </div>
                   </header>
 
                   <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F8F6] px-4 py-4 sm:px-5">
@@ -3671,11 +3709,9 @@ function HomeContent() {
                   </div>
                 </div>
               ) : (
-              <div className="flex h-full min-h-0 flex-col lg:flex-row">
+              <div className="flex h-full min-h-0 flex-col">
                 <aside
-                  className={`w-full min-h-0 border-b border-gray-200 bg-white lg:h-full lg:flex-shrink-0 lg:border-b-0 lg:border-r ${
-                    plannerStep === 'hotelDetails' ? 'lg:w-[600px]' : 'lg:w-[430px]'
-                  }`}
+                  className="w-full min-h-0 bg-white"
                 >
                   <div className="flex h-full min-h-0 flex-col">
                     <div className="flex items-center justify-between px-4 pt-4 pb-3 sm:px-8 sm:pt-6 sm:pb-4">
@@ -3755,38 +3791,36 @@ function HomeContent() {
                             />
                           </div>
 
-                          {startSuggestions.length > 0 && (
-                            <div className="mt-3 overflow-hidden rounded-[22px] border border-gray-200 bg-white shadow-lg">
-                              {startSuggestions.map((suggestion) => (
-                                <button
-                                  key={suggestion}
-                                  type="button"
-                                  onClick={() => void applyStartSelection(suggestion)}
-                                  className="block w-full border-b border-gray-100 px-4 py-3 text-left text-sm font-semibold text-gray-600 transition-colors last:border-b-0 hover:bg-gray-50 hover:text-[#1B2D45]"
-                                >
-                                  {suggestion}
-                                </button>
-                              ))}
-                            </div>
-                          )}
+                          <div className="mt-3 overflow-hidden rounded-[22px] border border-gray-200 bg-white shadow-lg">
+                            {startSuggestions.slice(0, 1).map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => void applyStartSelection(suggestion)}
+                                className="block w-full border-b border-gray-100 px-4 py-3 text-left text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-[#1B2D45]"
+                              >
+                                {suggestion}
+                              </button>
+                            ))}
 
-                          <button
-                            type="button"
-                            onClick={() => void detectCurrentLocation(true)}
-                            className="mt-5 flex w-full items-center justify-between rounded-[22px] border border-gray-200 bg-white px-4 py-4 text-left transition-colors hover:border-[#58CC02]"
-                          >
-                            <div>
-                              <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>
-                                Use my location
-                              </p>
-                              <p className="mt-1 text-xs text-gray-400">
-                                Autofill your starting point from the device you are on.
-                              </p>
-                            </div>
-                            <span className="text-sm font-bold" style={{ color: '#58CC02' }}>
-                              {detectingLocation ? 'Locating...' : 'Use'}
-                            </span>
-                          </button>
+                            <button
+                              type="button"
+                              onClick={() => void detectCurrentLocation(true)}
+                              className="flex w-full items-center justify-between bg-white px-4 py-4 text-left transition-colors hover:bg-gray-50"
+                            >
+                              <div>
+                                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>
+                                  Use my location
+                                </p>
+                                <p className="mt-1 text-xs text-gray-400">
+                                  Autofill your starting point from the device you are on.
+                                </p>
+                              </div>
+                              <span className="text-sm font-bold" style={{ color: '#58CC02' }}>
+                                {detectingLocation ? 'Locating...' : 'Use'}
+                              </span>
+                            </button>
+                          </div>
 
                           <div className="mt-6">
                             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
@@ -4257,7 +4291,7 @@ function HomeContent() {
                   </div>
                 </aside>
 
-                <div className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,#F7F9FB_0%,#EDF1F5_100%)]">
+                <div className="hidden">
                   <div className="flex items-center justify-between gap-4 border-b border-white/70 px-6 py-5 sm:px-8">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
