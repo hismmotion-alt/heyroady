@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { gsap } from 'gsap';
 import Navbar from '@/components/Navbar';
 import {
   WHERE_TO_GO_DESTINATIONS,
@@ -11,6 +12,7 @@ import {
 } from '@/lib/where-to-go';
 
 type ActiveFilter = 'all' | WhereToGoTag;
+const DESTINATIONS_PER_SLIDE = 6;
 
 const CATEGORY_STYLES: Record<WhereToGoDestination['categoryColor'], string> = {
   coral: 'bg-[#EC501E] text-white',
@@ -69,23 +71,24 @@ function TagIcon({ id }: { id: WhereToGoTag }) {
 function DestinationCard({ destination, onPlan }: { destination: WhereToGoDestination; onPlan: () => void }) {
   return (
     <article
-      className="group flex min-h-[390px] flex-col overflow-hidden rounded-[24px] border border-[#E6E8EF] bg-white shadow-[0_14px_34px_rgba(20,16,70,0.08)] transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_22px_48px_rgba(20,16,70,0.14)]"
+      className="group flex min-h-[318px] flex-col overflow-hidden rounded-[22px] border border-[#E6E8EF] bg-white shadow-[0_14px_34px_rgba(20,16,70,0.08)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_22px_48px_rgba(20,16,70,0.14)]"
     >
-      <button type="button" onClick={onPlan} className="relative h-[166px] overflow-hidden text-left">
+      <button type="button" onClick={onPlan} className="relative h-[132px] overflow-hidden text-left">
         <img
           src={destination.image}
           alt={destination.name}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
+          data-destination-image
         />
         <span className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-xs font-extrabold shadow-sm ${CATEGORY_STYLES[destination.categoryColor]}`}>
           {destination.category}
         </span>
       </button>
 
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col p-4">
         <button type="button" onClick={onPlan} className="text-left">
-          <h2 className="text-[24px] font-extrabold leading-tight text-[#141046] transition-colors group-hover:text-[#EC501E]">
+          <h2 className="text-[21px] font-extrabold leading-tight text-[#141046] transition-colors group-hover:text-[#EC501E]">
             {destination.name}
           </h2>
         </button>
@@ -96,22 +99,15 @@ function DestinationCard({ destination, onPlan }: { destination: WhereToGoDestin
           </svg>
           {destination.region}
         </p>
-        <p className="mt-4 flex-1 text-[15px] font-medium leading-7 text-[#6F7285]">
+        <p className="mt-3 line-clamp-3 flex-1 text-[14px] font-medium leading-6 text-[#6F7285]">
           {destination.description}
         </p>
 
-        <div className="mt-5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-sm font-extrabold text-[#EC501E]">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
-              <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
-              <circle cx="12" cy="10" r="2.5" />
-            </svg>
-            {destination.stopCount} stops
-          </div>
+        <div className="mt-4 flex justify-end">
           <button
             type="button"
             onClick={onPlan}
-            className="rounded-full border border-[#DDE1EA] px-5 py-2.5 text-sm font-extrabold text-[#141046] transition-all duration-300 hover:border-[#25AB45] hover:bg-[#25AB45] hover:text-white"
+            className="rounded-full border border-[#DDE1EA] px-4 py-2 text-sm font-extrabold text-[#141046] transition-all duration-300 hover:border-[#25AB45] hover:bg-[#25AB45] hover:text-white"
           >
             Plan this trip
           </button>
@@ -123,12 +119,70 @@ function DestinationCard({ destination, onPlan }: { destination: WhereToGoDestin
 
 export default function WhereToGoPageClient() {
   const router = useRouter();
+  const gridRef = useRef<HTMLDivElement>(null);
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
+  const [activeSlide, setActiveSlide] = useState(0);
 
   const destinations = useMemo(() => {
     if (activeFilter === 'all') return WHERE_TO_GO_DESTINATIONS;
     return WHERE_TO_GO_DESTINATIONS.filter((destination) => destination.tags.includes(activeFilter));
   }, [activeFilter]);
+  const totalSlides = Math.max(1, Math.ceil(destinations.length / DESTINATIONS_PER_SLIDE));
+  const visibleDestinations = destinations.slice(
+    activeSlide * DESTINATIONS_PER_SLIDE,
+    activeSlide * DESTINATIONS_PER_SLIDE + DESTINATIONS_PER_SLIDE
+  );
+
+  useEffect(() => {
+    setActiveSlide(0);
+  }, [activeFilter]);
+
+  useEffect(() => {
+    if (!gridRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const context = gsap.context(() => {
+      const cards = gsap.utils.toArray<HTMLElement>('[data-destination-card]');
+      const images = gsap.utils.toArray<HTMLElement>('[data-destination-image]');
+
+      gsap.fromTo(
+        cards,
+        { autoAlpha: 0, x: 42, y: 16, scale: 0.985 },
+        {
+          autoAlpha: 1,
+          x: 0,
+          y: 0,
+          scale: 1,
+          duration: 0.72,
+          ease: 'power3.out',
+          stagger: 0.08,
+          delay: 0.08,
+        }
+      );
+
+      gsap.fromTo(
+        images,
+        { xPercent: 8, scale: 1.08 },
+        {
+          xPercent: 0,
+          scale: 1,
+          duration: 1,
+          ease: 'power3.out',
+          stagger: 0.08,
+          delay: 0.12,
+        }
+      );
+    }, gridRef);
+
+    return () => context.revert();
+  }, [activeSlide, activeFilter]);
+
+  function goToPreviousSlide() {
+    setActiveSlide((current) => Math.max(0, current - 1));
+  }
+
+  function goToNextSlide() {
+    setActiveSlide((current) => Math.min(totalSlides - 1, current + 1));
+  }
 
   function startDestinationFlow(destination: WhereToGoDestination) {
     const params = new URLSearchParams({
@@ -223,7 +277,7 @@ export default function WhereToGoPageClient() {
 
               <div className="mb-6 hidden items-center justify-between gap-4 sm:flex">
                 <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-[#EC501E]">
-                  {destinations.length} destination{destinations.length === 1 ? '' : 's'}
+                  Showing {visibleDestinations.length} of {destinations.length} destination{destinations.length === 1 ? '' : 's'}
                 </p>
                 <button
                   type="button"
@@ -234,15 +288,53 @@ export default function WhereToGoPageClient() {
                 </button>
               </div>
 
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {destinations.map((destination) => (
-                  <DestinationCard
-                    key={destination.id}
-                    destination={destination}
-                    onPlan={() => startDestinationFlow(destination)}
-                  />
+              <div ref={gridRef} className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {visibleDestinations.map((destination) => (
+                  <div key={destination.id} data-destination-card>
+                    <DestinationCard
+                      destination={destination}
+                      onPlan={() => startDestinationFlow(destination)}
+                    />
+                  </div>
                 ))}
               </div>
+
+              {totalSlides > 1 && (
+                <div className="mt-5 flex flex-col items-center justify-between gap-4 sm:flex-row">
+                  <div className="flex items-center gap-2">
+                    {Array.from({ length: totalSlides }).map((_, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => setActiveSlide(index)}
+                        aria-label={`Show destination slide ${index + 1}`}
+                        className={`h-2.5 rounded-full transition-all ${
+                          activeSlide === index ? 'w-8 bg-[#25AB45]' : 'w-2.5 bg-[#DDE1EA] hover:bg-[#AEB8C8]'
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex w-full items-center gap-3 sm:w-auto">
+                    <button
+                      type="button"
+                      onClick={goToPreviousSlide}
+                      disabled={activeSlide === 0}
+                      className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-[#DDE1EA] bg-white px-5 text-sm font-extrabold text-[#141046] transition-all hover:border-[#25AB45] disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      onClick={goToNextSlide}
+                      disabled={activeSlide === totalSlides - 1}
+                      className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-[#25AB45] px-5 text-sm font-extrabold text-white shadow-[0_16px_34px_rgba(37,171,69,0.16)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:flex-none"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </section>
