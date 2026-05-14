@@ -6,6 +6,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
+import { getHotelImageUrl } from '@/lib/hotel-images';
 import type { User } from '@supabase/supabase-js';
 import type { Message, TripData, HotelSuggestion } from '@/lib/types';
 
@@ -1049,6 +1050,7 @@ function ChatContent() {
                   {generatedTrip.hotels.map((hotel, i) => {
                     const isSelected = selectedHotel?.name === hotel.name;
                     const bookingUrl = `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(hotel.name + ' ' + hotel.city)}`;
+                    const hotelImage = getHotelImageUrl(hotel);
                     return (
                       <div
                         key={i}
@@ -1059,9 +1061,9 @@ function ChatContent() {
                           backgroundColor: isSelected ? 'rgba(216,90,48,0.04)' : 'white',
                         }}
                       >
-                        {hotel.fsqPhoto ? (
+                        {hotelImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={hotel.fsqPhoto} alt={hotel.name} className="w-full h-20 object-cover rounded-md mb-2" />
+                          <img src={hotelImage} alt={hotel.name} className="w-full h-20 object-cover rounded-md mb-2" />
                         ) : (
                           <div className="w-full h-16 rounded-md mb-2 flex items-center justify-center bg-gray-50">
                             <span className="text-2xl">🏨</span>

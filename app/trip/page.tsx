@@ -9,6 +9,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import type { TripData, HotelSuggestion } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
+import { getHotelImageUrl } from '@/lib/hotel-images';
 import type { User } from '@supabase/supabase-js';
 import {
   DndContext,
@@ -657,6 +658,7 @@ function TripContent() {
                 {trip.hotels && trip.hotels.length > 0 ? (() => {
                   const h = trip.hotels![overviewHotelIdx];
                   const priceLabel = h.fsqPrice != null ? '$'.repeat(h.fsqPrice) : h.priceRange;
+                  const hotelImage = getHotelImageUrl(h);
                   const bookingParams = new URLSearchParams({
                     aid: '2858827',
                     ss: encodeURIComponent(`${h.name} ${h.city}`).replace(/%20/g, '+'),
@@ -673,9 +675,9 @@ function TripContent() {
                     <>
                       {/* Photo */}
                       <div className="relative" style={{ height: 180 }}>
-                        {h.fsqPhoto ? (
+                        {hotelImage ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img src={h.fsqPhoto} alt={h.name} className="w-full h-full object-cover" />
+                          <img src={hotelImage} alt={h.name} className="w-full h-full object-cover" />
                         ) : (
                           <div
                             className="w-full h-full flex items-center justify-center text-5xl"

@@ -1,4 +1,5 @@
 import type { HotelSuggestion } from '@/lib/types';
+import { getHotelImageUrl } from '@/lib/hotel-images';
 
 const AFFILIATE_ID = '2858827';
 
@@ -52,6 +53,7 @@ function bookingUrl({ hotel, checkin, nights, guests }: Pick<HotelCardProps, 'ho
 export default function HotelCard({ hotel, stopCity, checkin, nights, guests, isSelected, onSelect }: HotelCardProps) {
   const displayCity = hotel.city || stopCity;
   const priceLabel = hotel.fsqPrice != null ? '$'.repeat(hotel.fsqPrice) : hotel.priceRange;
+  const hotelImage = getHotelImageUrl(hotel);
 
   return (
     <div
@@ -64,9 +66,9 @@ export default function HotelCard({ hotel, stopCity, checkin, nights, guests, is
       <div className="flex gap-0">
         {/* Photo */}
         <div className="w-24 flex-shrink-0 relative overflow-hidden" style={{ minHeight: 90 }}>
-          {hotel.fsqPhoto ? (
+          {hotelImage ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={hotel.fsqPhoto} alt={hotel.name} className="w-24 h-full object-cover absolute inset-0" style={{ minHeight: 90 }} />
+            <img src={hotelImage} alt={hotel.name} className="w-24 h-full object-cover absolute inset-0" style={{ minHeight: 90 }} />
           ) : (
             <div
               className="w-24 h-full absolute inset-0 flex flex-col items-center justify-center gap-1"
