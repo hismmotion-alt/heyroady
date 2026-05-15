@@ -1836,10 +1836,12 @@ function HomeContent() {
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState('');
   const [mapsMenuOpen, setMapsMenuOpen] = useState(false);
+  const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
   const [homeDestinationFilter, setHomeDestinationFilter] = useState<HomeDestinationFilter>('all');
   const [homeDestinationSlide, setHomeDestinationSlide] = useState(0);
 
   const suggestionRef = useRef<HTMLDivElement>(null);
+  const mobileProfileMenuRef = useRef<HTMLDivElement>(null);
   const homeMobileDestinationsRef = useRef<HTMLDivElement>(null);
   const hotelCheckinInputRef = useRef<HTMLInputElement>(null);
   const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2089,6 +2091,9 @@ function HomeContent() {
       if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
         setStartSuggestions([]);
         setDestinationSuggestions([]);
+      }
+      if (mobileProfileMenuRef.current && !mobileProfileMenuRef.current.contains(event.target as Node)) {
+        setMobileProfileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -2938,6 +2943,14 @@ function HomeContent() {
     }
 
     await handleSaveTrip(false);
+  }
+
+  async function handlePlannerSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUser(null);
+    setMobileProfileMenuOpen(false);
+    router.refresh();
   }
 
   async function handleCopyLink() {
@@ -3840,28 +3853,54 @@ function HomeContent() {
                         </button>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (!user) router.push('/login?next=/');
-                        }}
-                        className="inline-flex h-11 items-center justify-center rounded-full border border-gray-200 bg-white px-4 text-sm font-extrabold text-[#1B2D45] shadow-sm sm:hidden"
-                        aria-label={user ? 'Profile' : 'Sign in'}
-                      >
-                        {user?.user_metadata?.avatar_url ? (
-                          <img
-                            src={user.user_metadata.avatar_url}
-                            alt="Profile"
-                            className="h-9 w-9 rounded-full object-cover"
-                          />
-                        ) : user ? (
-                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EFFFF4] text-sm font-extrabold text-[#13A85B]">
-                            {user.email?.[0]?.toUpperCase() ?? 'R'}
-                          </span>
-                        ) : (
-                          'Sign in'
+                      <div className="relative sm:hidden" ref={mobileProfileMenuRef}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!user) {
+                              router.push('/login?next=/');
+                              return;
+                            }
+                            setMobileProfileMenuOpen((open) => !open);
+                          }}
+                          className="inline-flex h-11 items-center justify-center rounded-full border border-gray-200 bg-white px-4 text-sm font-extrabold text-[#1B2D45] shadow-sm"
+                          aria-expanded={mobileProfileMenuOpen}
+                          aria-label={user ? 'Profile menu' : 'Sign in'}
+                        >
+                          {user?.user_metadata?.avatar_url ? (
+                            <img
+                              src={user.user_metadata.avatar_url}
+                              alt="Profile"
+                              className="h-9 w-9 rounded-full object-cover"
+                            />
+                          ) : user ? (
+                            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EFFFF4] text-sm font-extrabold text-[#13A85B]">
+                              {user.email?.[0]?.toUpperCase() ?? 'R'}
+                            </span>
+                          ) : (
+                            'Sign in'
+                          )}
+                        </button>
+
+                        {user && mobileProfileMenuOpen && (
+                          <div className="absolute right-0 top-[calc(100%+8px)] z-50 w-40 overflow-hidden rounded-2xl border border-gray-100 bg-white text-left shadow-[0_18px_50px_rgba(27,45,69,0.18)]">
+                            <a
+                              href="/my-trips"
+                              className="block px-4 py-3 text-sm font-extrabold text-[#1B2D45] transition-colors hover:bg-[#F8FAF7]"
+                              onClick={() => setMobileProfileMenuOpen(false)}
+                            >
+                              Saved trips
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => void handlePlannerSignOut()}
+                              className="block w-full border-t border-gray-100 px-4 py-3 text-left text-sm font-extrabold text-[#D85A30] transition-colors hover:bg-[#FFF6F2]"
+                            >
+                              Log out
+                            </button>
+                          </div>
                         )}
-                      </button>
+                      </div>
 
                       <div className="order-3 w-full text-center lg:order-none lg:w-auto">
                         <p
