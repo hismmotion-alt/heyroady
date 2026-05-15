@@ -460,10 +460,10 @@ export async function POST(req: Request) {
 ${body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0'
   ? `STRICT COORDINATE BOUNDS: En-route stops must fall within the geographic corridor between "${start}" and "${end}". Destination spots must be within 40km of "${end}"${endCoords ? ` (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)})` : ''}.
 
-Suggest ${body.numberOfEnrouteStops} stop${body.numberOfEnrouteStops === '1' ? '' : 's'} along the drive from "${start}" to "${end}" (en-route, ordered geographically from start to end), then ${spotsInstruction} spot${spotsInstruction === '1' ? '' : 's'} to explore in "${end}" (things to do and see at the destination). Return all of them in a single stops array: en-route stops first, destination spots last.`
+Suggest ${body.numberOfEnrouteStops} stop${body.numberOfEnrouteStops === '1' ? '' : 's'} along the drive from "${start}" to "${end}" (en-route, ordered geographically from start to end), then ${spotsInstruction} spot${spotsInstruction === '1' ? '' : 's'} to explore in "${end}" (things to do and see at the destination). The requested destination spot count INCLUDES the final destination point: the last destination spot must be a specific real place in or near "${end}", not just the city/town itself. Return all of them in a single stops array: en-route stops first, destination spots last.`
   : `${endCoords ? `STRICT COORDINATE BOUNDS: Every spot must be within 40km of "${end}" (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}). Spots outside this radius will be discarded.` : ''}
 
-Suggest exactly ${spotsInstruction} interesting spots to explore in "${end}". These are things to do and see at the destination — not stops along the drive. Order them in a logical exploration sequence.`
+Suggest exactly ${spotsInstruction} interesting spots to explore in "${end}". These are things to do and see at the destination — not stops along the drive. The requested spot count INCLUDES the final destination point: the last spot must be a specific real place in or near "${end}", not just the city/town itself. Order them in a logical exploration sequence.`
 }
 
 Return this exact JSON structure:

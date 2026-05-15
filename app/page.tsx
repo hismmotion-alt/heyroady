@@ -1041,6 +1041,11 @@ function getHotelDestinationDisplay(hotel: HotelSuggestion) {
   return hotel.city ? `${hotel.name}, ${hotel.city}` : hotel.name;
 }
 
+function getDestinationCityLabel(destination: string) {
+  const [city] = destination.split(',').map((part) => part.trim()).filter(Boolean);
+  return city || destination;
+}
+
 function getHotelLocationSummary(hotel: HotelSuggestion) {
   return hotel.city || 'Destination stay';
 }
@@ -1348,6 +1353,7 @@ function ResultStayCard({
 function RouteAtGlance({
   startLabel,
   stops,
+  finalDestinationSpot,
   selectedHotel,
   fallbackDestination,
   activeStop,
@@ -1355,14 +1361,26 @@ function RouteAtGlance({
 }: {
   startLabel: string;
   stops: PlannerStop[];
+  finalDestinationSpot: PlannerStop | null;
   selectedHotel: HotelSuggestion | null;
   fallbackDestination: string;
   activeStop: number;
   onStopClick: (index: number) => void;
 }) {
-  const finalLabel = selectedHotel?.city || fallbackDestination;
-  const finalSubLabel = selectedHotel ? selectedHotel.name : 'Final stop';
-  const finalIcon = selectedHotel ? '🏨' : '🏁';
+  const routeStops = stops
+    .map((stop, originalIndex) => ({ stop, originalIndex }))
+    .filter(({ stop }) => stop.id !== finalDestinationSpot?.id);
+  const finalLabel = finalDestinationSpot?.name || selectedHotel?.city || fallbackDestination;
+  const finalSubLabel = finalDestinationSpot
+    ? `${finalDestinationSpot.city} · final spot`
+    : selectedHotel
+      ? selectedHotel.name
+      : 'Final stop';
+  const finalIcon = finalDestinationSpot ? getCategoryIcon(finalDestinationSpot.category) : selectedHotel ? '🏨' : '🏁';
+  const finalSelected = finalDestinationSpot ? activeStop === stops.findIndex((stop) => stop.id === finalDestinationSpot.id) : false;
+  const finalStopOriginalIndex = finalDestinationSpot
+    ? stops.findIndex((stop) => stop.id === finalDestinationSpot.id)
+    : -1;
 
   return (
     <div className="rounded-[26px] border border-[#DDE3EA] bg-white p-5 shadow-[0_10px_30px_rgba(27,45,69,0.05)]">
@@ -1401,13 +1419,13 @@ function RouteAtGlance({
             </p>
           </div>
 
-          {stops.map((stop, index) => {
-            const selected = activeStop === index;
+          {routeStops.map(({ stop, originalIndex }, displayIndex) => {
+            const selected = activeStop === originalIndex;
             return (
               <button
                 key={stop.id}
                 type="button"
-                onClick={() => onStopClick(index)}
+                onClick={() => onStopClick(originalIndex)}
                 className="relative flex flex-col items-center text-center"
               >
                 <div className="absolute left-1/2 top-8 hidden h-0.5 w-full border-t-2 border-dashed border-[#C6CED8] sm:block" />
@@ -1424,7 +1442,7 @@ function RouteAtGlance({
                   className="mt-3 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-extrabold text-white"
                   style={{ backgroundColor: stop.stopType === 'en-route' ? '#D85A30' : '#378ADD' }}
                 >
-                  {index + 2}
+                  {displayIndex + 2}
                 </span>
                 <p className="mt-2 text-sm font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
                   {stop.name}
@@ -1445,12 +1463,24 @@ function RouteAtGlance({
             );
           })}
 
-          <div className="relative flex flex-col items-center text-center">
-            <span className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 border-[#1B66D2] bg-white text-2xl">
+          <button
+            type="button"
+            onClick={() => {
+              if (finalStopOriginalIndex >= 0) onStopClick(finalStopOriginalIndex);
+            }}
+            className="relative flex flex-col items-center text-center"
+          >
+            <span
+              className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full border-2 bg-white text-2xl transition-transform"
+              style={{
+                borderColor: finalSelected ? '#1B2D45' : '#1B66D2',
+                transform: finalSelected ? 'scale(1.06)' : 'none',
+              }}
+            >
               {finalIcon}
             </span>
             <span className="mt-3 flex h-5 w-5 items-center justify-center rounded-full bg-[#1B66D2] text-[11px] font-extrabold text-white">
-              {stops.length + 2}
+              {routeStops.length + 2}
             </span>
             <p className="mt-2 text-sm font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
               {finalLabel}
@@ -1467,7 +1497,7 @@ function RouteAtGlance({
             >
               {finalSubLabel}
             </p>
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -1761,6 +1791,14 @@ function stripPlannerStop(stop: PlannerStop): Stop {
   return rest;
 }
 
+function getFinalDestinationSpot(stops: PlannerStop[]) {
+  for (let index = stops.length - 1; index >= 0; index -= 1) {
+    if (stops[index].stopType === 'destination') return stops[index];
+  }
+
+  return stops[stops.length - 1] ?? null;
+}
+
 function HomeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1820,7 +1858,6 @@ function HomeContent() {
   const routeTagline = tripData?.tagline ?? activeRouteOption?.tagline ?? fallbackRoute.tagline;
   const routeSummary = tripData?.destinationDescription ?? destinationPreset?.description ?? fallbackRoute.summary;
   const questionSteps = buildQuestionSteps(prefs, hasFixedDestination);
-  const mapStops = useMemo(() => stops.map(stripPlannerStop), [stops]);
   const progressSteps =
     plannerStep === 'generating' || plannerStep === 'results' || plannerStep === 'save' || plannerStep === 'saved'
       ? [...questionSteps, 'results', 'save']
@@ -1856,20 +1893,37 @@ function HomeContent() {
   const shouldShowStayPicker = prefs.hotelPreference !== 'none';
   const visibleHotels = shouldShowStayPicker ? tripData?.hotels?.slice(0, 4) ?? [] : [];
   const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
+  const finalDestinationSpot = selectedHotel ? null : getFinalDestinationSpot(stops);
+  const finalDestinationSpotId = finalDestinationSpot?.id ?? null;
+  const routeWaypointStops = useMemo(
+    () => (finalDestinationSpotId ? stops.filter((stop) => stop.id !== finalDestinationSpotId) : stops),
+    [stops, finalDestinationSpotId]
+  );
+  const mapStops = useMemo(
+    () => routeWaypointStops.map(stripPlannerStop),
+    [routeWaypointStops]
+  );
   const selectedHotelDestination = selectedHotel ? getHotelDestinationLabel(selectedHotel) : '';
   const tripDestinationDisplay = selectedHotel ? getHotelDestinationDisplay(selectedHotel) : routeDestination;
-  const tripDestinationLabel = selectedHotelDestination || routeDestination;
+  const tripDestinationLabel = selectedHotelDestination || finalDestinationSpot?.name || routeDestination;
+  const destinationCityLabel = getDestinationCityLabel(routeDestination);
   const hasGeneratedTrip = Boolean(tripData || stops.length > 0);
   const hotelEndCoords =
     selectedHotel?.lat != null && selectedHotel?.lng != null
       ? ([selectedHotel.lng, selectedHotel.lat] as [number, number])
       : null;
-  const endCoords = hotelEndCoords ?? mapEndCoords ?? fallbackRoute.destinationCoords;
+  const finalSpotEndCoords = finalDestinationSpot
+    ? ([finalDestinationSpot.lng, finalDestinationSpot.lat] as [number, number])
+    : null;
+  const endCoords = hotelEndCoords ?? finalSpotEndCoords ?? mapEndCoords ?? fallbackRoute.destinationCoords;
   const tripMiles = tripData?.totalMiles ?? estimateTripMiles(startCoords, stops, endCoords);
   const tripDaysLabel = estimateTripDaysLabel(prefs, stops.length, fallbackRoute.durationLabel);
   const routeStartPoint = formatCoordsForRoute(startCoords) || startInput;
-  const googleMapsUrl = routeStartPoint ? buildGoogleMapsUrl(routeStartPoint, stops, tripDestinationLabel) : '#';
-  const appleMapsUrl = routeStartPoint ? buildAppleMapsUrl(routeStartPoint, stops, tripDestinationLabel) : '#';
+  const routeEndPoint = finalDestinationSpot && !selectedHotel
+    ? `${finalDestinationSpot.lat},${finalDestinationSpot.lng}`
+    : tripDestinationLabel;
+  const googleMapsUrl = routeStartPoint ? buildGoogleMapsUrl(routeStartPoint, routeWaypointStops, routeEndPoint) : '#';
+  const appleMapsUrl = routeStartPoint ? buildAppleMapsUrl(routeStartPoint, routeWaypointStops, routeEndPoint) : '#';
   const filteredHomeDestinations =
     homeDestinationFilter === 'all'
       ? WHERE_TO_GO_DESTINATIONS
@@ -3742,23 +3796,52 @@ function HomeContent() {
                       </div>
 
                       <div className="order-3 w-full text-center lg:order-none lg:w-auto">
+                        <p
+                          className="mx-auto mb-2 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-extrabold"
+                          style={{ backgroundColor: 'rgba(88,204,2,0.12)', color: '#46a302' }}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                            <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
+                            <circle cx="12" cy="10" r="2.5" />
+                          </svg>
+                          Destination: {destinationCityLabel}
+                        </p>
                         <h2 className="text-2xl font-extrabold leading-tight sm:text-3xl" style={{ color: '#1B2D45' }}>
                           Roady picked your trip!
                         </h2>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={closePlanner}
-                        className="rounded-full border px-5 py-2.5 text-sm font-extrabold transition-colors"
-                        style={{
-                          borderColor: 'rgba(216,90,48,0.24)',
-                          backgroundColor: 'rgba(216,90,48,0.08)',
-                          color: '#D85A30',
-                        }}
-                      >
-                        Close
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void handleSuggestNewRoute()}
+                          className="inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-extrabold transition-colors hover:bg-[#F8FAF7]"
+                          style={{
+                            borderColor: 'rgba(27,45,69,0.14)',
+                            color: '#1B2D45',
+                          }}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                            <path d="M21 12a9 9 0 0 1-15.5 6.25" />
+                            <path d="M3 12a9 9 0 0 1 15.5-6.25" />
+                            <path d="M18 3v4h-4" />
+                            <path d="M6 21v-4h4" />
+                          </svg>
+                          Suggest new trip
+                        </button>
+                        <button
+                          type="button"
+                          onClick={closePlanner}
+                          className="rounded-full border px-5 py-2.5 text-sm font-extrabold transition-colors"
+                          style={{
+                            borderColor: 'rgba(216,90,48,0.24)',
+                            backgroundColor: 'rgba(216,90,48,0.08)',
+                            color: '#D85A30',
+                          }}
+                        >
+                          Close
+                        </button>
+                      </div>
                     </div>
 
                   </header>
@@ -3836,6 +3919,7 @@ function HomeContent() {
                         <RouteAtGlance
                           startLabel={startInput}
                           stops={stops}
+                          finalDestinationSpot={finalDestinationSpot}
                           selectedHotel={selectedHotel}
                           fallbackDestination={routeDestination}
                           activeStop={activeStop}
