@@ -9,8 +9,8 @@ This library is not stop-only. A place can be:
 Roady should use the same curated place library for both use cases.
 
 Current library audit:
-- 142 total curated places
-- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai, Santa Barbara, Pismo Beach
+- 162 total curated places
+- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai, Santa Barbara, Pismo Beach, Ventura, Solvang / Santa Ynez Valley
 - Partial coverage exists across SoCal Coast, Central Coast, NorCal Coast, Bay Area, Wine Country, Desert, Eastern Sierra, and Sierra Nevada
 - Category mix: nature, scenic, culture, food
 
@@ -23,6 +23,8 @@ Current library audit:
 - [x] Ojai (10 places: Shelf Road Trail, Valley View Preserve and Fox Canyon Trail, Ventura River Preserve, Ojai Valley Trail, Bart's Books, Downtown Ojai Arcade and Libbey Park, Meditation Mount, Ojai Olive Oil Farm, Ojai Meadows Preserve, Rose Valley Falls)
 - [x] Santa Barbara (16 places: Santa Barbara County Courthouse Clock Tower, Santa Barbara Botanic Garden, Ganna Walska Lotusland, Douglas Family Preserve, Arroyo Burro Beach and Boathouse, The Funk Zone, El Presidio de Santa Barbara State Historic Park, Butterfly Beach, Lizard's Mouth, Cold Spring Tavern, Mesa Lane Steps Beach, Mission Rose Garden, Alice Keck Park Memorial Garden, Franceschi Park, Chromatic Gate, Inspiration Point via Jesusita Trail)
 - [x] Pismo Beach (10 places: Pismo Preserve, Pismo State Beach Monarch Butterfly Grove, Dinosaur Caves Park, Eldwayen Ocean Park Tide Pools, Margo Dodd Park, Pismo Beach Pier and Whale Watch Platform, Oceano Dunes and Pismo Dunes Natural Preserve, Oso Flaco Lake Boardwalk, Avila Valley Barn, Pirates Cove and Cave Landing)
+- [x] Ventura (10 places: Serra Cross Park and Grant Park Overlook, Ventura Botanical Gardens, Surfers Point and Ventura Promenade, Ventura Harbor Village, Channel Islands Visitor Center, Mission San Buenaventura, San Buenaventura State Beach and Marina Park, Emma Wood State Beach and River Trail, Downtown Ventura Main Street and Thrift Row, Rincon Point and Bates Beach)
+- [x] Solvang / Santa Ynez Valley (10 places: Old Mission Santa Ines, Elverhoj Museum of History and Art, Hans Christian Andersen Museum and The Book Loft, Solvang Vintage Motorcycle Museum, OstrichLand USA, Sunny Fields Park, Clairmont Lavender Farm, Los Olivos Corner House and Tasting Walk, Nojoqui Falls Park, Gaviota Wind Caves)
 
 ## Partial Coverage In Library
 - [~] Laguna Beach / SoCal Coast (Crystal Cove State Park, Heisler Park Overlook, plus nearby San Diego/Encinitas/La Jolla/San Clemente coastal places)
@@ -52,8 +54,8 @@ Current library audit:
 - [x] Santa Barbara
 - [x] Pismo Beach
 - [~] Laguna Beach
-- [ ] Ventura — next full training target
-- [ ] Solvang
+- [x] Ventura
+- [x] Solvang
 
 ### Bay Area
 - [~] Point Reyes
@@ -64,7 +66,7 @@ Current library audit:
 ### Wine Country
 - [~] Napa Valley / Calistoga
 - [~] Sonoma / Healdsburg
-- [ ] Temecula Wine Country
+- [ ] Temecula Wine Country — next full training target
 
 ### Desert
 - [~] Joshua Tree

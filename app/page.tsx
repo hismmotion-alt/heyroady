@@ -3983,11 +3983,19 @@ function HomeContent() {
                     </div>
 
                     <div
-                      className={`${plannerStep === 'hotelDetails' ? 'mt-3 pb-3 sm:mt-4 sm:pb-4' : plannerStep === 'interests' ? 'mt-5 pb-5 sm:mt-8 sm:pb-8' : 'mt-4 pb-4 sm:mt-8 sm:pb-8'} min-h-0 flex-1 overflow-y-auto px-4 sm:px-8`}
+                      className={`${
+                        plannerStep === 'hotelDetails'
+                          ? 'mt-3 pb-28 sm:mt-4 sm:pb-4'
+                          : plannerStep === 'interests'
+                            ? 'mt-5 pb-28 sm:mt-8 sm:pb-8'
+                            : plannerStep === 'start'
+                              ? 'mt-3 pb-28 sm:mt-8 sm:pb-8'
+                              : 'mt-4 pb-28 sm:mt-8 sm:pb-8'
+                      } min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 sm:px-8`}
                     >
                       {plannerStep === 'start' && (
-                        <div ref={suggestionRef} className="space-y-4">
-                          <div className="rounded-[22px] border border-gray-200 bg-[#FAFAF9] px-4 py-3">
+                        <div ref={suggestionRef} className="space-y-3 sm:space-y-4">
+                          <div className="rounded-[20px] border border-gray-200 bg-[#FAFAF9] px-4 py-2.5 sm:rounded-[22px] sm:py-3">
                             <label
                               htmlFor="planner-start"
                               className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400"
@@ -4041,7 +4049,7 @@ function HomeContent() {
                             )}
                           </div>
 
-                          <div className="rounded-[22px] border border-gray-200 bg-[#FAFAF9] px-4 py-3">
+                          <div className="rounded-[20px] border border-gray-200 bg-[#FAFAF9] px-4 py-2.5 sm:rounded-[22px] sm:py-3">
                             <div className="flex items-center justify-between gap-4">
                               <label
                                 htmlFor="planner-destination"
@@ -4110,7 +4118,7 @@ function HomeContent() {
                             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
                               Popular destinations
                             </p>
-                            <div className="mt-3 flex flex-wrap gap-3">
+                            <div className="mt-2 flex flex-wrap gap-2 sm:mt-3 sm:gap-3">
                               {POPULAR_DESTINATIONS.map((destination) => (
                                 <button
                                   key={destination.id}
@@ -4119,7 +4127,7 @@ function HomeContent() {
                                     setSeedRouteId(destination.fallbackRouteId);
                                     void applyDestinationSelection(destination.name);
                                   }}
-                                  className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:border-[#1B2D45] hover:text-[#1B2D45]"
+                                  className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:border-[#1B2D45] hover:text-[#1B2D45] sm:px-4 sm:py-2 sm:text-sm"
                                 >
                                   {destination.name}
                                 </button>

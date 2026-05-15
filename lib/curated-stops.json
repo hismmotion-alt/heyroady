@@ -1561,6 +1561,226 @@
       "tags": ["sea cave", "cliff views", "Avila", "short hike"],
       "description": "A rugged bluff and cove area near Avila Beach with cave-like rock openings, coastal views, and a short walk to dramatic overlooks. It is more adventurous than the main Avila waterfront.",
       "tip": "This area has steep edges, informal paths, and a clothing-optional beach nearby, so route it carefully based on the group. Avoid after rain or in high wind."
+    },
+    {
+      "name": "Serra Cross Park and Grant Park Overlook",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2850,
+      "lng": -119.2975,
+      "category": "scenic",
+      "tags": ["viewpoint", "history", "sunset", "Channel Islands views"],
+      "description": "A hilltop landmark above downtown Ventura with a historic cross site, city views, coastline, and Channel Islands backdrop. It is the fastest way to understand Ventura's setting between mountains and sea.",
+      "tip": "Go near golden hour if the weather is clear, but expect wind. Parking is limited near the top; combine it with Ventura Botanical Gardens or downtown rather than treating it as a long stop."
+    },
+    {
+      "name": "Ventura Botanical Gardens",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2841,
+      "lng": -119.2994,
+      "category": "nature",
+      "tags": ["botanical garden", "hiking", "views", "Mediterranean plants"],
+      "description": "A hillside garden above Ventura with walking paths, Mediterranean-climate plantings, and wide views over downtown, the pier, and the Channel Islands. It feels like a garden and a light hike at the same time.",
+      "tip": "Check current hours and admission before routing travelers there. The trails are exposed, so bring water and sun protection even though it is close to downtown."
+    },
+    {
+      "name": "Surfers Point and Ventura Promenade",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2750,
+      "lng": -119.3038,
+      "category": "scenic",
+      "tags": ["surfing", "beach walk", "pier", "sunset"],
+      "description": "A classic Ventura beachfront stretch where the promenade, pier, and Surfers Point meet. It is ideal for watching surfers, walking the coast, and getting the laid-back beach-town feel without overplanning.",
+      "tip": "Walk from the pier toward Surfers Point instead of moving the car. Wind can be strong in the afternoon, while mornings are usually calmer for a beach walk."
+    },
+    {
+      "name": "Ventura Harbor Village",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2472,
+      "lng": -119.2650,
+      "category": "food",
+      "tags": ["harbor", "seafood", "shops", "island gateway"],
+      "description": "A working harbor and visitor village with seafood, boat views, rentals, shops, and access to Channel Islands excursions. It works well for families or as a practical pre/post-island stop.",
+      "tip": "Pair it with Marina Park or an Island Packers departure. If travelers want food, build in extra time because harbor parking and restaurant waits can fluctuate on weekends."
+    },
+    {
+      "name": "Channel Islands Visitor Center",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2478,
+      "lng": -119.2664,
+      "category": "culture",
+      "tags": ["national park", "marine life", "family-friendly", "harbor"],
+      "description": "The mainland visitor center for Channel Islands National Park, with exhibits, film, tidepool and kelp forest context, and practical information for the islands offshore.",
+      "tip": "Use it even if travelers are not taking a boat; it helps explain why the islands shape Ventura's coast. Check film times and ranger desk hours before timing a short visit."
+    },
+    {
+      "name": "Mission San Buenaventura",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2803,
+      "lng": -119.2999,
+      "category": "culture",
+      "tags": ["mission history", "downtown", "architecture", "gardens"],
+      "description": "The ninth California mission and the last founded by Junipero Serra, set in walkable downtown Ventura with a church, garden, museum context, and deep local history.",
+      "tip": "Pair it with downtown Main Street, the Museum of Ventura County, or Serra Cross. Check service and museum hours before routing visitors into the interior."
+    },
+    {
+      "name": "San Buenaventura State Beach and Marina Park",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2575,
+      "lng": -119.2744,
+      "category": "nature",
+      "tags": ["state beach", "family-friendly", "beach walk", "picnic"],
+      "description": "A long sandy beach south of the pier with room for beach walks, picnic time, bike path access, and family-friendly park space near Marina Park.",
+      "tip": "Use Marina Park for families who want easy bathrooms, grass, and harbor proximity. For a longer walk, connect north toward the pier or south along quieter sand."
+    },
+    {
+      "name": "Emma Wood State Beach and River Trail",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2905,
+      "lng": -119.3362,
+      "category": "nature",
+      "tags": ["state beach", "birding", "river mouth", "camping"],
+      "description": "A more open and less polished beach north of Ventura where the Ventura River reaches the ocean, with birding, rugged shoreline, and a different feel from the pier-area beaches.",
+      "tip": "Check access and campground status before routing; winter storms can affect beach and road conditions. Good for travelers who prefer wilder coast over boardwalk energy."
+    },
+    {
+      "name": "Downtown Ventura Main Street and Thrift Row",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.2809,
+      "lng": -119.2928,
+      "category": "culture",
+      "tags": ["downtown", "shops", "thrifting", "local food"],
+      "description": "Ventura's walkable downtown core mixes historic storefronts, thrift shops, coffee, restaurants, galleries, and the relaxed local rhythm that comes up repeatedly in social and community recommendations.",
+      "tip": "Park once and wander Main Street rather than chasing one exact storefront. It pairs naturally with the Mission, Museum of Ventura County, or a sunset run up to Serra Cross."
+    },
+    {
+      "name": "Rincon Point and Bates Beach",
+      "city": "Ventura",
+      "region": "Ventura Coast",
+      "lat": 34.3769,
+      "lng": -119.4838,
+      "category": "scenic",
+      "tags": ["surf spot", "beach", "coastal drive", "Carpinteria"],
+      "description": "A legendary surf area near the Ventura-Santa Barbara county line, with Bates Beach access, coastal highway views, and a quieter road-trip edge between Ventura and Carpinteria.",
+      "tip": "Best for watching surf or stretching legs along the coast, not for guaranteed swimming. Check parking and tides, and avoid crowding surfers' access points on good swell days."
+    },
+    {
+      "name": "Old Mission Santa Ines",
+      "city": "Solvang",
+      "region": "Santa Ynez Valley",
+      "lat": 34.5942,
+      "lng": -120.1367,
+      "category": "culture",
+      "tags": ["mission history", "gardens", "valley views", "architecture"],
+      "description": "An 1804 Spanish mission on a rise above Solvang, with a church, museum rooms, gardens, and views across the Santa Ynez Valley. It adds a deeper historical layer beyond the Danish storefronts.",
+      "tip": "Check museum and service hours before routing travelers inside. The exterior and valley view are still worthwhile if the museum is closed."
+    },
+    {
+      "name": "Elverhoj Museum of History and Art",
+      "city": "Solvang",
+      "region": "Santa Ynez Valley",
+      "lat": 34.5930,
+      "lng": -120.1396,
+      "category": "culture",
+      "tags": ["Danish heritage", "museum", "art", "historic home"],
+      "description": "A small museum in a Danish-style former residence, focused on Solvang's Danish-American story, regional art, folk traditions, and local history.",
+      "tip": "Good for travelers who want Solvang context without spending the whole day in shops. Pair it with the Mission or a downtown bakery walk."
+    },
+    {
+      "name": "Hans Christian Andersen Museum and The Book Loft",
+      "city": "Solvang",
+      "region": "Santa Ynez Valley",
+      "lat": 34.5951,
+      "lng": -120.1395,
+      "category": "culture",
+      "tags": ["bookstore", "Danish literature", "museum", "downtown"],
+      "description": "A compact museum above The Book Loft dedicated to Hans Christian Andersen, with displays tied to Danish literature and fairytales in the middle of walkable downtown Solvang.",
+      "tip": "It is a quick but charming stop for book lovers or families. Check current bookstore hours and use it as a quieter break from the busiest pastry-and-souvenir blocks."
+    },
+    {
+      "name": "Solvang Vintage Motorcycle Museum",
+      "city": "Solvang",
+      "region": "Santa Ynez Valley",
+      "lat": 34.5949,
+      "lng": -120.1379,
+      "category": "culture",
+      "tags": ["motorcycles", "museum", "collector", "rainy day"],
+      "description": "A niche collection of rare and vintage motorcycles tucked inside Solvang, offering a completely different angle from the town's Danish-theme attractions.",
+      "tip": "Hours can be limited, so confirm before sending gearheads there. It is best as a short specialty stop, not the main reason to visit Solvang."
+    },
+    {
+      "name": "OstrichLand USA",
+      "city": "Buellton",
+      "region": "Santa Ynez Valley",
+      "lat": 34.6060,
+      "lng": -120.2034,
+      "category": "nature",
+      "tags": ["ostriches", "emu", "family-friendly", "roadside stop"],
+      "description": "A quirky roadside farm between Buellton and Solvang where visitors can see and feed ostriches and emus. It is one of the valley's most memorable quick road-trip stops.",
+      "tip": "Best for families or travelers who enjoy oddball stops. Expect dust, wind, and strong bird energy; follow staff instructions closely while feeding."
+    },
+    {
+      "name": "Sunny Fields Park",
+      "city": "Solvang",
+      "region": "Santa Ynez Valley",
+      "lat": 34.6112,
+      "lng": -120.1340,
+      "category": "nature",
+      "tags": ["family-friendly", "playground", "picnic", "local park"],
+      "description": "A large local park north of town with a wooden castle-style playground, open lawns, picnic areas, and a calmer family break from downtown Solvang crowds.",
+      "tip": "Useful when traveling with kids who need unstructured time. Bring snacks or bakery treats from town and treat it as a reset rather than a sightseeing stop."
+    },
+    {
+      "name": "Clairmont Lavender Farm",
+      "city": "Los Olivos",
+      "region": "Santa Ynez Valley",
+      "lat": 34.6508,
+      "lng": -120.1192,
+      "category": "nature",
+      "tags": ["lavender", "farm", "Los Olivos", "photo-worthy"],
+      "description": "A small lavender farm near Los Olivos with fields, a farm shop, and a slow Santa Ynez Valley pace that pairs well with Solvang or Los Olivos browsing.",
+      "tip": "Lavender bloom is seasonal, usually strongest in late spring and early summer. Check hours before routing because farm shops can vary by season."
+    },
+    {
+      "name": "Los Olivos Corner House and Tasting Walk",
+      "city": "Los Olivos",
+      "region": "Santa Ynez Valley",
+      "lat": 34.6679,
+      "lng": -120.1153,
+      "category": "food",
+      "tags": ["wine tasting", "small town", "boutiques", "walkable"],
+      "description": "Los Olivos' compact downtown is a walkable grid of tasting rooms, boutiques, galleries, and cafes set among old western-style buildings. It gives a Solvang trip a more wine-country village feel.",
+      "tip": "Park once and walk slowly; do not overbook tastings. Non-drinkers can still enjoy shops, galleries, coffee, and the small-town architecture."
+    },
+    {
+      "name": "Nojoqui Falls Park",
+      "city": "Solvang",
+      "region": "Santa Ynez Valley",
+      "lat": 34.5345,
+      "lng": -120.1819,
+      "category": "nature",
+      "tags": ["waterfall", "short hike", "oak woodland", "picnic"],
+      "description": "A county park south of Solvang with oak shade, picnic areas, and a short trail toward a seasonal waterfall tucked into a canyon wall.",
+      "tip": "Check current trail status before routing here because storm damage and closures happen. The waterfall is seasonal, so manage expectations during dry months."
+    },
+    {
+      "name": "Gaviota Wind Caves",
+      "city": "Gaviota",
+      "region": "Santa Ynez Valley",
+      "lat": 34.4788,
+      "lng": -120.2274,
+      "category": "nature",
+      "tags": ["hiking", "sandstone caves", "views", "Gaviota"],
+      "description": "A short but steep hike in Gaviota State Park to honeycombed sandstone formations and coastal-mountain views, adding a rugged outdoor option south of Solvang.",
+      "tip": "This is more exposed and strenuous than it looks from the map. Avoid hot afternoons, bring water, and confirm park access and trail conditions before sending casual travelers."
     }
   ]
 }
