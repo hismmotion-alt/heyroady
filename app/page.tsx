@@ -77,6 +77,7 @@ type SuggestedRouteOption = {
 };
 
 type HomeDestinationFilter = 'all' | WhereToGoTag;
+const HOME_MOBILE_DESTINATIONS_PER_SLIDE = 6;
 
 const WHERE_TO_GO_CATEGORY_CLASSES: Record<WhereToGoDestination['categoryColor'], string> = {
   coral: 'bg-[#EC501E] text-white',
@@ -1736,8 +1737,10 @@ function HomeContent() {
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState('');
   const [homeDestinationFilter, setHomeDestinationFilter] = useState<HomeDestinationFilter>('all');
+  const [homeDestinationSlide, setHomeDestinationSlide] = useState(0);
 
   const suggestionRef = useRef<HTMLDivElement>(null);
+  const homeMobileDestinationsRef = useRef<HTMLDivElement>(null);
   const hotelCheckinInputRef = useRef<HTMLInputElement>(null);
   const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveOnRestoreRef = useRef(false);
@@ -1798,6 +1801,18 @@ function HomeContent() {
   const tripDaysLabel = estimateTripDaysLabel(prefs, stops.length, fallbackRoute.durationLabel);
   const googleMapsUrl = startInput ? buildGoogleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
   const appleMapsUrl = startInput ? buildAppleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
+  const filteredHomeDestinations =
+    homeDestinationFilter === 'all'
+      ? WHERE_TO_GO_DESTINATIONS
+      : WHERE_TO_GO_DESTINATIONS.filter((destination) => destination.tags.includes(homeDestinationFilter));
+  const homeDestinationSlideCount = Math.max(
+    1,
+    Math.ceil(filteredHomeDestinations.length / HOME_MOBILE_DESTINATIONS_PER_SLIDE)
+  );
+  const mobileWhereToGoDestinations = filteredHomeDestinations.slice(
+    homeDestinationSlide * HOME_MOBILE_DESTINATIONS_PER_SLIDE,
+    homeDestinationSlide * HOME_MOBILE_DESTINATIONS_PER_SLIDE + HOME_MOBILE_DESTINATIONS_PER_SLIDE
+  );
 
   function resetSuggestedTrip(clearMessages = true) {
     setTripData(null);
@@ -2027,6 +2042,49 @@ function HomeContent() {
     if (hotelCarouselIndex < visibleHotels.length) return;
     setHotelCarouselIndex(0);
   }, [hotelCarouselIndex, visibleHotels.length]);
+
+  useEffect(() => {
+    setHomeDestinationSlide(0);
+  }, [homeDestinationFilter]);
+
+  useEffect(() => {
+    if (!homeMobileDestinationsRef.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const context = gsap.context(() => {
+      const cards = gsap.utils.toArray<HTMLElement>('[data-home-destination-card]');
+      const images = gsap.utils.toArray<HTMLElement>('[data-home-destination-image]');
+
+      gsap.fromTo(
+        cards,
+        { autoAlpha: 0, x: 34, y: 14, scale: 0.985 },
+        {
+          autoAlpha: 1,
+          x: 0,
+          y: 0,
+          scale: 1,
+          duration: 0.68,
+          ease: 'power3.out',
+          stagger: 0.07,
+          delay: 0.06,
+        }
+      );
+
+      gsap.fromTo(
+        images,
+        { xPercent: 7, scale: 1.08 },
+        {
+          xPercent: 0,
+          scale: 1,
+          duration: 0.92,
+          ease: 'power3.out',
+          stagger: 0.07,
+          delay: 0.1,
+        }
+      );
+    }, homeMobileDestinationsRef);
+
+    return () => context.revert();
+  }, [homeDestinationSlide, homeDestinationFilter]);
 
   useEffect(() => {
     if (!plannerOpen || !selectedHotel || !tripData?.hotels || !MAPBOX_TOKEN) return;
@@ -2763,12 +2821,6 @@ function HomeContent() {
     setPlannerStep(questionSteps[currentIndex - 1]);
   }
 
-  const mobileWhereToGoDestinations = (
-    homeDestinationFilter === 'all'
-      ? WHERE_TO_GO_DESTINATIONS
-      : WHERE_TO_GO_DESTINATIONS.filter((destination) => destination.tags.includes(homeDestinationFilter))
-  ).slice(0, 3);
-
   const navLinks = [
     { label: 'Where to go', href: '/where-to-go' },
     { label: 'Blog', href: '/blog' },
@@ -3097,20 +3149,31 @@ function HomeContent() {
             ))}
           </div>
 
-          <div className="mt-5 space-y-5">
+          <div className="mt-5 flex items-center justify-between gap-4">
+            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#EC501E]">
+              Showing {mobileWhereToGoDestinations.length} of {filteredHomeDestinations.length}
+            </p>
+            <p className="text-xs font-extrabold text-[#818395]">
+              {homeDestinationSlide + 1} / {homeDestinationSlideCount}
+            </p>
+          </div>
+
+          <div ref={homeMobileDestinationsRef} className="mt-4 grid gap-4">
             {mobileWhereToGoDestinations.map((destination) => (
               <button
                 key={destination.id}
                 type="button"
                 onClick={() => openPlannerForDestination(destination)}
-                className="group block w-full overflow-hidden rounded-[26px] border border-[#E6E8EF] bg-white text-left shadow-[0_14px_34px_rgba(20,16,70,0.08)] transition-all duration-300 active:scale-[0.99]"
+                className="group block min-h-[318px] w-full overflow-hidden rounded-[22px] border border-[#E6E8EF] bg-white text-left shadow-[0_14px_34px_rgba(20,16,70,0.08)] transition-all duration-300 active:scale-[0.99]"
+                data-home-destination-card
               >
-                <div className="relative h-[178px] overflow-hidden">
+                <div className="relative h-[132px] overflow-hidden">
                   <img
                     src={destination.image}
                     alt={destination.name}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
+                    data-home-destination-image
                   />
                   <span
                     className={`absolute left-4 top-4 rounded-full px-3 py-1.5 text-xs font-extrabold shadow-sm ${WHERE_TO_GO_CATEGORY_CLASSES[destination.categoryColor]}`}
@@ -3118,25 +3181,22 @@ function HomeContent() {
                     {destination.category}
                   </span>
                 </div>
-                <div className="p-5">
-                  <h3 className="text-[24px] font-extrabold leading-tight text-[#141046]">
+                <div className="flex min-h-[186px] flex-col p-4">
+                  <h3 className="text-[21px] font-extrabold leading-tight text-[#141046]">
                     {destination.name}
                   </h3>
-                  <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#6F7285]">
+                  <p className="mt-2 flex items-center gap-2 text-sm font-medium text-[#6F7285]">
                     <svg className="h-4 w-4 text-[#141046]" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24">
                       <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
                       <circle cx="12" cy="10" r="2.5" />
                     </svg>
                     {destination.region}
                   </p>
-                  <p className="mt-3 text-[15px] font-medium leading-7 text-[#6F7285]">
+                  <p className="mt-3 line-clamp-3 flex-1 text-[14px] font-medium leading-6 text-[#6F7285]">
                     {destination.description}
                   </p>
-                  <div className="mt-5 flex items-center justify-between gap-4">
-                    <span className="text-sm font-extrabold text-[#EC501E]">
-                      {destination.stopCount} stops
-                    </span>
-                    <span className="rounded-full border border-[#DDE1EA] px-5 py-2.5 text-sm font-extrabold text-[#141046]">
+                  <div className="mt-4 flex justify-end">
+                    <span className="rounded-full border border-[#DDE1EA] px-4 py-2 text-sm font-extrabold text-[#141046]">
                       Plan this trip
                     </span>
                   </div>
@@ -3144,6 +3204,43 @@ function HomeContent() {
               </button>
             ))}
           </div>
+
+          {homeDestinationSlideCount > 1 && (
+            <div className="mt-5 space-y-4">
+              <div className="flex items-center justify-center gap-2">
+                {Array.from({ length: homeDestinationSlideCount }).map((_, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => setHomeDestinationSlide(index)}
+                    aria-label={`Show mobile destination slide ${index + 1}`}
+                    className={`h-2.5 rounded-full transition-all ${
+                      homeDestinationSlide === index ? 'w-8 bg-[#25AB45]' : 'w-2.5 bg-[#DDE1EA]'
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setHomeDestinationSlide((current) => Math.max(0, current - 1))}
+                  disabled={homeDestinationSlide === 0}
+                  className="inline-flex h-12 flex-1 items-center justify-center rounded-full border border-[#DDE1EA] bg-white px-5 text-sm font-extrabold text-[#141046] transition-all disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHomeDestinationSlide((current) => Math.min(homeDestinationSlideCount - 1, current + 1))}
+                  disabled={homeDestinationSlide === homeDestinationSlideCount - 1}
+                  className="inline-flex h-12 flex-1 items-center justify-center rounded-full bg-[#25AB45] px-5 text-sm font-extrabold text-white shadow-[0_16px_34px_rgba(37,171,69,0.16)] transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
