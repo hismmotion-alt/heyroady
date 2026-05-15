@@ -9,8 +9,8 @@ This library is not stop-only. A place can be:
 Roady should use the same curated place library for both use cases.
 
 Current library audit:
-- 86 total curated places
-- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove
+- 116 total curated places
+- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai
 - Partial coverage exists across SoCal Coast, Central Coast, NorCal Coast, Bay Area, Wine Country, Desert, Eastern Sierra, and Sierra Nevada
 - Category mix: nature, scenic, culture, food
 
@@ -18,6 +18,9 @@ Current library audit:
 - [x] Big Sur (9 places: Bixby Creek Bridge, McWay Falls, Pfeiffer Beach, Partington Cove, Calla Lily Valley, Limekiln State Park, Sand Dollar Beach, Point Sur State Historic Park, Salmon Creek Falls)
 - [x] Carmel-by-the-Sea (10 places: Point Lobos State Natural Reserve, China Cove and Bird Island Trail, Carmel Beach and Scenic Road Walkway, Carmel Mission Basilica, Tor House and Hawk Tower, Mission Trail Nature Preserve, Carmel River State Beach, Carmel Courtyards and Secret Passageways, Hugh Comstock Fairytale Cottages, Garrapata State Park and Soberanes Point)
 - [x] Monterey / Pacific Grove (10 places: Monterey Bay Coastal Recreation Trail, Cannery Row Historic Waterfront, Pacific Biological Laboratories, Monterey State Historic Park and Path of History, Old Fisherman's Wharf and Custom House Plaza, San Carlos Beach and Breakwater Cove, Asilomar State Beach and Coast Trail, Point Pinos Lighthouse, Monarch Grove Sanctuary, Lovers Point Park)
+- [x] Santa Cruz (10 places: Natural Bridges State Beach and Monarch Grove, Wilder Ranch Coast Bluffs, West Cliff Drive and Steamer Lane, Seymour Marine Discovery Center and Coastal Campus, UC Santa Cruz Arboretum and Botanic Garden, Henry Cowell Redwoods Old-Growth Loop, Roaring Camp Railroads, The Forest of Nisene Marks, Capitola Village and Venetian Court, Shark Fin Cove)
+- [x] Half Moon Bay (10 places: Pillar Point Bluff and Mavericks Overlook, Fitzgerald Marine Reserve, Pillar Point Harbor and Princeton-by-the-Sea, Half Moon Bay Coastside Trail, Cowell Ranch State Beach, Poplar Beach and Wavecrest Bluffs, Main Street Half Moon Bay, Harley Farms Goat Dairy, Devil's Slide Trail, Purisima Creek Redwoods Preserve)
+- [x] Ojai (10 places: Shelf Road Trail, Valley View Preserve and Fox Canyon Trail, Ventura River Preserve, Ojai Valley Trail, Bart's Books, Downtown Ojai Arcade and Libbey Park, Meditation Mount, Ojai Olive Oil Farm, Ojai Meadows Preserve, Rose Valley Falls)
 
 ## Partial Coverage In Library
 - [~] Laguna Beach / SoCal Coast (Crystal Cove State Park, Heisler Park Overlook, plus nearby San Diego/Encinitas/La Jolla/San Clemente coastal places)
@@ -34,17 +37,17 @@ Current library audit:
 ### Central & Northern Coast
 - [x] Carmel-by-the-Sea
 - [x] Monterey
-- [ ] Santa Cruz — next full training target
-- [ ] Half Moon Bay
+- [x] Santa Cruz
+- [x] Half Moon Bay
 - [~] Bodega Bay
 - [~] Mendocino
 - [~] Fort Bragg
 - [ ] Eureka / Humboldt Coast
-- [ ] Ojai
+- [x] Ojai
 
 ### Southern California Coast
 - [~] Malibu
-- [ ] Santa Barbara
+- [ ] Santa Barbara — next full training target
 - [ ] Pismo Beach
 - [~] Laguna Beach
 - [ ] Ventura
