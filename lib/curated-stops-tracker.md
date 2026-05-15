@@ -9,8 +9,8 @@ This library is not stop-only. A place can be:
 Roady should use the same curated place library for both use cases.
 
 Current library audit:
-- 178 total curated places
-- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai, Santa Barbara, Pismo Beach, Ventura, Solvang / Santa Ynez Valley, Temecula Wine Country
+- 208 total curated places
+- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai, Santa Barbara, Pismo Beach, Ventura, Solvang / Santa Ynez Valley, Temecula Wine Country, Palm Springs, Death Valley, Anza-Borrego Desert / Borrego Springs
 - Partial coverage exists across SoCal Coast, Central Coast, NorCal Coast, Bay Area, Wine Country, Desert, Eastern Sierra, and Sierra Nevada
 - Category mix: nature, scenic, culture, food
 
@@ -26,6 +26,9 @@ Current library audit:
 - [x] Ventura (10 places: Serra Cross Park and Grant Park Overlook, Ventura Botanical Gardens, Surfers Point and Ventura Promenade, Ventura Harbor Village, Channel Islands Visitor Center, Mission San Buenaventura, San Buenaventura State Beach and Marina Park, Emma Wood State Beach and River Trail, Downtown Ventura Main Street and Thrift Row, Rincon Point and Bates Beach)
 - [x] Solvang / Santa Ynez Valley (10 places: Old Mission Santa Ines, Elverhoj Museum of History and Art, Hans Christian Andersen Museum and The Book Loft, Solvang Vintage Motorcycle Museum, OstrichLand USA, Sunny Fields Park, Clairmont Lavender Farm, Los Olivos Corner House and Tasting Walk, Nojoqui Falls Park, Gaviota Wind Caves)
 - [x] Temecula Wine Country (16 places: Briar Rose Winery, Doffo Winery and MotoDoffo Collection, Monte De Oro Winery Barrel Cellar, Europa Village Gardens, Somerset Vineyard and Winery, Old Town Temecula and Thompson & Twain, Temecula Olive Oil Company Tasting Room, Sugarplum Zoo and Chocolates, Lake Skinner Recreation Area, Santa Rosa Plateau Ecological Reserve, Mount Palomar Winery Secret Garden, Callaway Vineyard and Winery Hilltop Views, Thornton Winery Champagne Jazz Patio, Akash Winery Sunset Patio, Vail Lake Resort and Vailocity Bike Park, Pennypickle's Workshop)
+- [x] Palm Springs (10 places: Moorten Botanical Garden and Cactarium, Tahquitz Canyon Waterfall Trail, Indian Canyons Palm Oasis Trails, Palm Springs Aerial Tramway, Palm Springs Visitor Center Tramway Gas Station, Architecture and Design Center, Agua Caliente Cultural Plaza and Museum, Palm Springs Windmill Tours, Sunnylands Center and Gardens, Frey House II)
+- [x] Death Valley (10 places: Badwater Basin Salt Flats, Zabriskie Point, Artists Palette and Artists Drive, Mesquite Flat Sand Dunes, Dantes View, Golden Canyon and Red Cathedral, Mosaic Canyon Narrows, Natural Bridge Canyon, Ubehebe Crater, Twenty Mule Team Canyon)
+- [x] Anza-Borrego Desert / Borrego Springs (10 places: Anza-Borrego Desert State Park Visitor Center, Borrego Palm Canyon Oasis Trail, Galleta Meadows Sky Art Sculptures, Fonts Point Badlands Overlook, The Slot Canyon, Hellhole Canyon and Maidenhair Falls, Cactus Loop Trail at Yaqui Pass, Little Blair Valley Pictograph Trail, Calcite Mine Road and Slot Canyons, Borrego Springs Dark Sky Viewing)
 
 ## Partial Coverage In Library
 - [~] Laguna Beach / SoCal Coast (Crystal Cove State Park, Heisler Park Overlook, plus nearby San Diego/Encinitas/La Jolla/San Clemente coastal places)
@@ -71,10 +74,10 @@ Current library audit:
 
 ### Desert
 - [~] Joshua Tree
-- [ ] Palm Springs — next full training target
-- [ ] Death Valley
-- [ ] Anza-Borrego Desert / Borrego Springs
-- [ ] Trona Pinnacles
+- [x] Palm Springs
+- [x] Death Valley
+- [x] Anza-Borrego Desert / Borrego Springs
+- [ ] Trona Pinnacles — next full training target
 
 ### Sierra Nevada & Mountains
 - [~] Yosemite (full coverage beyond Tunnel View)
