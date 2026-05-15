@@ -3646,7 +3646,7 @@ function HomeContent() {
 
           <div className="relative flex h-full w-full items-end justify-center sm:items-center sm:p-4">
             <div
-              className={`relative h-full w-full overflow-hidden bg-[#F3F4F2] shadow-[0_36px_120px_rgba(27,45,69,0.24)] transition-all duration-300 sm:rounded-[34px] ${
+              className={`relative h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[#F3F4F2] shadow-[0_36px_120px_rgba(27,45,69,0.24)] transition-all duration-300 sm:h-full sm:max-h-[calc(100dvh-2rem)] sm:rounded-[34px] ${
                 plannerStep === 'results' ? 'sm:max-w-[1480px]' : 'sm:max-w-7xl'
               } ${
                 plannerVisible ? 'translate-y-0 scale-100 opacity-100' : 'translate-y-8 scale-[0.98] opacity-0'
@@ -3925,11 +3925,11 @@ function HomeContent() {
                   </div>
                 </div>
               ) : (
-              <div className="flex h-full min-h-0 flex-col xl:flex-row">
+              <div className="flex h-full min-h-0 flex-col overflow-hidden xl:flex-row">
                 <aside
-                  className="min-h-0 w-full flex-shrink-0 bg-white xl:w-[42%] xl:max-w-[560px]"
+                  className="flex h-full min-h-0 w-full flex-1 flex-shrink-0 flex-col overflow-hidden bg-white xl:w-[42%] xl:max-w-[560px]"
                 >
-                  <div className="flex h-full min-h-0 flex-col">
+                  <div className="flex h-full min-h-0 flex-col overflow-hidden">
                     <div className="flex items-center justify-between px-4 pt-4 pb-3 sm:px-8 sm:pt-6 sm:pb-4">
                       <img src="/roady-logo.png" alt="Roady" style={{ height: 38, width: 'auto' }} />
                       <button
@@ -3991,7 +3991,7 @@ function HomeContent() {
                             : plannerStep === 'start'
                               ? 'mt-3 pb-28 sm:mt-8 sm:pb-8'
                               : 'mt-4 pb-28 sm:mt-8 sm:pb-8'
-                      } min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 sm:px-8`}
+                      } min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 [-webkit-overflow-scrolling:touch] sm:px-8`}
                     >
                       {plannerStep === 'start' && (
                         <div ref={suggestionRef} className="space-y-3 sm:space-y-4">
@@ -4532,7 +4532,7 @@ function HomeContent() {
 
                     {plannerStep !== 'generating' && plannerStep !== 'save' && plannerStep !== 'saved' && (
                       <div
-                        className={`${plannerStep === 'hotelDetails' ? 'py-3' : 'py-5'} border-t border-gray-100 px-6 sm:px-8`}
+                        className={`${plannerStep === 'hotelDetails' ? 'py-3' : 'py-5'} flex-shrink-0 border-t border-gray-100 px-6 sm:px-8`}
                       >
                         <div className="flex items-center gap-3">
                           <button
@@ -4573,7 +4573,7 @@ function HomeContent() {
                     )}
 
                     {plannerStep === 'save' && (
-                      <div className="border-t border-gray-100 px-6 py-5 sm:px-8">
+                      <div className="flex-shrink-0 border-t border-gray-100 px-6 py-5 sm:px-8">
                         <button
                           type="button"
                           onClick={handleBack}
