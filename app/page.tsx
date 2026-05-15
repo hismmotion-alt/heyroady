@@ -2897,6 +2897,49 @@ function HomeContent() {
     }
   }
 
+  async function handleUnsaveTrip() {
+    if (!savedTripId) return;
+
+    setSaving(true);
+    setSaveMessage('');
+
+    try {
+      const response = await fetch('/api/save-trip', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: savedTripId }),
+      });
+
+      if (response.status === 401) {
+        persistPlannerState(false);
+        router.push('/login?next=/');
+        return;
+      }
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || 'Unable to remove saved trip right now.');
+      }
+
+      setSavedTripId(null);
+      setSaveMessage('Trip removed from saved trips.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to remove saved trip right now.';
+      setSaveMessage(message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleToggleSaveTrip() {
+    if (tripSaved) {
+      await handleUnsaveTrip();
+      return;
+    }
+
+    await handleSaveTrip(false);
+  }
+
   async function handleCopyLink() {
     if (!startInput.trim()) return;
 
@@ -3787,7 +3830,7 @@ function HomeContent() {
                         <button
                           type="button"
                           onClick={handleBack}
-                          className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-extrabold transition-colors hover:text-[#1B2D45]"
+                          className="hidden items-center gap-2 rounded-full border border-gray-200 bg-white px-4 py-2.5 text-sm font-extrabold transition-colors hover:text-[#1B2D45] sm:inline-flex"
                           style={{ color: '#1B2D45' }}
                         >
                           <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
@@ -3796,6 +3839,29 @@ function HomeContent() {
                           Back
                         </button>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!user) router.push('/login?next=/');
+                        }}
+                        className="inline-flex h-11 items-center justify-center rounded-full border border-gray-200 bg-white px-4 text-sm font-extrabold text-[#1B2D45] shadow-sm sm:hidden"
+                        aria-label={user ? 'Profile' : 'Sign in'}
+                      >
+                        {user?.user_metadata?.avatar_url ? (
+                          <img
+                            src={user.user_metadata.avatar_url}
+                            alt="Profile"
+                            className="h-9 w-9 rounded-full object-cover"
+                          />
+                        ) : user ? (
+                          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EFFFF4] text-sm font-extrabold text-[#13A85B]">
+                            {user.email?.[0]?.toUpperCase() ?? 'R'}
+                          </span>
+                        ) : (
+                          'Sign in'
+                        )}
+                      </button>
 
                       <div className="order-3 w-full text-center lg:order-none lg:w-auto">
                         <p
@@ -3813,11 +3879,23 @@ function HomeContent() {
                         </h2>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="order-4 flex w-full items-center justify-center gap-2 sm:order-none sm:w-auto">
+                        <button
+                          type="button"
+                          onClick={closePlanner}
+                          className="order-1 rounded-full border px-5 py-2.5 text-sm font-extrabold transition-colors sm:order-2"
+                          style={{
+                            borderColor: 'rgba(216,90,48,0.24)',
+                            backgroundColor: 'rgba(216,90,48,0.08)',
+                            color: '#D85A30',
+                          }}
+                        >
+                          Close
+                        </button>
                         <button
                           type="button"
                           onClick={() => void handleSuggestNewRoute()}
-                          className="inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-extrabold transition-colors hover:bg-[#F8FAF7]"
+                          className="order-2 inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-extrabold transition-colors hover:bg-[#F8FAF7] sm:order-1"
                           style={{
                             borderColor: 'rgba(27,45,69,0.14)',
                             color: '#1B2D45',
@@ -3830,18 +3908,6 @@ function HomeContent() {
                             <path d="M6 21v-4h4" />
                           </svg>
                           Suggest new trip
-                        </button>
-                        <button
-                          type="button"
-                          onClick={closePlanner}
-                          className="rounded-full border px-5 py-2.5 text-sm font-extrabold transition-colors"
-                          style={{
-                            borderColor: 'rgba(216,90,48,0.24)',
-                            backgroundColor: 'rgba(216,90,48,0.08)',
-                            color: '#D85A30',
-                          }}
-                        >
-                          Close
                         </button>
                       </div>
                     </div>
@@ -3947,12 +4013,15 @@ function HomeContent() {
                               />
                               <button
                                 type="button"
-                                onClick={() => void handleSaveTrip(false)}
-                                disabled={saving || tripSaved || !canProceed('results')}
+                                onClick={() => void handleToggleSaveTrip()}
+                                disabled={saving || !canProceed('results')}
                                 className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                                 style={{ backgroundColor: '#FF4E18' }}
                               >
-                                {saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save this trip'}
+                                <svg className="h-4 w-4" viewBox="0 0 24 24" fill={tripSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+                                </svg>
+                                {saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save trip'}
                               </button>
                             </div>
                           </div>
@@ -4048,12 +4117,15 @@ function HomeContent() {
                           />
                           <button
                             type="button"
-                            onClick={() => void handleSaveTrip(false)}
-                            disabled={saving || tripSaved || !canProceed('results')}
+                            onClick={() => void handleToggleSaveTrip()}
+                            disabled={saving || !canProceed('results')}
                             className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                             style={{ backgroundColor: '#FF4E18' }}
                           >
-                            {saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save this trip'}
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill={tripSaved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
+                            </svg>
+                            {saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save trip'}
                           </button>
                         </div>
                         <p className="mt-3 text-center text-xs font-semibold text-gray-400">
@@ -4592,9 +4664,9 @@ function HomeContent() {
                               kind="copy"
                             />
                             <ShareActionButton
-                              onClick={() => void handleSaveTrip(false)}
-                              disabled={saving || tripSaved}
-                              label={saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save'}
+                              onClick={() => void handleToggleSaveTrip()}
+                              disabled={saving}
+                              label={saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save trip'}
                               sublabel={
                                 tripSaved
                                   ? 'Saved to your Roady account.'
