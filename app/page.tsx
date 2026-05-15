@@ -14,7 +14,6 @@ import type { User } from '@supabase/supabase-js';
 import {
   PLANNER_ROUTE_DEFINITIONS,
   PLANNER_ROUTE_ORDER,
-  POPULAR_STARTS,
   type PlannerRouteKey,
   type PlannerStop,
   type StartRegion,
@@ -66,6 +65,8 @@ type PlannerPreferences = {
   numberOfStops: string;
 };
 
+type DestinationMode = 'custom' | 'roady';
+
 type SuggestedRouteOption = {
   id: string;
   name: string;
@@ -92,6 +93,9 @@ type PersistedPlannerState = {
   destinationPreset?: WhereToGoDestination | null;
   startInput: string;
   startCoords: [number, number] | null;
+  destinationInput?: string;
+  destinationCoords?: [number, number] | null;
+  destinationMode?: DestinationMode;
   prefs: PlannerPreferences;
   routeOptions: SuggestedRouteOption[];
   routeOptionIndex: number;
@@ -583,6 +587,8 @@ const DISTANCE_LABELS: Record<string, string> = Object.fromEntries(
   DISTANCE_OPTIONS.map((option) => [option.id, option.label])
 );
 
+const POPULAR_DESTINATIONS = WHERE_TO_GO_DESTINATIONS.slice(0, 8);
+
 const ROUTE_ICONS: Record<PlannerRouteKey, string> = {
   pch: '🌊',
   parks: '🌲',
@@ -597,7 +603,7 @@ const PLANNER_META: Record<
   start: {
     eyebrow: 'Starting point',
     title: 'Where are you starting from?',
-    description: 'Type an address, pick a popular start, or let Roady detect your current location.',
+    description: 'Add your starting point and destination, or let Roady choose where you should go.',
   },
   group: {
     eyebrow: 'Travel crew',
@@ -986,6 +992,10 @@ function estimateTripDaysLabel(
   stopCount: number,
   fallbackLabel: string
 ) {
+  if (prefs.hotelPreference === 'none') {
+    return '1 day';
+  }
+
   if (prefs.hotelNights) {
     if (prefs.hotelNights.endsWith('+')) {
       const nights = Number.parseInt(prefs.hotelNights, 10);
@@ -1585,16 +1595,11 @@ async function reverseGeocodeLabel(lng: number, lat: number): Promise<string | n
   }
 }
 
-function buildQuestionSteps(prefs: PlannerPreferences, hasDestinationPreset = false): PlannerStep[] {
+function buildQuestionSteps(prefs: PlannerPreferences, hasFixedDestination = false): PlannerStep[] {
   const steps: PlannerStep[] = ['start', 'group'];
-  if (!hasDestinationPreset && prefs.travelGroup === 'family-kids') steps.push('kids');
-  if (hasDestinationPreset) {
-    steps.push('hotelBudget');
-    if (prefs.hotelPreference && prefs.hotelPreference !== 'none') steps.push('hotelDetails');
-    steps.push('enroute', 'spots');
-    return steps;
-  }
-  steps.push('distance', 'interests', 'hotelBudget');
+  if (prefs.travelGroup === 'family-kids') steps.push('kids');
+  if (!hasFixedDestination) steps.push('distance');
+  steps.push('interests', 'hotelBudget');
   if (prefs.hotelPreference && prefs.hotelPreference !== 'none') steps.push('hotelDetails');
   steps.push('enroute', 'spots');
   return steps;
@@ -1718,6 +1723,10 @@ function HomeContent() {
   const [startInput, setStartInput] = useState('');
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [startSuggestions, setStartSuggestions] = useState<string[]>([]);
+  const [destinationInput, setDestinationInput] = useState('');
+  const [destinationCoords, setDestinationCoords] = useState<[number, number] | null>(null);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<string[]>([]);
+  const [destinationMode, setDestinationMode] = useState<DestinationMode>('custom');
   const [prefs, setPrefs] = useState<PlannerPreferences>(DEFAULT_PREFS);
   const [destinationPreset, setDestinationPreset] = useState<WhereToGoDestination | null>(null);
   const [routeOptions, setRouteOptions] = useState<SuggestedRouteOption[]>([]);
@@ -1730,7 +1739,6 @@ function HomeContent() {
   const [hotelCarouselIndex, setHotelCarouselIndex] = useState(0);
   const [user, setUser] = useState<User | null>(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
-  const [didTryAutoLocate, setDidTryAutoLocate] = useState(false);
   const [plannerError, setPlannerError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
   const [saving, setSaving] = useState(false);
@@ -1743,16 +1751,21 @@ function HomeContent() {
   const homeMobileDestinationsRef = useRef<HTMLDivElement>(null);
   const hotelCheckinInputRef = useRef<HTMLInputElement>(null);
   const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const destinationSuggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveOnRestoreRef = useRef(false);
 
   const routeRegion = getStartRegion(startInput, startCoords);
   const fallbackRoute = PLANNER_ROUTE_DEFINITIONS[seedRouteId][routeRegion];
   const activeRouteOption = routeOptions[routeOptionIndex] ?? null;
-  const routeDestination = activeRouteOption?.destination ?? destinationPreset?.name ?? fallbackRoute.destination;
+  const hasFixedDestination = Boolean(destinationPreset || (destinationMode === 'custom' && destinationInput.trim()));
+  const routeDestination =
+    activeRouteOption?.destination ??
+    destinationPreset?.name ??
+    (destinationMode === 'custom' && destinationInput.trim() ? destinationInput.trim() : fallbackRoute.destination);
   const routeName = tripData?.routeName ?? activeRouteOption?.name ?? fallbackRoute.routeName;
   const routeTagline = tripData?.tagline ?? activeRouteOption?.tagline ?? fallbackRoute.tagline;
   const routeSummary = tripData?.destinationDescription ?? destinationPreset?.description ?? fallbackRoute.summary;
-  const questionSteps = buildQuestionSteps(prefs, Boolean(destinationPreset));
+  const questionSteps = buildQuestionSteps(prefs, hasFixedDestination);
   const mapStops = useMemo(() => stops.map(stripPlannerStop), [stops]);
   const progressSteps =
     plannerStep === 'generating' || plannerStep === 'results' || plannerStep === 'save' || plannerStep === 'saved'
@@ -1792,6 +1805,7 @@ function HomeContent() {
   const selectedHotelDestination = selectedHotel ? getHotelDestinationLabel(selectedHotel) : '';
   const tripDestinationDisplay = selectedHotel ? getHotelDestinationDisplay(selectedHotel) : routeDestination;
   const tripDestinationLabel = selectedHotelDestination || routeDestination;
+  const hasGeneratedTrip = Boolean(tripData || stops.length > 0);
   const hotelEndCoords =
     selectedHotel?.lat != null && selectedHotel?.lng != null
       ? ([selectedHotel.lng, selectedHotel.lat] as [number, number])
@@ -1963,6 +1977,7 @@ function HomeContent() {
     const handleClickOutside = (event: MouseEvent) => {
       if (suggestionRef.current && !suggestionRef.current.contains(event.target as Node)) {
         setStartSuggestions([]);
+        setDestinationSuggestions([]);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -1993,6 +2008,9 @@ function HomeContent() {
       setDestinationPreset(parsed.destinationPreset ?? null);
       setStartInput(parsed.startInput);
       setStartCoords(parsed.startCoords);
+      setDestinationInput(parsed.destinationInput ?? parsed.destinationPreset?.name ?? '');
+      setDestinationCoords(parsed.destinationCoords ?? null);
+      setDestinationMode(parsed.destinationMode ?? (parsed.destinationPreset ? 'custom' : 'roady'));
       setPrefs({ ...DEFAULT_PREFS, ...parsed.prefs });
       setRouteOptions(parsed.routeOptions);
       setRouteOptionIndex(parsed.routeOptionIndex);
@@ -2026,12 +2044,6 @@ function HomeContent() {
     // This intentionally runs when the URL changes into the where-to-go launch state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, router]);
-
-  useEffect(() => {
-    if (!plannerOpen || plannerStep !== 'start' || didTryAutoLocate) return;
-    setDidTryAutoLocate(true);
-    void detectCurrentLocation(false);
-  }, [plannerOpen, plannerStep, didTryAutoLocate]);
 
   useEffect(() => {
     if (selectedHotelIndex < visibleHotels.length) return;
@@ -2239,6 +2251,25 @@ function HomeContent() {
     };
   }, [plannerStep, startInput]);
 
+  useEffect(() => {
+    if (plannerStep !== 'start' || destinationMode !== 'custom') return;
+    if (destinationSuggestionTimerRef.current) clearTimeout(destinationSuggestionTimerRef.current);
+
+    if (destinationInput.trim().length < 2) {
+      setDestinationSuggestions([]);
+      return;
+    }
+
+    destinationSuggestionTimerRef.current = setTimeout(async () => {
+      const suggestions = await fetchAddressSuggestions(destinationInput);
+      setDestinationSuggestions(suggestions);
+    }, 220);
+
+    return () => {
+      if (destinationSuggestionTimerRef.current) clearTimeout(destinationSuggestionTimerRef.current);
+    };
+  }, [plannerStep, destinationInput, destinationMode]);
+
   async function detectCurrentLocation(autoAdvance: boolean) {
     if (!navigator.geolocation || detectingLocation) return;
 
@@ -2289,6 +2320,40 @@ function HomeContent() {
     }
   }
 
+  async function applyDestinationSelection(value: string, coords?: [number, number] | null) {
+    resetSuggestedTrip();
+    setDestinationMode('custom');
+    setDestinationPreset(null);
+    setDestinationInput(value);
+    setDestinationSuggestions([]);
+    setPrefs((currentPrefs) => ({ ...currentPrefs, distancePreference: '' }));
+
+    if (coords) {
+      setDestinationCoords(coords);
+      return;
+    }
+
+    try {
+      const resolved = await geocode(value);
+      setDestinationCoords(resolved);
+    } catch {
+      setDestinationCoords(null);
+    }
+  }
+
+  function setRoadyDestinationMode(enabled: boolean) {
+    resetSuggestedTrip();
+    setDestinationMode(enabled ? 'roady' : 'custom');
+    setDestinationPreset(null);
+    setDestinationSuggestions([]);
+    if (enabled) {
+      setDestinationInput('');
+      setDestinationCoords(null);
+    } else {
+      setPrefs((currentPrefs) => ({ ...currentPrefs, distancePreference: '' }));
+    }
+  }
+
   function openPlanner(routeId: PlannerRouteKey = 'pch') {
     setSeedRouteId(routeId);
     setDestinationPreset(null);
@@ -2298,6 +2363,10 @@ function HomeContent() {
     setStartInput('');
     setStartCoords(null);
     setStartSuggestions([]);
+    setDestinationInput('');
+    setDestinationCoords(null);
+    setDestinationSuggestions([]);
+    setDestinationMode('custom');
     setPrefs(DEFAULT_PREFS);
     setTripData(null);
     setRouteOptions([]);
@@ -2311,7 +2380,6 @@ function HomeContent() {
     setSaveMessage('');
     setShareMessage('');
     setSavedTripId(null);
-    setDidTryAutoLocate(false);
     requestAnimationFrame(() => setPlannerVisible(true));
   }
 
@@ -2324,6 +2392,10 @@ function HomeContent() {
     setStartInput('');
     setStartCoords(null);
     setStartSuggestions([]);
+    setDestinationInput(destination.name);
+    setDestinationCoords(null);
+    setDestinationSuggestions([]);
+    setDestinationMode('custom');
     setPrefs(DEFAULT_PREFS);
     setTripData(null);
     setRouteOptions([
@@ -2347,7 +2419,6 @@ function HomeContent() {
     setSaveMessage('');
     setShareMessage('');
     setSavedTripId(null);
-    setDidTryAutoLocate(false);
     requestAnimationFrame(() => setPlannerVisible(true));
   }
 
@@ -2382,6 +2453,9 @@ function HomeContent() {
       destinationPreset,
       startInput,
       startCoords,
+      destinationInput,
+      destinationCoords,
+      destinationMode,
       prefs,
       routeOptions,
       routeOptionIndex,
@@ -2441,11 +2515,14 @@ function HomeContent() {
     const fallbackVariant =
       PLANNER_ROUTE_DEFINITIONS[option.fallbackRouteId ?? seedRouteId][routeRegion];
 
-    let endPoint: [number, number] = fallbackVariant.destinationCoords;
+    const hasCustomDestinationCoords =
+      destinationMode === 'custom' && option.destination === destinationInput.trim() && Boolean(destinationCoords);
+    let endPoint: [number, number] =
+      hasCustomDestinationCoords && destinationCoords ? destinationCoords : fallbackVariant.destinationCoords;
     try {
       endPoint = await geocode(option.destination);
     } catch {
-      endPoint = fallbackVariant.destinationCoords;
+      endPoint = hasCustomDestinationCoords && destinationCoords ? destinationCoords : fallbackVariant.destinationCoords;
     }
 
     setMapEndCoords(endPoint);
@@ -2546,6 +2623,11 @@ function HomeContent() {
       return;
     }
 
+    if (destinationMode === 'custom' && !destinationPreset && !destinationInput.trim()) {
+      setPlannerStep('start');
+      return;
+    }
+
     if (destinationPreset) {
       const option: SuggestedRouteOption = routeOptions[0] ?? {
         id: destinationPreset.slug,
@@ -2555,6 +2637,23 @@ function HomeContent() {
         destination: destinationPreset.name,
         icon: '📍',
         fallbackRouteId: destinationPreset.fallbackRouteId,
+      };
+      await loadTripForRoute(option, [option], 0);
+      return;
+    }
+
+    if (destinationMode === 'custom' && destinationInput.trim()) {
+      const preferredSeed = pickSeedRouteId(prefs, seedRouteId);
+      setSeedRouteId(preferredSeed);
+      const destinationName = destinationInput.trim();
+      const option: SuggestedRouteOption = {
+        id: `custom-${destinationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'destination'}`,
+        name: `${destinationName} Road Trip`,
+        tagline: `A custom Roady route to ${destinationName}.`,
+        via: 'Custom destination',
+        destination: destinationName,
+        icon: '📍',
+        fallbackRouteId: preferredSeed,
       };
       await loadTripForRoute(option, [option], 0);
       return;
@@ -2760,7 +2859,7 @@ function HomeContent() {
   function canProceed(step: PlannerStep) {
     switch (step) {
       case 'start':
-        return Boolean(startInput.trim());
+        return Boolean(startInput.trim() && (destinationMode === 'roady' || destinationPreset || destinationInput.trim()));
       case 'group':
         return Boolean(prefs.travelGroup);
       case 'kids':
@@ -3675,7 +3774,7 @@ function HomeContent() {
 
                         {!shouldShowStayPicker && (
                           <div className="rounded-[24px] border border-[#DDE3EA] bg-white p-4 shadow-[0_10px_30px_rgba(27,45,69,0.05)]">
-                            <div className="grid grid-cols-[0.7fr_1.3fr] gap-3">
+                            <div className="grid gap-3 sm:grid-cols-[0.75fr_1.1fr_1.1fr]">
                               <button
                                 type="button"
                                 onClick={handleBack}
@@ -3684,18 +3783,28 @@ function HomeContent() {
                               >
                                 Back
                               </button>
+                              <a
+                                href={googleMapsUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
+                                style={{ backgroundColor: '#58CC02' }}
+                              >
+                                Open in Maps
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                                  <path d="M14 3h7v7" />
+                                  <path d="M10 14 21 3" />
+                                  <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+                                </svg>
+                              </a>
                               <button
                                 type="button"
-                                onClick={() => setPlannerStep('save')}
-                                disabled={!canProceed('results')}
+                                onClick={() => void handleSaveTrip(false)}
+                                disabled={saving || !canProceed('results')}
                                 className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                                 style={{ backgroundColor: '#FF4E18' }}
                               >
-                                Continue
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
-                                  <path d="M5 12h14" />
-                                  <path d="m13 6 6 6-6 6" />
-                                </svg>
+                                {saving ? 'Saving...' : 'Save this trip'}
                               </button>
                             </div>
                           </div>
@@ -3774,7 +3883,7 @@ function HomeContent() {
                           </div>
                         )}
 
-                        <div className="mt-4 grid grid-cols-[0.7fr_1.3fr] gap-3">
+                        <div className="mt-4 grid gap-3 sm:grid-cols-[0.7fr_1.15fr_1.15fr]">
                           <button
                             type="button"
                             onClick={handleBack}
@@ -3783,18 +3892,28 @@ function HomeContent() {
                           >
                             Back
                           </button>
+                          <a
+                            href={googleMapsUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
+                            style={{ backgroundColor: '#58CC02' }}
+                          >
+                            Open in Maps
+                            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                              <path d="M14 3h7v7" />
+                              <path d="M10 14 21 3" />
+                              <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
+                            </svg>
+                          </a>
                           <button
                             type="button"
-                            onClick={() => setPlannerStep('save')}
-                            disabled={!canProceed('results')}
+                            onClick={() => void handleSaveTrip(false)}
+                            disabled={saving || !canProceed('results')}
                             className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                             style={{ backgroundColor: '#FF4E18' }}
                           >
-                            Save stay & continue
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
-                              <path d="M5 12h14" />
-                              <path d="m13 6 6 6-6 6" />
-                            </svg>
+                            {saving ? 'Saving...' : 'Save this trip'}
                           </button>
                         </div>
                         <p className="mt-3 text-center text-xs font-semibold text-gray-400">
@@ -3867,71 +3986,142 @@ function HomeContent() {
                       className={`${plannerStep === 'hotelDetails' ? 'mt-3 pb-3 sm:mt-4 sm:pb-4' : plannerStep === 'interests' ? 'mt-5 pb-5 sm:mt-8 sm:pb-8' : 'mt-4 pb-4 sm:mt-8 sm:pb-8'} min-h-0 flex-1 overflow-y-auto px-4 sm:px-8`}
                     >
                       {plannerStep === 'start' && (
-                        <div ref={suggestionRef}>
-                          <div className="rounded-[26px] border border-gray-200 bg-[#FAFAF9] p-4">
+                        <div ref={suggestionRef} className="space-y-4">
+                          <div className="rounded-[22px] border border-gray-200 bg-[#FAFAF9] px-4 py-3">
                             <label
                               htmlFor="planner-start"
                               className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400"
                             >
                               Starting point
                             </label>
+                            <div className="mt-2 flex items-center gap-3">
+                              <input
+                                id="planner-start"
+                                value={startInput}
+                                onChange={(event) => {
+                                  resetSuggestedTrip();
+                                  setStartInput(event.target.value);
+                                  setStartCoords(null);
+                                }}
+                                placeholder="Type your location"
+                                className="min-w-0 flex-1 border-0 bg-transparent px-0 text-xl font-extrabold text-[#1B2D45] outline-none placeholder:text-gray-300 sm:text-[22px]"
+                                autoComplete="off"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => void detectCurrentLocation(false)}
+                                className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-[#58CC02] shadow-[0_8px_20px_rgba(27,45,69,0.08)] transition-transform hover:scale-105"
+                                aria-label="Use my current location"
+                                title="Use my current location"
+                              >
+                                {detectingLocation ? (
+                                  <span className="h-5 w-5 rounded-full border-2 border-[#58CC02] border-t-transparent animate-spin" />
+                                ) : (
+                                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+                                    <path d="M12 21s7-4.35 7-11a7 7 0 1 0-14 0c0 6.65 7 11 7 11Z" />
+                                    <circle cx="12" cy="10" r="2.5" />
+                                  </svg>
+                                )}
+                              </button>
+                            </div>
+
+                            {startSuggestions.slice(0, 1).length > 0 && (
+                              <div className="mt-4 overflow-hidden rounded-[18px] border border-gray-200 bg-white">
+                                {startSuggestions.slice(0, 1).map((suggestion) => (
+                                  <button
+                                    key={suggestion}
+                                    type="button"
+                                    onClick={() => void applyStartSelection(suggestion, null, false)}
+                                    className="block w-full px-4 py-3 text-left text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-[#1B2D45]"
+                                  >
+                                    {suggestion}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="rounded-[22px] border border-gray-200 bg-[#FAFAF9] px-4 py-3">
+                            <div className="flex items-center justify-between gap-4">
+                              <label
+                                htmlFor="planner-destination"
+                                className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400"
+                              >
+                                Destination
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setRoadyDestinationMode(destinationMode !== 'roady')}
+                                className={`flex items-center gap-2 rounded-full border-2 px-4 py-2 text-sm font-extrabold shadow-[0_8px_20px_rgba(27,45,69,0.08)] transition-all hover:-translate-y-0.5 ${
+                                  destinationMode === 'roady'
+                                    ? 'border-[#58CC02] bg-[#58CC02] text-white shadow-[0_12px_28px_rgba(88,204,2,0.22)]'
+                                    : 'border-[#1B2D45] bg-white text-[#1B2D45]'
+                                }`}
+                                aria-pressed={destinationMode === 'roady'}
+                              >
+                                <span
+                                  className={`h-5 w-9 rounded-full p-0.5 transition-colors ${
+                                    destinationMode === 'roady' ? 'bg-white/30' : 'bg-[#E5E7EB]'
+                                  }`}
+                                >
+                                  <span
+                                    className={`block h-4 w-4 rounded-full transition-transform ${
+                                      destinationMode === 'roady' ? 'translate-x-4 bg-white' : 'translate-x-0 bg-[#1B2D45]'
+                                    }`}
+                                  />
+                                </span>
+                                Let Roady pick
+                              </button>
+                            </div>
                             <input
-                              id="planner-start"
-                              value={startInput}
+                              id="planner-destination"
+                              value={destinationInput}
                               onChange={(event) => {
                                 resetSuggestedTrip();
-                                setStartInput(event.target.value);
+                                setDestinationMode('custom');
+                                setDestinationPreset(null);
+                                setDestinationInput(event.target.value);
+                                setDestinationCoords(null);
+                                setPrefs((currentPrefs) => ({ ...currentPrefs, distancePreference: '' }));
                               }}
-                              placeholder="Where are you starting from?"
-                              className="mt-3 w-full border-0 bg-transparent px-0 text-2xl font-extrabold text-[#1B2D45] outline-none placeholder:text-gray-300"
+                              placeholder={destinationMode === 'roady' ? 'Roady will choose for you' : 'Where do you want to go?'}
+                              disabled={destinationMode === 'roady'}
+                              className="mt-2 w-full border-0 bg-transparent px-0 text-xl font-extrabold text-[#1B2D45] outline-none placeholder:text-gray-300 disabled:text-gray-300 sm:text-[22px]"
                               autoComplete="off"
                             />
-                          </div>
 
-                          <div className="mt-3 overflow-hidden rounded-[22px] border border-gray-200 bg-white shadow-lg">
-                            {startSuggestions.slice(0, 1).map((suggestion) => (
-                              <button
-                                key={suggestion}
-                                type="button"
-                                onClick={() => void applyStartSelection(suggestion)}
-                                className="block w-full border-b border-gray-100 px-4 py-3 text-left text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-[#1B2D45]"
-                              >
-                                {suggestion}
-                              </button>
-                            ))}
-
-                            <button
-                              type="button"
-                              onClick={() => void detectCurrentLocation(true)}
-                              className="flex w-full items-center justify-between bg-white px-4 py-4 text-left transition-colors hover:bg-gray-50"
-                            >
-                              <div>
-                                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>
-                                  Use my location
-                                </p>
-                                <p className="mt-1 text-xs text-gray-400">
-                                  Autofill your starting point from the device you are on.
-                                </p>
+                            {destinationMode === 'custom' && destinationSuggestions.slice(0, 1).length > 0 && (
+                              <div className="mt-4 overflow-hidden rounded-[18px] border border-gray-200 bg-white">
+                                {destinationSuggestions.slice(0, 1).map((suggestion) => (
+                                  <button
+                                    key={suggestion}
+                                    type="button"
+                                    onClick={() => void applyDestinationSelection(suggestion)}
+                                    className="block w-full px-4 py-3 text-left text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-[#1B2D45]"
+                                  >
+                                    {suggestion}
+                                  </button>
+                                ))}
                               </div>
-                              <span className="text-sm font-bold" style={{ color: '#58CC02' }}>
-                                {detectingLocation ? 'Locating...' : 'Use'}
-                              </span>
-                            </button>
+                            )}
                           </div>
 
-                          <div className="mt-6">
+                          <div>
                             <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
-                              Popular starts
+                              Popular destinations
                             </p>
                             <div className="mt-3 flex flex-wrap gap-3">
-                              {POPULAR_STARTS.map((start) => (
+                              {POPULAR_DESTINATIONS.map((destination) => (
                                 <button
-                                  key={start}
+                                  key={destination.id}
                                   type="button"
-                                  onClick={() => void applyStartSelection(start)}
+                                  onClick={() => {
+                                    setSeedRouteId(destination.fallbackRouteId);
+                                    void applyDestinationSelection(destination.name);
+                                  }}
                                   className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:border-[#1B2D45] hover:text-[#1B2D45]"
                                 >
-                                  {start}
+                                  {destination.name}
                                 </button>
                               ))}
                             </div>
@@ -4394,25 +4584,36 @@ function HomeContent() {
                       <p className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
                         Live trip preview
                       </p>
-                      <p className="mt-1 text-lg font-extrabold" style={{ color: '#1B2D45' }}>
-                        {startInput || 'Choose a starting point'} to {tripDestinationDisplay}
-                      </p>
+                      {hasGeneratedTrip ? (
+                        <p className="mt-1 text-lg font-extrabold" style={{ color: '#1B2D45' }}>
+                          {startInput || 'Choose a starting point'} to {tripDestinationDisplay}
+                        </p>
+                      ) : (
+                        <div className="mt-2 h-5 w-64 rounded-full bg-white/80" />
+                      )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2 justify-end">
-                      <span
-                        className="rounded-full px-3 py-1 text-xs font-bold"
-                        style={{ backgroundColor: 'rgba(27,45,69,0.08)', color: '#1B2D45' }}
-                      >
-                        {tripDaysLabel}
-                      </span>
-                      <span
-                        className="rounded-full px-3 py-1 text-xs font-bold"
-                        style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}
-                      >
-                        {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} {tripDestinationDisplay}
-                      </span>
-                    </div>
+                    {hasGeneratedTrip ? (
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        <span
+                          className="rounded-full px-3 py-1 text-xs font-bold"
+                          style={{ backgroundColor: 'rgba(27,45,69,0.08)', color: '#1B2D45' }}
+                        >
+                          {tripDaysLabel}
+                        </span>
+                        <span
+                          className="rounded-full px-3 py-1 text-xs font-bold"
+                          style={{ backgroundColor: 'rgba(216,90,48,0.08)', color: '#D85A30' }}
+                        >
+                          {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} {tripDestinationDisplay}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        <span className="h-7 w-20 rounded-full bg-white/80" />
+                        <span className="h-7 w-32 rounded-full bg-white/80" />
+                      </div>
+                    )}
                   </div>
 
                   <div className="min-h-0 flex-1 overflow-y-auto p-6 sm:p-8">
@@ -4458,42 +4659,62 @@ function HomeContent() {
                           <p className="text-xs font-bold uppercase tracking-[0.14em] text-gray-400">
                             Trip card
                           </p>
-                          <div className="mt-4">
-                            <p className="text-sm font-bold" style={{ color: '#D85A30' }}>
-                              {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} Suggested route
-                            </p>
-                            <p className="mt-2 text-2xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
-                              {routeName}
-                            </p>
-                            <p className="mt-2 text-sm text-gray-400">{tripDestinationDisplay}</p>
-                            <p className="mt-4 text-sm leading-relaxed text-gray-500">{routeTagline}</p>
-                          </div>
-                          <div className="mt-5 grid grid-cols-3 gap-3">
-                            <div className="rounded-[18px] bg-[#FAFAF9] p-3">
-                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
-                                Days
-                              </p>
-                              <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
-                                {tripDaysLabel}
-                              </p>
+                          {hasGeneratedTrip ? (
+                            <>
+                              <div className="mt-4">
+                                <p className="text-sm font-bold" style={{ color: '#D85A30' }}>
+                                  {activeRouteOption?.icon ?? ROUTE_ICONS[seedRouteId]} Suggested route
+                                </p>
+                                <p className="mt-2 text-2xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                                  {routeName}
+                                </p>
+                                <p className="mt-2 text-sm text-gray-400">{tripDestinationDisplay}</p>
+                                <p className="mt-4 text-sm leading-relaxed text-gray-500">{routeTagline}</p>
+                              </div>
+                              <div className="mt-5 grid grid-cols-3 gap-3">
+                                <div className="rounded-[18px] bg-[#FAFAF9] p-3">
+                                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                                    Days
+                                  </p>
+                                  <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
+                                    {tripDaysLabel}
+                                  </p>
+                                </div>
+                                <div className="rounded-[18px] bg-[#FAFAF9] p-3">
+                                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                                    Miles
+                                  </p>
+                                  <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
+                                    {formatMiles(tripMiles)}
+                                  </p>
+                                </div>
+                                <div className="rounded-[18px] bg-[#FAFAF9] p-3">
+                                  <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
+                                    Stops
+                                  </p>
+                                  <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
+                                    {stops.length || '--'}
+                                  </p>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="mt-5 space-y-4">
+                              <div className="h-4 w-28 rounded-full bg-[#EEF1F4]" />
+                              <div className="h-8 w-full rounded-full bg-[#EEF1F4]" />
+                              <div className="h-4 w-2/3 rounded-full bg-[#EEF1F4]" />
+                              <div className="space-y-2 pt-2">
+                                <div className="h-3 w-full rounded-full bg-[#F1F3F5]" />
+                                <div className="h-3 w-5/6 rounded-full bg-[#F1F3F5]" />
+                                <div className="h-3 w-3/5 rounded-full bg-[#F1F3F5]" />
+                              </div>
+                              <div className="grid grid-cols-3 gap-3 pt-1">
+                                <div className="h-[70px] rounded-[18px] bg-[#FAFAF9]" />
+                                <div className="h-[70px] rounded-[18px] bg-[#FAFAF9]" />
+                                <div className="h-[70px] rounded-[18px] bg-[#FAFAF9]" />
+                              </div>
                             </div>
-                            <div className="rounded-[18px] bg-[#FAFAF9] p-3">
-                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
-                                Miles
-                              </p>
-                              <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
-                                {formatMiles(tripMiles)}
-                              </p>
-                            </div>
-                            <div className="rounded-[18px] bg-[#FAFAF9] p-3">
-                              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-gray-400">
-                                Stops
-                              </p>
-                              <p className="mt-2 text-sm font-extrabold" style={{ color: '#1B2D45' }}>
-                                {stops.length || '--'}
-                              </p>
-                            </div>
-                          </div>
+                          )}
                         </div>
 
                         <div className="rounded-[26px] border border-white/80 bg-white p-5 shadow-sm">
