@@ -51,13 +51,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         {children}
-        {/* Google Analytics GA4 */}
+        {/* Google Analytics GA4 + Google Ads */}
         <Script src="https://www.googletagmanager.com/gtag/js?id=G-WNHQYCWFEK" strategy="afterInteractive" />
         <Script id="ga4" strategy="afterInteractive">{`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', 'G-WNHQYCWFEK');
+          gtag('config', 'AW-18158989061');
         `}</Script>
         <Script id="travelpayouts" strategy="afterInteractive">{`
           (function () {
