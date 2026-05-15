@@ -21,6 +21,15 @@ async function geocodePlace(query: string): Promise<[number, number] | null> {
   }
 }
 
+function parseClientCoords(value: unknown): [number, number] | null {
+  if (!value || typeof value !== 'object') return null;
+  const coords = value as { lat?: unknown; lng?: unknown };
+  const lat = typeof coords.lat === 'number' ? coords.lat : Number(coords.lat);
+  const lng = typeof coords.lng === 'number' ? coords.lng : Number(coords.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return [lat, lng];
+}
+
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -120,7 +129,10 @@ export async function POST(req: Request) {
     let options = await askClaude(client, start, distanceLabel, distanceConstraint, prefLines, excludeDestinations);
 
     // Validate distances using geocoding only when a distance band was supplied.
-    const startCoords = distance ? await geocodePlace(`${start}, California`) : null;
+    const providedStartCoords = parseClientCoords(body.startCoords);
+    const startCoords = distance
+      ? providedStartCoords ?? await geocodePlace(`${start}, California`)
+      : providedStartCoords;
     if (startCoords && distance) {
       // Geocode each destination in parallel
       const destCoords = await Promise.all(

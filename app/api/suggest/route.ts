@@ -23,6 +23,15 @@ async function geocodePlace(query: string): Promise<[number, number] | null> {
   }
 }
 
+function parseClientCoords(value: unknown): [number, number] | null {
+  if (!value || typeof value !== 'object') return null;
+  const coords = value as { lat?: unknown; lng?: unknown };
+  const lat = typeof coords.lat === 'number' ? coords.lat : Number(coords.lat);
+  const lng = typeof coords.lng === 'number' ? coords.lng : Number(coords.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return [lat, lng];
+}
+
 /** Haversine distance in km between two lat/lng points. */
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -378,10 +387,12 @@ export async function POST(req: Request) {
     }
 
     // Geocode start and end in parallel to get real coordinates for sorting + prompt context
-    const [startCoords, endCoords] = await Promise.all([
-      geocodePlace(start),
+    const providedStartCoords = parseClientCoords(body.startCoords);
+    const [geocodedStartCoords, endCoords] = await Promise.all([
+      providedStartCoords ? Promise.resolve(providedStartCoords) : geocodePlace(start),
       geocodePlace(end),
     ]);
+    const startCoords = providedStartCoords ?? geocodedStartCoords;
 
     const preferenceContext = buildPreferenceContext(body);
 

@@ -1551,6 +1551,59 @@ function ShareActionButton({
   );
 }
 
+function MapChoiceButton({
+  googleMapsUrl,
+  appleMapsUrl,
+  open,
+  onToggle,
+}: {
+  googleMapsUrl: string;
+  appleMapsUrl: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
+        style={{ backgroundColor: '#58CC02' }}
+      >
+        Open in Maps
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-[16px] border border-gray-200 bg-white shadow-[0_18px_40px_rgba(27,45,69,0.16)]">
+          <a
+            href={googleMapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block px-4 py-3 text-center text-sm font-extrabold text-[#1B2D45] transition-colors hover:bg-[#F8FAF7]"
+          >
+            Open in Google Maps
+          </a>
+          <a
+            href={appleMapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block border-t border-gray-100 px-4 py-3 text-center text-sm font-extrabold text-[#1B2D45] transition-colors hover:bg-[#F8FAF7]"
+          >
+            Open in Apple Maps
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function formatCoordsForRoute(coords: [number, number] | null) {
+  return coords ? `${coords[1]},${coords[0]}` : '';
+}
+
 function buildGoogleMapsUrl(start: string, stops: PlannerStop[], end: string) {
   const points = [
     encodeURIComponent(start),
@@ -1586,10 +1639,10 @@ async function reverseGeocodeLabel(lng: number, lat: number): Promise<string | n
 
   try {
     const response = await fetch(
-      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&types=place,locality&limit=1`
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${MAPBOX_TOKEN}&types=address,poi,place,locality&limit=1`
     );
     const data = await response.json();
-    return data.features?.[0]?.text ?? data.features?.[0]?.place_name ?? null;
+    return data.features?.[0]?.place_name ?? data.features?.[0]?.text ?? null;
   } catch {
     return null;
   }
@@ -1744,6 +1797,7 @@ function HomeContent() {
   const [saving, setSaving] = useState(false);
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState('');
+  const [mapsMenuOpen, setMapsMenuOpen] = useState(false);
   const [homeDestinationFilter, setHomeDestinationFilter] = useState<HomeDestinationFilter>('all');
   const [homeDestinationSlide, setHomeDestinationSlide] = useState(0);
 
@@ -1813,8 +1867,9 @@ function HomeContent() {
   const endCoords = hotelEndCoords ?? mapEndCoords ?? fallbackRoute.destinationCoords;
   const tripMiles = tripData?.totalMiles ?? estimateTripMiles(startCoords, stops, endCoords);
   const tripDaysLabel = estimateTripDaysLabel(prefs, stops.length, fallbackRoute.durationLabel);
-  const googleMapsUrl = startInput ? buildGoogleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
-  const appleMapsUrl = startInput ? buildAppleMapsUrl(startInput, stops, tripDestinationLabel) : '#';
+  const routeStartPoint = formatCoordsForRoute(startCoords) || startInput;
+  const googleMapsUrl = routeStartPoint ? buildGoogleMapsUrl(routeStartPoint, stops, tripDestinationLabel) : '#';
+  const appleMapsUrl = routeStartPoint ? buildAppleMapsUrl(routeStartPoint, stops, tripDestinationLabel) : '#';
   const filteredHomeDestinations =
     homeDestinationFilter === 'all'
       ? WHERE_TO_GO_DESTINATIONS
@@ -2380,6 +2435,7 @@ function HomeContent() {
     setSaveMessage('');
     setShareMessage('');
     setSavedTripId(null);
+    setMapsMenuOpen(false);
     requestAnimationFrame(() => setPlannerVisible(true));
   }
 
@@ -2419,6 +2475,7 @@ function HomeContent() {
     setSaveMessage('');
     setShareMessage('');
     setSavedTripId(null);
+    setMapsMenuOpen(false);
     requestAnimationFrame(() => setPlannerVisible(true));
   }
 
@@ -2443,6 +2500,7 @@ function HomeContent() {
     setPlannerVisible(false);
     setTimeout(() => {
       setPlannerOpen(false);
+      setMapsMenuOpen(false);
     }, 260);
   }
 
@@ -2546,6 +2604,12 @@ function HomeContent() {
           hotelNights: prefs.hotelNights,
           numberOfEnrouteStops: prefs.numberOfEnrouteStops,
           numberOfStops: prefs.numberOfStops,
+          startCoords: startCoords
+            ? {
+                lat: startCoords[1],
+                lng: startCoords[0],
+              }
+            : null,
         }),
       });
 
@@ -2679,6 +2743,12 @@ function HomeContent() {
           interests: prefs.interests.join(','),
           numberOfEnrouteStops: prefs.numberOfEnrouteStops,
           excludeDestinations,
+          startCoords: startCoords
+            ? {
+                lat: startCoords[1],
+                lng: startCoords[0],
+              }
+            : null,
         }),
       });
 
@@ -3783,20 +3853,12 @@ function HomeContent() {
                               >
                                 Back
                               </button>
-                              <a
-                                href={googleMapsUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
-                                style={{ backgroundColor: '#58CC02' }}
-                              >
-                                Open in Maps
-                                <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
-                                  <path d="M14 3h7v7" />
-                                  <path d="M10 14 21 3" />
-                                  <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
-                                </svg>
-                              </a>
+                              <MapChoiceButton
+                                googleMapsUrl={googleMapsUrl}
+                                appleMapsUrl={appleMapsUrl}
+                                open={mapsMenuOpen}
+                                onToggle={() => setMapsMenuOpen((value) => !value)}
+                              />
                               <button
                                 type="button"
                                 onClick={() => void handleSaveTrip(false)}
@@ -3892,20 +3954,12 @@ function HomeContent() {
                           >
                             Back
                           </button>
-                          <a
-                            href={googleMapsUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90"
-                            style={{ backgroundColor: '#58CC02' }}
-                          >
-                            Open in Maps
-                            <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24">
-                              <path d="M14 3h7v7" />
-                              <path d="M10 14 21 3" />
-                              <path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5" />
-                            </svg>
-                          </a>
+                          <MapChoiceButton
+                            googleMapsUrl={googleMapsUrl}
+                            appleMapsUrl={appleMapsUrl}
+                            open={mapsMenuOpen}
+                            onToggle={() => setMapsMenuOpen((value) => !value)}
+                          />
                           <button
                             type="button"
                             onClick={() => void handleSaveTrip(false)}
