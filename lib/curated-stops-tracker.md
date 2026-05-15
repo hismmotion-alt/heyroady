@@ -9,8 +9,8 @@ This library is not stop-only. A place can be:
 Roady should use the same curated place library for both use cases.
 
 Current library audit:
-- 116 total curated places
-- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai
+- 142 total curated places
+- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai, Santa Barbara, Pismo Beach
 - Partial coverage exists across SoCal Coast, Central Coast, NorCal Coast, Bay Area, Wine Country, Desert, Eastern Sierra, and Sierra Nevada
 - Category mix: nature, scenic, culture, food
 
@@ -21,6 +21,8 @@ Current library audit:
 - [x] Santa Cruz (10 places: Natural Bridges State Beach and Monarch Grove, Wilder Ranch Coast Bluffs, West Cliff Drive and Steamer Lane, Seymour Marine Discovery Center and Coastal Campus, UC Santa Cruz Arboretum and Botanic Garden, Henry Cowell Redwoods Old-Growth Loop, Roaring Camp Railroads, The Forest of Nisene Marks, Capitola Village and Venetian Court, Shark Fin Cove)
 - [x] Half Moon Bay (10 places: Pillar Point Bluff and Mavericks Overlook, Fitzgerald Marine Reserve, Pillar Point Harbor and Princeton-by-the-Sea, Half Moon Bay Coastside Trail, Cowell Ranch State Beach, Poplar Beach and Wavecrest Bluffs, Main Street Half Moon Bay, Harley Farms Goat Dairy, Devil's Slide Trail, Purisima Creek Redwoods Preserve)
 - [x] Ojai (10 places: Shelf Road Trail, Valley View Preserve and Fox Canyon Trail, Ventura River Preserve, Ojai Valley Trail, Bart's Books, Downtown Ojai Arcade and Libbey Park, Meditation Mount, Ojai Olive Oil Farm, Ojai Meadows Preserve, Rose Valley Falls)
+- [x] Santa Barbara (16 places: Santa Barbara County Courthouse Clock Tower, Santa Barbara Botanic Garden, Ganna Walska Lotusland, Douglas Family Preserve, Arroyo Burro Beach and Boathouse, The Funk Zone, El Presidio de Santa Barbara State Historic Park, Butterfly Beach, Lizard's Mouth, Cold Spring Tavern, Mesa Lane Steps Beach, Mission Rose Garden, Alice Keck Park Memorial Garden, Franceschi Park, Chromatic Gate, Inspiration Point via Jesusita Trail)
+- [x] Pismo Beach (10 places: Pismo Preserve, Pismo State Beach Monarch Butterfly Grove, Dinosaur Caves Park, Eldwayen Ocean Park Tide Pools, Margo Dodd Park, Pismo Beach Pier and Whale Watch Platform, Oceano Dunes and Pismo Dunes Natural Preserve, Oso Flaco Lake Boardwalk, Avila Valley Barn, Pirates Cove and Cave Landing)
 
 ## Partial Coverage In Library
 - [~] Laguna Beach / SoCal Coast (Crystal Cove State Park, Heisler Park Overlook, plus nearby San Diego/Encinitas/La Jolla/San Clemente coastal places)
@@ -47,10 +49,10 @@ Current library audit:
 
 ### Southern California Coast
 - [~] Malibu
-- [ ] Santa Barbara — next full training target
-- [ ] Pismo Beach
+- [x] Santa Barbara
+- [x] Pismo Beach
 - [~] Laguna Beach
-- [ ] Ventura
+- [ ] Ventura — next full training target
 - [ ] Solvang
 
 ### Bay Area
