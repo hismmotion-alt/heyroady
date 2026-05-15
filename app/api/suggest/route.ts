@@ -1,6 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ROADY_SYSTEM_PROMPT } from '@/lib/prompts';
-import { getCuratedSpotsForDestination, buildCuratedStopsContext } from '@/lib/curated-stops';
+import {
+  getCuratedSpotsForDestination,
+  getCuratedStopsForRoute,
+  buildCuratedStopsContext,
+} from '@/lib/curated-stops';
 
 /** Geocode a place name → [lat, lng] using Mapbox. Returns null on failure. */
 async function geocodePlace(query: string): Promise<[number, number] | null> {
@@ -385,9 +389,20 @@ export async function POST(req: Request) {
       ? `\n\nThe traveler chose this route concept: "${body.routeHint}". Build the trip around this theme.`
       : '';
 
-    const curatedStopsContext = endCoords
-      ? buildCuratedStopsContext(getCuratedSpotsForDestination(endCoords[0], endCoords[1]))
-      : '';
+    const wantsEnrouteStops = Boolean(body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0');
+    const curatedPlaces =
+      startCoords && endCoords && wantsEnrouteStops
+        ? [
+            ...getCuratedStopsForRoute(startCoords[0], startCoords[1], endCoords[0], endCoords[1]),
+            ...getCuratedSpotsForDestination(endCoords[0], endCoords[1]),
+          ]
+        : endCoords
+          ? getCuratedSpotsForDestination(endCoords[0], endCoords[1])
+          : [];
+    const uniqueCuratedPlaces = Array.from(
+      new Map(curatedPlaces.map((place) => [`${place.name}-${place.city}`, place])).values()
+    );
+    const curatedStopsContext = buildCuratedStopsContext(uniqueCuratedPlaces);
 
     // Determine how many spots to suggest
     let spotsInstruction: string;

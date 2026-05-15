@@ -725,6 +725,226 @@
       "tags": ["waterfall", "hidden", "hiking", "off the beaten path"],
       "description": "A 100-foot double-plunge waterfall at the southern end of Big Sur — one of the least-visited in the area despite being roadside accessible. The upper pool is framed by a natural amphitheater of ferns.",
       "tip": "Pull out at the Salmon Creek Trailhead, 4 miles north of Ragged Point (mile marker 5.5). A 0.5-mile trail follows the creek to the falls. Free. Most visitors drive past without stopping even though it's right off the highway."
+    },
+    {
+      "name": "Point Lobos State Natural Reserve",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5159,
+      "lng": -121.9428,
+      "category": "nature",
+      "tags": ["coastal trails", "wildlife", "marine reserve", "photography"],
+      "description": "A compact reserve of cypress groves, rocky coves, sea lion lookouts, and protected underwater habitat just south of Carmel. It works as a marquee Carmel spot or a high-value stop before Big Sur.",
+      "tip": "Vehicle entry is limited and the park is popular; arrive early or park outside and walk in when lots are full. Start with Cypress Grove or Sea Lion Point if time is short."
+    },
+    {
+      "name": "China Cove and Bird Island Trail",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5064,
+      "lng": -121.9434,
+      "category": "scenic",
+      "tags": ["turquoise water", "short hike", "wildlife", "Point Lobos"],
+      "description": "A short Point Lobos walk with views into jade-green China Cove, Gibson Beach access, wave-carved arches, and Bird Island seabird habitat. It feels more hidden than the main overlooks.",
+      "tip": "Use the Bird Island parking area if you get a space. Bring binoculars and stay on the trail above China Cove; beach access changes to protect sensitive wildlife."
+    },
+    {
+      "name": "Carmel Beach and Scenic Road Walkway",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5505,
+      "lng": -121.9270,
+      "category": "scenic",
+      "tags": ["white sand", "sunset", "dog-friendly", "coastal walk"],
+      "description": "Carmel's signature white-sand beach backed by cypress trees, storybook homes, and the Scenic Road bluff path. It is ideal for sunset, a slow morning walk, or a low-effort coastal stop.",
+      "tip": "Park near the foot of Ocean Avenue or along Scenic Road and use the stairways instead of cutting down the bluff. Dogs can be off leash on the sand only when under control; leash them on the Scenic Pathway."
+    },
+    {
+      "name": "Carmel Mission Basilica",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5420,
+      "lng": -121.9191,
+      "category": "culture",
+      "tags": ["mission history", "architecture", "gardens", "museum"],
+      "description": "A National Historic Landmark and active basilica with restored mission architecture, quiet courtyards, museum rooms, and deep Alta California history tied to Junipero Serra.",
+      "tip": "Check the mission calendar before going because services, weddings, and special events can limit access to the Basilica. Pair it with Mission Trail Nature Preserve nearby."
+    },
+    {
+      "name": "Tor House and Hawk Tower",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5365,
+      "lng": -121.9288,
+      "category": "culture",
+      "tags": ["literary landmark", "architecture", "ocean views", "guided tour"],
+      "description": "Poet Robinson Jeffers' hand-built stone home and tower on Carmel Point, where granite rooms, gardens, and ocean views explain why Carmel became an artists' refuge.",
+      "tip": "Tours are limited and usually docent-led on specific days, so reserve ahead. Wear comfortable shoes and arrive a few minutes early; tours start promptly from the docent office."
+    },
+    {
+      "name": "Mission Trail Nature Preserve",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5468,
+      "lng": -121.9166,
+      "category": "nature",
+      "tags": ["hiking", "native plants", "quiet trail", "near downtown"],
+      "description": "A 34-acre pocket of meadows, native plant gardens, and roughly three miles of trails tucked between Carmel Mission and the village. It is the easy nature reset most visitors miss.",
+      "tip": "Use it for a calm morning walk before downtown gets busy. Trails are simple but can be uneven after rain; combine with Carmel Mission for a culture-plus-nature stop."
+    },
+    {
+      "name": "Carmel River State Beach",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5362,
+      "lng": -121.9279,
+      "category": "nature",
+      "tags": ["lagoon", "birding", "quiet beach", "marine sanctuary"],
+      "description": "A mile-long state beach where the Carmel River forms a lagoon before meeting the Pacific, creating habitat for waterfowl and songbirds with broad views across Carmel Bay.",
+      "tip": "Come for birding and walking, not swimming; the surf and drop-off can be dangerous. Parking is at the end of Carmelo Street and the park has no campground."
+    },
+    {
+      "name": "Carmel Courtyards and Secret Passageways",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5552,
+      "lng": -121.9220,
+      "category": "culture",
+      "tags": ["walking", "courtyards", "shops", "hidden corners"],
+      "description": "Downtown Carmel hides dozens of passageways and courtyards between galleries, cafes, bookstores, and tiny gardens. It turns the village into a low-key scavenger hunt.",
+      "tip": "Start around Ocean Avenue, Dolores, and San Carlos, then wander slowly instead of following only storefronts. The Pilgrim's Way Secret Garden is a good anchor for this walk."
+    },
+    {
+      "name": "Hugh Comstock Fairytale Cottages",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.5554,
+      "lng": -121.9214,
+      "category": "culture",
+      "tags": ["architecture", "storybook", "walking tour", "photography"],
+      "description": "Carmel's storybook identity comes from Hugh Comstock's whimsical cottages with rolled eaves, crooked rooflines, and garden-like settings. They are best experienced as a respectful village walk.",
+      "tip": "Many cottages are private homes or businesses, so admire from sidewalks and public paths. The Tuck Box area is one of the easiest places to start."
+    },
+    {
+      "name": "Garrapata State Park and Soberanes Point",
+      "city": "Carmel-by-the-Sea",
+      "region": "Central Coast",
+      "lat": 36.4535,
+      "lng": -121.9259,
+      "category": "nature",
+      "tags": ["coastal hike", "wildflowers", "Big Sur gateway", "headlands"],
+      "description": "A rugged stretch between Carmel and Big Sur with bluff trails, wildflower slopes, sea stacks, and Santa Lucia mountain views. It is a flexible stop when Point Lobos is too crowded.",
+      "tip": "Use official pullouts and check current trail closures before committing to longer hikes. Soberanes Point is the best short scenic option; bring layers because wind picks up fast."
+    },
+    {
+      "name": "Monterey Bay Coastal Recreation Trail",
+      "city": "Monterey",
+      "region": "Central Coast",
+      "lat": 36.6079,
+      "lng": -121.8910,
+      "category": "scenic",
+      "tags": ["coastal trail", "biking", "wildlife", "waterfront"],
+      "description": "An easy paved rail-trail that links Monterey's waterfront with Cannery Row, Pacific Grove, beaches, harbor views, and frequent sea otter sightings. It can be a whole activity or a smart connector between spots.",
+      "tip": "Rent bikes if you want to cover more ground, but walk the stretch from Fisherman's Wharf through Cannery Row for the densest scenery. Expect pedestrians to stop suddenly for wildlife photos."
+    },
+    {
+      "name": "Cannery Row Historic Waterfront",
+      "city": "Monterey",
+      "region": "Central Coast",
+      "lat": 36.6168,
+      "lng": -121.9006,
+      "category": "culture",
+      "tags": ["Steinbeck", "waterfront", "history", "shops"],
+      "description": "The former sardine-canning strip that inspired Steinbeck still has industrial bones, conveyor bridges, warehouse facades, and bayfront pockets between the busier shops and restaurants.",
+      "tip": "Look up at the old cannery structures instead of only walking storefronts. Early morning is best for atmosphere before the aquarium and lunch crowds fill the row."
+    },
+    {
+      "name": "Pacific Biological Laboratories",
+      "city": "Monterey",
+      "region": "Central Coast",
+      "lat": 36.6166,
+      "lng": -121.9019,
+      "category": "culture",
+      "tags": ["Ed Ricketts", "Steinbeck", "science history", "Cannery Row"],
+      "description": "Ed Ricketts' old marine biology lab on Cannery Row, the real-world inspiration behind Doc's lab in Steinbeck's writing. It gives the busy waterfront a quieter literary-science layer.",
+      "tip": "Do not assume it is open for drop-in visits; access is limited and often event-based. Even from outside, it is worth pairing with a Cannery Row walk if the traveler likes Steinbeck or marine science."
+    },
+    {
+      "name": "Monterey State Historic Park and Path of History",
+      "city": "Monterey",
+      "region": "Central Coast",
+      "lat": 36.6034,
+      "lng": -121.8949,
+      "category": "culture",
+      "tags": ["California history", "adobes", "walking tour", "museums"],
+      "description": "A walkable cluster of adobes, gardens, museums, and landmarks from Monterey's Spanish, Mexican, and early American periods, including the Custom House and Pacific House.",
+      "tip": "Enter the Path of History anywhere, but Custom House Plaza is the easiest anchor. It is a good low-cost alternative when the coast is foggy or windy."
+    },
+    {
+      "name": "Old Fisherman's Wharf and Custom House Plaza",
+      "city": "Monterey",
+      "region": "Central Coast",
+      "lat": 36.6048,
+      "lng": -121.8913,
+      "category": "food",
+      "tags": ["seafood", "harbor", "sea lions", "history"],
+      "description": "A historic working-waterfront-turned-walking pier beside Custom House Plaza, with seafood counters, whale watching boats, harbor views, and noisy sea lions around the pilings.",
+      "tip": "Use it as a short harbor stroll rather than the whole day. Check the water below the wharf for otters and sea lions, then walk into the historic plaza next door."
+    },
+    {
+      "name": "San Carlos Beach and Breakwater Cove",
+      "city": "Monterey",
+      "region": "Central Coast",
+      "lat": 36.6107,
+      "lng": -121.8939,
+      "category": "nature",
+      "tags": ["scuba", "harbor", "marine life", "easy stop"],
+      "description": "A small beach and breakwater next to the harbor that is famous with local divers and easy for non-divers to enjoy for harbor wildlife, bay views, and a quieter pause near Cannery Row.",
+      "tip": "Great for watching dive classes gear up and for spotting harbor seals or sea lions, but water entry is best left to prepared divers. Parking turns over fastest earlier in the day."
+    },
+    {
+      "name": "Asilomar State Beach and Coast Trail",
+      "city": "Pacific Grove",
+      "region": "Central Coast",
+      "lat": 36.6248,
+      "lng": -121.9408,
+      "category": "nature",
+      "tags": ["tide pools", "coastal trail", "sunset", "marine reserve"],
+      "description": "A one-mile Pacific Grove coastline of dunes, rocky coves, tide pools, boardwalk sections, and protected marine reserve habitat. It feels wilder than Monterey's central waterfront.",
+      "tip": "Go near low tide for tide pools or at sunset for the softest light. Stay on marked paths through the dunes and bring a wind layer even on clear days."
+    },
+    {
+      "name": "Point Pinos Lighthouse",
+      "city": "Pacific Grove",
+      "region": "Central Coast",
+      "lat": 36.6332,
+      "lng": -121.9333,
+      "category": "culture",
+      "tags": ["lighthouse", "maritime history", "Pacific Grove", "coastal drive"],
+      "description": "The oldest continuously operating lighthouse on the West Coast, set above the Pacific Grove shoreline near Asilomar and the golf links.",
+      "tip": "Check current museum hours before building a plan around the interior. Even when closed, it pairs well with Asilomar, the coastal drive, and sunset around Point Pinos."
+    },
+    {
+      "name": "Monarch Grove Sanctuary",
+      "city": "Pacific Grove",
+      "region": "Central Coast",
+      "lat": 36.6217,
+      "lng": -121.9263,
+      "category": "nature",
+      "tags": ["monarch butterflies", "seasonal", "wildlife", "quiet walk"],
+      "description": "Pacific Grove's protected overwintering site for western monarch butterflies, with a short quiet walking path through eucalyptus, pine, cypress, and nectar beds.",
+      "tip": "This is seasonal: monarchs typically arrive around mid-October and leave by February, with peak viewing November through January. Morning clusters can look like brown leaves until the sun warms them."
+    },
+    {
+      "name": "Lovers Point Park",
+      "city": "Pacific Grove",
+      "region": "Central Coast",
+      "lat": 36.6264,
+      "lng": -121.9164,
+      "category": "scenic",
+      "tags": ["sunrise", "picnic", "kayaking", "coastal walk"],
+      "description": "A small Pacific Grove waterfront park with lawns, rocks, a protected cove, and trail access toward Monterey or Asilomar. It is one of the rare west-coast spots that can be good for sunrise.",
+      "tip": "Use it as a picnic or coffee stop between Monterey and Pacific Grove. Parking is easier than Cannery Row, but the beach below can be restricted for dogs and wildlife protection."
     }
   ]
 }

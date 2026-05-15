@@ -22,7 +22,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Return up to maxResults curated stops that fall within the route corridor. */
+/** Return up to maxResults curated places that can work as en-route stops within the route corridor. */
 export function getCuratedStopsForRoute(
   startLat: number,
   startLng: number,
@@ -45,7 +45,7 @@ export function getCuratedStopsForRoute(
     .map(({ stop }) => stop);
 }
 
-/** Return up to maxResults curated spots near the destination (within 80km). */
+/** Return up to maxResults curated places that can work as destination spots within 80km. */
 export function getCuratedSpotsForDestination(
   endLat: number,
   endLng: number,
@@ -59,11 +59,11 @@ export function getCuratedSpotsForDestination(
     .map(({ stop }) => stop);
 }
 
-/** Format curated stops as a prompt-ready string for injection into the Claude user message. */
+/** Format curated places as prompt-ready context for trip generation. */
 export function buildCuratedStopsContext(stops: CuratedStop[]): string {
   if (stops.length === 0) return '';
   const list = stops
     .map(s => `- ${s.name} (${s.city}): ${s.description} Insider tip: ${s.tip}`)
     .join('\n');
-  return `\n\nHere are hand-picked local spots at or near this destination — prioritize these over generic tourist spots when they fit the traveler's preferences:\n${list}\nYou may use any of these or suggest other equally specific, non-obvious spots. Avoid well-known tourist traps.`;
+  return `\n\nHere are hand-picked local places from Roady's curated library. A place can be used as an en-route stop when it fits the drive, or as a destination spot when it is near the final city. Prioritize these over generic tourist spots when they fit the traveler's preferences:\n${list}\nYou may use any of these or suggest other equally specific, non-obvious places. Avoid well-known tourist traps.`;
 }

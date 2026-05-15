@@ -3806,9 +3806,9 @@ function HomeContent() {
                   </div>
                 </div>
               ) : (
-              <div className="flex h-full min-h-0 flex-col">
+              <div className="flex h-full min-h-0 flex-col xl:flex-row">
                 <aside
-                  className="w-full min-h-0 bg-white"
+                  className="min-h-0 w-full flex-shrink-0 bg-white xl:w-[42%] xl:max-w-[560px]"
                 >
                   <div className="flex h-full min-h-0 flex-col">
                     <div className="flex items-center justify-between px-4 pt-4 pb-3 sm:px-8 sm:pt-6 sm:pb-4">
@@ -4388,7 +4388,7 @@ function HomeContent() {
                   </div>
                 </aside>
 
-                <div className="hidden">
+                <aside className="hidden min-h-0 flex-1 flex-col bg-[#F8FAF7] xl:flex">
                   <div className="flex items-center justify-between gap-4 border-b border-white/70 px-6 py-5 sm:px-8">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-[0.14em]" style={{ color: '#D85A30' }}>
@@ -4564,7 +4564,7 @@ function HomeContent() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </aside>
               </div>
               )}
             </div>
