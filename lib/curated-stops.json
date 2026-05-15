@@ -1781,6 +1781,182 @@
       "tags": ["hiking", "sandstone caves", "views", "Gaviota"],
       "description": "A short but steep hike in Gaviota State Park to honeycombed sandstone formations and coastal-mountain views, adding a rugged outdoor option south of Solvang.",
       "tip": "This is more exposed and strenuous than it looks from the map. Avoid hot afternoons, bring water, and confirm park access and trail conditions before sending casual travelers."
+    },
+    {
+      "name": "Briar Rose Winery",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5401,
+      "lng": -117.0494,
+      "category": "food",
+      "tags": ["wine tasting", "storybook", "hidden winery", "reservation"],
+      "description": "A small-production winery known for its Snow White cottage-style buildings and storybook grounds, originally tied to a Disney Fantasyland craftsman. It gives Temecula Wine Country a more intimate and whimsical stop.",
+      "tip": "Tastings are often reservation-based and the property is smaller than the big resort wineries, so book ahead. Best for couples or travelers who want something quieter than the main tasting-room circuit."
+    },
+    {
+      "name": "Doffo Winery and MotoDoffo Collection",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5480,
+      "lng": -117.0233,
+      "category": "culture",
+      "tags": ["wine tasting", "motorcycles", "family winery", "Argentina"],
+      "description": "A family winery that combines Temecula wine with a large vintage motorcycle collection, Argentine heritage, and a different personality from the region's more polished resort tasting rooms.",
+      "tip": "Great for groups where not everyone is equally wine-focused. Check current tasting and MotoDoffo access details before promising the full collection."
+    },
+    {
+      "name": "Monte De Oro Winery Barrel Cellar",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5363,
+      "lng": -117.0444,
+      "category": "food",
+      "tags": ["wine tasting", "barrel cellar", "vineyard views", "Rancho California Road"],
+      "description": "A vineyard-view winery known for its glass-floor tasting room looking into the barrel cellar, giving travelers an easy wow moment without leaving the main wine-country corridor.",
+      "tip": "Reserve tastings on busy weekends. It works well as an anchor winery before adding a smaller hidden gem like Briar Rose or Doffo."
+    },
+    {
+      "name": "Europa Village Gardens",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5285,
+      "lng": -117.0731,
+      "category": "food",
+      "tags": ["wine tasting", "gardens", "European village", "photo-worthy"],
+      "description": "A themed wine destination split into European-style village areas with gardens, courtyards, food, and tasting spaces. It is one of Temecula's more immersive wine-country stops.",
+      "tip": "It can get busy and feel like a resort experience, so use it when travelers want atmosphere and photos. Make reservations for dining or structured tasting."
+    },
+    {
+      "name": "Somerset Vineyard and Winery",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5304,
+      "lng": -117.0346,
+      "category": "food",
+      "tags": ["wine tasting", "gardens", "amphora", "live music"],
+      "description": "A wine-country stop with garden spaces, Rhône and Spanish-style wines, and a reputation for a more relaxed tasting pace than the biggest Temecula names.",
+      "tip": "Check the event calendar because live music can shift the vibe from quiet tasting to social afternoon. Good as a mid-route stop between larger wineries."
+    },
+    {
+      "name": "Old Town Temecula and Thompson & Twain",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.4936,
+      "lng": -117.1484,
+      "category": "culture",
+      "tags": ["old town", "speakeasy", "shops", "restaurants"],
+      "description": "Historic Old Town Temecula mixes western storefronts, restaurants, tasting rooms, antique shops, and a hidden speakeasy-style cocktail bar inside Crush & Brew.",
+      "tip": "Use Old Town as the non-winery anchor for food or evening plans. Thompson & Twain requires checking hours and access rules; it is not always a spontaneous walk-in."
+    },
+    {
+      "name": "Temecula Olive Oil Company Tasting Room",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.4938,
+      "lng": -117.1485,
+      "category": "food",
+      "tags": ["olive oil", "old town", "tasting", "local food"],
+      "description": "A local olive oil tasting room in Old Town where travelers can sample California olive oils and vinegars, adding an agricultural tasting option that is not another glass of wine.",
+      "tip": "Good for mixed-age groups or anyone skipping alcohol. Pair it with Old Town shops, coffee, or dinner instead of making it a standalone destination."
+    },
+    {
+      "name": "Sugarplum Zoo and Chocolates",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5250,
+      "lng": -117.0438,
+      "category": "food",
+      "tags": ["family-friendly", "animals", "chocolate", "wine country"],
+      "description": "A small animal sanctuary and chocolate shop in wine country that shows up often in local recommendations for travelers with kids or groups who need a break from winery tasting rooms.",
+      "tip": "Check hours and admission before sending families there. It is best as a short reset between wineries or before heading back toward Old Town."
+    },
+    {
+      "name": "Lake Skinner Recreation Area",
+      "city": "Winchester",
+      "region": "Temecula Valley",
+      "lat": 33.5867,
+      "lng": -117.0658,
+      "category": "nature",
+      "tags": ["lake", "picnic", "camping", "balloon festival"],
+      "description": "A regional park northeast of Temecula with lake views, picnic areas, trails, camping, birding, and the well-known balloon and wine festival setting.",
+      "tip": "Use it when travelers want nature or family time outside tasting rooms. Check county park fees, boating rules, and seasonal event closures before routing."
+    },
+    {
+      "name": "Santa Rosa Plateau Ecological Reserve",
+      "city": "Murrieta",
+      "region": "Temecula Valley",
+      "lat": 33.5277,
+      "lng": -117.2747,
+      "category": "nature",
+      "tags": ["hiking", "vernal pools", "oak woodland", "wildflowers"],
+      "description": "A large ecological reserve west of Temecula with oak woodlands, grasslands, seasonal vernal pools, trails, and a quieter natural landscape far from the tasting-room crowds.",
+      "tip": "Best in cooler months, spring wildflower season, or early morning. Check reserve status and trail closures before sending travelers because access can change after weather or fire recovery work."
+    },
+    {
+      "name": "Mount Palomar Winery Secret Garden",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5281,
+      "lng": -117.0517,
+      "category": "food",
+      "tags": ["wine tasting", "gardens", "photo-worthy", "vineyard"],
+      "description": "A long-running Temecula winery with garden-like event spaces and vineyard views that repeatedly appears in social wedding and wine-country photo inspiration.",
+      "tip": "Use it for travelers who want a scenic winery with more garden atmosphere. Check current tasting, dining, and event closures because private events can affect access."
+    },
+    {
+      "name": "Callaway Vineyard and Winery Hilltop Views",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5292,
+      "lng": -117.0839,
+      "category": "food",
+      "tags": ["first winery", "vineyard views", "sunset", "restaurant"],
+      "description": "Temecula Valley's founding estate winery, set on an elevated site with vineyard views, tours, tasting, and dining. Social posts often highlight it for sunset and broad wine-country panoramas.",
+      "tip": "Reserve tastings or dining on weekends. It is a strong first-stop orientation point because the view explains the valley's vineyard layout."
+    },
+    {
+      "name": "Thornton Winery Champagne Jazz Patio",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5245,
+      "lng": -117.0917,
+      "category": "food",
+      "tags": ["sparkling wine", "jazz", "restaurant", "French chateau"],
+      "description": "A French chateau-style winery known for sparkling wine, Café Champagne, and the Champagne Jazz concert series. It gives Temecula a food-and-music stop beyond standard tasting flights.",
+      "tip": "Check the concert calendar before routing music fans there. For quieter travelers, avoid major event times and use it for lunch or sparkling-wine tasting instead."
+    },
+    {
+      "name": "Akash Winery Sunset Patio",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.5345,
+      "lng": -117.0347,
+      "category": "food",
+      "tags": ["sunset", "wine tasting", "beer", "open-air patio"],
+      "description": "A modern open-air winery and vineyard patio that shows up in social recommendations for sunset views, casual outdoor energy, cornhole, and a more contemporary wine-country feel.",
+      "tip": "Best late afternoon if the group wants sunset and a relaxed patio. Check hours and event schedule; it can shift from mellow to lively depending on the day."
+    },
+    {
+      "name": "Vail Lake Resort and Vailocity Bike Park",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.4635,
+      "lng": -116.9997,
+      "category": "nature",
+      "tags": ["lake", "mountain biking", "glamping", "trails"],
+      "description": "A 400-acre recreation resort east of wine country with lake access, camping and glamping, hiking and equestrian trails, and a dedicated mountain bike park.",
+      "tip": "Use this for outdoorsy travelers who want activity beyond wine tasting. Confirm day-use, bike park, lake, and resort access rules before routing because amenities can depend on booking type."
+    },
+    {
+      "name": "Pennypickle's Workshop",
+      "city": "Temecula",
+      "region": "Temecula Valley",
+      "lat": 33.4931,
+      "lng": -117.1498,
+      "category": "culture",
+      "tags": ["children's museum", "science", "family-friendly", "Old Town"],
+      "description": "Temecula's whimsical children's science museum in Old Town, built around Professor Phineas Pennypickle's workshop with hands-on exhibits and playful experiments.",
+      "tip": "Good for family trips or hot afternoons when kids need indoor activity. Check hours before sending travelers, since it is not open every day."
     }
   ]
 }

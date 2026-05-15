@@ -9,8 +9,8 @@ This library is not stop-only. A place can be:
 Roady should use the same curated place library for both use cases.
 
 Current library audit:
-- 162 total curated places
-- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai, Santa Barbara, Pismo Beach, Ventura, Solvang / Santa Ynez Valley
+- 178 total curated places
+- Strong coverage: Big Sur, Carmel-by-the-Sea, Monterey / Pacific Grove, Santa Cruz, Half Moon Bay, Ojai, Santa Barbara, Pismo Beach, Ventura, Solvang / Santa Ynez Valley, Temecula Wine Country
 - Partial coverage exists across SoCal Coast, Central Coast, NorCal Coast, Bay Area, Wine Country, Desert, Eastern Sierra, and Sierra Nevada
 - Category mix: nature, scenic, culture, food
 
@@ -25,6 +25,7 @@ Current library audit:
 - [x] Pismo Beach (10 places: Pismo Preserve, Pismo State Beach Monarch Butterfly Grove, Dinosaur Caves Park, Eldwayen Ocean Park Tide Pools, Margo Dodd Park, Pismo Beach Pier and Whale Watch Platform, Oceano Dunes and Pismo Dunes Natural Preserve, Oso Flaco Lake Boardwalk, Avila Valley Barn, Pirates Cove and Cave Landing)
 - [x] Ventura (10 places: Serra Cross Park and Grant Park Overlook, Ventura Botanical Gardens, Surfers Point and Ventura Promenade, Ventura Harbor Village, Channel Islands Visitor Center, Mission San Buenaventura, San Buenaventura State Beach and Marina Park, Emma Wood State Beach and River Trail, Downtown Ventura Main Street and Thrift Row, Rincon Point and Bates Beach)
 - [x] Solvang / Santa Ynez Valley (10 places: Old Mission Santa Ines, Elverhoj Museum of History and Art, Hans Christian Andersen Museum and The Book Loft, Solvang Vintage Motorcycle Museum, OstrichLand USA, Sunny Fields Park, Clairmont Lavender Farm, Los Olivos Corner House and Tasting Walk, Nojoqui Falls Park, Gaviota Wind Caves)
+- [x] Temecula Wine Country (16 places: Briar Rose Winery, Doffo Winery and MotoDoffo Collection, Monte De Oro Winery Barrel Cellar, Europa Village Gardens, Somerset Vineyard and Winery, Old Town Temecula and Thompson & Twain, Temecula Olive Oil Company Tasting Room, Sugarplum Zoo and Chocolates, Lake Skinner Recreation Area, Santa Rosa Plateau Ecological Reserve, Mount Palomar Winery Secret Garden, Callaway Vineyard and Winery Hilltop Views, Thornton Winery Champagne Jazz Patio, Akash Winery Sunset Patio, Vail Lake Resort and Vailocity Bike Park, Pennypickle's Workshop)
 
 ## Partial Coverage In Library
 - [~] Laguna Beach / SoCal Coast (Crystal Cove State Park, Heisler Park Overlook, plus nearby San Diego/Encinitas/La Jolla/San Clemente coastal places)
@@ -66,11 +67,11 @@ Current library audit:
 ### Wine Country
 - [~] Napa Valley / Calistoga
 - [~] Sonoma / Healdsburg
-- [ ] Temecula Wine Country — next full training target
+- [x] Temecula Wine Country
 
 ### Desert
 - [~] Joshua Tree
-- [ ] Palm Springs
+- [ ] Palm Springs — next full training target
 - [ ] Death Valley
 - [ ] Anza-Borrego Desert / Borrego Springs
 - [ ] Trona Pinnacles
