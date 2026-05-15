@@ -181,5 +181,5 @@ export default function RouteMap({ stops, start, end, endLabel, activeStop, onSt
     });
   }, [activeStop, stops]);
 
-  return <div ref={mapContainer} className="w-full h-full" style={{ minHeight: '400px' }} />;
+  return <div ref={mapContainer} className="h-full min-h-full w-full" />;
 }

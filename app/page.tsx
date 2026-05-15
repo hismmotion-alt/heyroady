@@ -1907,6 +1907,7 @@ function HomeContent() {
   const tripDestinationDisplay = selectedHotel ? getHotelDestinationDisplay(selectedHotel) : routeDestination;
   const tripDestinationLabel = selectedHotelDestination || finalDestinationSpot?.name || routeDestination;
   const destinationCityLabel = getDestinationCityLabel(routeDestination);
+  const tripSaved = Boolean(savedTripId);
   const hasGeneratedTrip = Boolean(tripData || stops.length > 0);
   const hotelEndCoords =
     selectedHotel?.lat != null && selectedHotel?.lng != null
@@ -1946,6 +1947,7 @@ function HomeContent() {
     setActiveStop(-1);
     setSelectedHotelIndex(0);
     setHotelCarouselIndex(0);
+    setSavedTripId(null);
     if (clearMessages) {
       setPlannerError('');
       setSaveMessage('');
@@ -2623,6 +2625,7 @@ function HomeContent() {
     setPlannerError('');
     setSaveMessage('');
     setShareMessage('');
+    setSavedTripId(null);
 
     const fallbackVariant =
       PLANNER_ROUTE_DEFINITIONS[option.fallbackRouteId ?? seedRouteId][routeRegion];
@@ -2885,7 +2888,6 @@ function HomeContent() {
 
       const data = await response.json();
       setSavedTripId(data.id);
-      setPlannerStep('saved');
       setSaveMessage(autoTriggered ? 'Signed in and saved automatically.' : 'Trip saved.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unable to save trip right now.';
@@ -3849,7 +3851,7 @@ function HomeContent() {
                   <div className="min-h-0 flex-1 overflow-y-auto bg-[#F7F8F6] px-4 py-4 sm:px-5">
                     <div className={`mx-auto grid max-w-[1400px] gap-4 ${shouldShowStayPicker ? 'xl:grid-cols-[minmax(0,1.5fr)_minmax(390px,0.95fr)]' : ''}`}>
                       <div className="flex min-w-0 flex-col gap-4">
-                        <div className="relative min-h-[430px] overflow-hidden rounded-[28px] border border-[#DDE3EA] bg-white shadow-[0_16px_42px_rgba(27,45,69,0.08)] lg:min-h-[560px]">
+                        <div className="relative min-h-[344px] overflow-hidden rounded-[28px] border border-[#DDE3EA] bg-white shadow-[0_16px_42px_rgba(27,45,69,0.08)] sm:min-h-[430px] lg:min-h-[560px]">
                           {HAS_MAPBOX && startCoords && stops.length > 0 ? (
                             <RouteMap
                               stops={mapStops}
@@ -3946,11 +3948,11 @@ function HomeContent() {
                               <button
                                 type="button"
                                 onClick={() => void handleSaveTrip(false)}
-                                disabled={saving || !canProceed('results')}
+                                disabled={saving || tripSaved || !canProceed('results')}
                                 className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                                 style={{ backgroundColor: '#FF4E18' }}
                               >
-                                {saving ? 'Saving...' : 'Save this trip'}
+                                {saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save this trip'}
                               </button>
                             </div>
                           </div>
@@ -4047,11 +4049,11 @@ function HomeContent() {
                           <button
                             type="button"
                             onClick={() => void handleSaveTrip(false)}
-                            disabled={saving || !canProceed('results')}
+                            disabled={saving || tripSaved || !canProceed('results')}
                             className="inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-extrabold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                             style={{ backgroundColor: '#FF4E18' }}
                           >
-                            {saving ? 'Saving...' : 'Save this trip'}
+                            {saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save this trip'}
                           </button>
                         </div>
                         <p className="mt-3 text-center text-xs font-semibold text-gray-400">
@@ -4591,10 +4593,12 @@ function HomeContent() {
                             />
                             <ShareActionButton
                               onClick={() => void handleSaveTrip(false)}
-                              disabled={saving}
-                              label={saving ? 'Saving...' : 'Save'}
+                              disabled={saving || tripSaved}
+                              label={saving ? 'Saving...' : tripSaved ? 'Trip saved' : 'Save'}
                               sublabel={
-                                user
+                                tripSaved
+                                  ? 'Saved to your Roady account.'
+                                  : user
                                   ? 'Keep it in your Roady account.'
                                   : 'Continue with Google and save it.'
                               }
