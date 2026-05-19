@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -18,6 +19,13 @@ function buildDistanceConstraint(distance: string, start: string): string {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { start, travelStyle, interests, vibe, days, distance } = body;
 

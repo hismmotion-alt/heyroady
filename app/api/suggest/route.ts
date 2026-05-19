@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ROADY_SYSTEM_PROMPT } from '@/lib/prompts';
+import { createServerSupabaseClient } from '@/lib/supabase-server';
 import {
   getCuratedSpotsForDestination,
   getCuratedStopsForRoute,
@@ -378,6 +379,13 @@ function buildPreferenceContext(body: Record<string, string>): string {
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const client = getClient();
     const body = await req.json();
     const { start, end } = body;

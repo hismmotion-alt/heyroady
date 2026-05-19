@@ -7,7 +7,7 @@ import type { TripPreferences } from '@/lib/types';
 export type { TripPreferences };
 
 interface Props {
-  onComplete: (prefs: TripPreferences) => void;
+  onComplete: (prefs: TripPreferences) => void | Promise<void>;
   prefilledGroup?: string;
   prefilledStopTypes?: string[];
 }
@@ -140,6 +140,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   const [hotelGuests, setHotelGuests]     = useState('');
   const [hotelCheckin, setHotelCheckin]   = useState('');
   const [hotelNights, setHotelNights]     = useState('');
+  const [submitting, setSubmitting]       = useState(false);
 
   const skipGroup     = !!prefilledGroup;
   const skipStopTypes = !!prefilledStopTypes;
@@ -171,21 +172,26 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
     }
   }
 
-  function handleComplete() {
+  async function handleComplete() {
     const effectiveGroup     = travelGroup || prefilledGroup || '';
     const effectiveStopTypes = stopTypes.length > 0 ? stopTypes : (prefilledStopTypes || []);
-    onComplete({
-      travelGroup: effectiveGroup,
-      ...(effectiveGroup === 'family-kids' && kidsAges.length > 0 && { kidsAges }),
-      stopTypes: effectiveStopTypes,
-      numberOfEnrouteStops,
-      numberOfStops,
-      stopDuration: '',
-      ...(hotelPreference && { hotelPreference }),
-      ...(hotelGuests && { hotelGuests }),
-      ...(hotelCheckin && { hotelCheckin }),
-      ...(hotelNights && { hotelNights }),
-    });
+    setSubmitting(true);
+    try {
+      await onComplete({
+        travelGroup: effectiveGroup,
+        ...(effectiveGroup === 'family-kids' && kidsAges.length > 0 && { kidsAges }),
+        stopTypes: effectiveStopTypes,
+        numberOfEnrouteStops,
+        numberOfStops,
+        stopDuration: '',
+        ...(hotelPreference && { hotelPreference }),
+        ...(hotelGuests && { hotelGuests }),
+        ...(hotelCheckin && { hotelCheckin }),
+        ...(hotelNights && { hotelNights }),
+      });
+    } catch {
+      setSubmitting(false);
+    }
   }
 
   function handleNext() {
@@ -362,11 +368,11 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
           )}
           <button
             onClick={handleNext}
-            disabled={!canContinue()}
+            disabled={!canContinue() || submitting}
             className="flex-1 py-3 rounded-2xl font-bold text-sm text-white transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#58CC02' }}
           >
-            {isLastStep ? 'Plan My Trip' : 'Continue'}
+            {submitting ? 'Continuing...' : isLastStep ? 'Plan My Trip' : 'Continue'}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
               <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
             </svg>

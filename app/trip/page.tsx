@@ -107,6 +107,7 @@ function TripContent() {
   const [startCoords, setStartCoords] = useState<[number, number] | null>(null);
   const [endCoords, setEndCoords] = useState<[number, number] | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -120,6 +121,7 @@ function TripContent() {
   const [stopFilter, setStopFilter] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set<string>());
   const [overviewHotelIdx, setOverviewHotelIdx] = useState(0);
+  const userId = user?.id ?? null;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
@@ -137,8 +139,29 @@ function TripContent() {
   };
 
   useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      setAuthReady(true);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      setAuthReady(true);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!authReady) return;
+
     if (!start || !end) {
       router.push('/');
+      return;
+    }
+
+    if (!userId) {
+      const query = searchParams.toString();
+      router.push(`/login?next=${encodeURIComponent(`/trip${query ? `?${query}` : ''}`)}`);
       return;
     }
 
@@ -171,16 +194,7 @@ function TripContent() {
     }
 
     fetchTrip();
-  }, [start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, router]);
-
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  }, [authReady, userId, start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests, router, searchParams]);
 
   if (loading) {
     return (

@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import TripPreferencesForm from '@/components/TripPreferences';
 import type { TripPreferences } from '@/lib/types';
+import { createClient } from '@/lib/supabase';
 
 // Map suggest wizard travelStyle → TripPreferences travelGroup
 const STYLE_TO_GROUP: Record<string, string> = {
@@ -62,7 +63,7 @@ function PreferencesContent() {
     ? interests.split(',').filter(Boolean).map((i) => INTEREST_TO_STOP[i]).filter(Boolean)
     : undefined;
 
-  function handleComplete(prefs: TripPreferences) {
+  async function handleComplete(prefs: TripPreferences) {
     const params = new URLSearchParams({
       start,
       end,
@@ -83,7 +84,17 @@ function PreferencesContent() {
     if (vibe) params.set('vibe', vibe);
     if (distance) params.set('distance', distance);
     if (interests) params.set('interests', interests);
-    router.push(`/trip?${params.toString()}`);
+
+    const tripPath = `/trip?${params.toString()}`;
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push(`/login?next=${encodeURIComponent(tripPath)}`);
+      return;
+    }
+
+    router.push(tripPath);
   }
 
   return (

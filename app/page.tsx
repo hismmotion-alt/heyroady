@@ -105,6 +105,7 @@ type PersistedPlannerState = {
   selectedHotelIndex: number;
   hotelCarouselIndex?: number;
   autoSaveOnRestore?: boolean;
+  autoGenerateOnRestore?: boolean;
 };
 
 type ChoiceCardItem = {
@@ -1829,6 +1830,7 @@ function HomeContent() {
   const [selectedHotelIndex, setSelectedHotelIndex] = useState(0);
   const [hotelCarouselIndex, setHotelCarouselIndex] = useState(0);
   const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [plannerError, setPlannerError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
@@ -1847,6 +1849,7 @@ function HomeContent() {
   const suggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const destinationSuggestionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoSaveOnRestoreRef = useRef(false);
+  const autoGenerateOnRestoreRef = useRef(false);
 
   const routeRegion = getStartRegion(startInput, startCoords);
   const fallbackRoute = PLANNER_ROUTE_DEFINITIONS[seedRouteId][routeRegion];
@@ -2079,12 +2082,24 @@ function HomeContent() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => setUser(data.user ?? null));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user ?? null);
+      setAuthReady(true);
+    });
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      setAuthReady(true);
     });
     return () => authListener.subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const protectedPlannerSteps: PlannerStep[] = ['generating', 'results', 'save', 'saved'];
+    if (!authReady || user || !plannerOpen || !protectedPlannerSteps.includes(plannerStep)) return;
+
+    persistPlannerState(false, true);
+    router.push('/login?next=/');
+  }, [authReady, user, plannerOpen, plannerStep, router]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -2117,6 +2132,7 @@ function HomeContent() {
       const parsed = JSON.parse(saved) as PersistedPlannerState;
       window.localStorage.removeItem(PLANNER_STORAGE_KEY);
       autoSaveOnRestoreRef.current = Boolean(parsed.autoSaveOnRestore);
+      autoGenerateOnRestoreRef.current = Boolean(parsed.autoGenerateOnRestore);
       setPlannerOpen(true);
       requestAnimationFrame(() => setPlannerVisible(true));
       setPlannerStep(parsed.step);
@@ -2349,6 +2365,12 @@ function HomeContent() {
   }, [user]);
 
   useEffect(() => {
+    if (!user || !autoGenerateOnRestoreRef.current) return;
+    autoGenerateOnRestoreRef.current = false;
+    void generateSuggestedTrip();
+  }, [user]);
+
+  useEffect(() => {
     if (plannerStep !== 'start') return;
     if (suggestionTimerRef.current) clearTimeout(suggestionTimerRef.current);
 
@@ -2565,9 +2587,9 @@ function HomeContent() {
     }, 260);
   }
 
-  function persistPlannerState(autoSaveOnRestore = false) {
+  function persistPlannerState(autoSaveOnRestore = false, autoGenerateOnRestore = false) {
     const state: PersistedPlannerState = {
-      step: plannerStep === 'saved' ? 'save' : plannerStep,
+      step: autoGenerateOnRestore ? 'spots' : plannerStep === 'saved' ? 'save' : plannerStep,
       seedRouteId,
       destinationPreset,
       startInput,
@@ -2584,8 +2606,19 @@ function HomeContent() {
       selectedHotelIndex,
       hotelCarouselIndex,
       autoSaveOnRestore,
+      autoGenerateOnRestore,
     };
     window.localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(state));
+  }
+
+  async function requireSignInForPlannerGeneration() {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) return true;
+
+    persistPlannerState(false, true);
+    router.push('/login?next=/');
+    return false;
   }
 
   function buildTripData(): TripData {
@@ -2626,6 +2659,8 @@ function HomeContent() {
     options = routeOptions,
     optionIndex = routeOptionIndex
   ) {
+    if (!(await requireSignInForPlannerGeneration())) return;
+
     setPlannerStep('generating');
     setPlannerError('');
     setSaveMessage('');
@@ -2676,6 +2711,11 @@ function HomeContent() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          persistPlannerState(false, true);
+          router.push('/login?next=/');
+          return;
+        }
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.error || 'Unable to generate the trip.');
       }
@@ -2754,6 +2794,8 @@ function HomeContent() {
       return;
     }
 
+    if (!(await requireSignInForPlannerGeneration())) return;
+
     if (destinationPreset) {
       const option: SuggestedRouteOption = routeOptions[0] ?? {
         id: destinationPreset.slug,
@@ -2815,6 +2857,11 @@ function HomeContent() {
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          persistPlannerState(false, true);
+          router.push('/login?next=/');
+          return;
+        }
         const errorData = await response.json().catch(() => null);
         throw new Error(errorData?.error || 'Unable to suggest routes.');
       }

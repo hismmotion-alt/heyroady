@@ -26,10 +26,16 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith('/my-trips')) {
+  const isProtectedRoute =
+    request.nextUrl.pathname.startsWith('/my-trips') ||
+    request.nextUrl.pathname === '/trip';
+
+  if (!user && isProtectedRoute) {
     const url = request.nextUrl.clone();
+    const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     url.pathname = '/login';
-    url.searchParams.set('next', request.nextUrl.pathname);
+    url.search = '';
+    url.searchParams.set('next', next);
     return NextResponse.redirect(url);
   }
 
@@ -37,5 +43,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/my-trips/:path*'],
+  matcher: ['/my-trips/:path*', '/trip'],
 };
