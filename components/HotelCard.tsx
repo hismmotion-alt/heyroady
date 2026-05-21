@@ -14,10 +14,12 @@ interface HotelCardProps {
 }
 
 function bookingUrl({ hotel, checkin, nights, guests }: Pick<HotelCardProps, 'hotel' | 'checkin' | 'nights' | 'guests'>): string {
+  const directUrl = hotel.bookingUrl || (hotel.fsqWebsite?.includes('booking.com') ? hotel.fsqWebsite : '');
+
   // If Foursquare gave us a direct Booking.com URL, use it (with affiliate tag)
-  if (hotel.fsqWebsite?.includes('booking.com')) {
+  if (directUrl) {
     try {
-      const url = new URL(hotel.fsqWebsite);
+      const url = new URL(directUrl);
       url.searchParams.set('aid', AFFILIATE_ID);
       if (checkin) {
         url.searchParams.set('checkin', checkin);
@@ -135,7 +137,7 @@ export default function HotelCard({ hotel, stopCity, checkin, nights, guests, is
               className="flex-1 flex items-center justify-center py-1.5 rounded-lg text-xs font-bold transition-all hover:opacity-90"
               style={{ backgroundColor: '#003580', color: '#ffffff' }}
             >
-              Book on Booking.com →
+              View details
             </a>
           </div>
         </div>

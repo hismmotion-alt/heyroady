@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import StopCard from '@/components/StopCard';
 import HotelCard from '@/components/HotelCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import type { TripData } from '@/lib/types';
+import type { HotelSuggestion, TripData } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
@@ -81,6 +81,21 @@ const CHECKLIST_ITEMS = [
 
 function getOpenSourceImageUrl(query: string) {
   return `https://source.unsplash.com/900x540/?${encodeURIComponent(query)}`;
+}
+
+function getBookingDetailsUrl(hotel: HotelSuggestion, fallbackParams: URLSearchParams) {
+  const directUrl = hotel.bookingUrl || (hotel.fsqWebsite?.includes('booking.com') ? hotel.fsqWebsite : '');
+  if (directUrl) {
+    try {
+      const url = new URL(directUrl);
+      url.searchParams.set('aid', '2858827');
+      return url.toString();
+    } catch {
+      return directUrl;
+    }
+  }
+
+  return `https://www.booking.com/searchresults.html?${fallbackParams}`;
 }
 
 const PREVIEW_TRIP: TripData = {
@@ -515,6 +530,9 @@ function TripContent() {
   const editableStops = trip.stops
     .map((stop, index) => ({ stop, index }))
     .filter((item) => item.index !== finalDestinationIndex);
+  const mobileTripDays = hotelNights
+    ? `${hotelNights} night${hotelNights !== '1' ? 's' : ''}`
+    : `${Math.max(1, Math.ceil(trip.totalMiles / 180))} day${Math.max(1, Math.ceil(trip.totalMiles / 180)) === 1 ? '' : 's'}`;
 
   return (
     <div style={{ backgroundColor: '#FDF6EE', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", minHeight: '100vh' }}>
@@ -532,11 +550,13 @@ function TripContent() {
           <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 pt-4">
             <button
               onClick={() => router.push('/')}
-              className="h-10 rounded-full bg-white/95 px-3 shadow-sm"
-              aria-label="Go home"
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
+              aria-label="Close result"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/roady-logo.png" alt="Roady" className="h-7 w-auto" />
+              <svg className="h-5 w-5" fill="none" stroke="#1B2D45" strokeWidth="2.5" viewBox="0 0 24 24">
+                <path d="M18 6 6 18" strokeLinecap="round" />
+                <path d="m6 6 12 12" strokeLinecap="round" />
+              </svg>
             </button>
             <div className="flex items-center gap-2">
               <button
@@ -566,10 +586,19 @@ function TripContent() {
               </button>
             </div>
           </div>
-          <div className="absolute bottom-3 left-3 right-3 z-10 rounded-2xl bg-white/95 px-4 py-3 shadow-sm">
-            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#993C1D' }}>Your trip</p>
-            <h1 className="mt-0.5 truncate text-lg font-extrabold" style={{ color: '#1B2D45' }}>{start} to {end}</h1>
-            <p className="mt-0.5 line-clamp-1 text-xs font-semibold" style={{ color: '#6B7280' }}>{trip.tagline}</p>
+          <div className="absolute bottom-3 left-3 right-3 z-10 grid grid-cols-3 gap-2 rounded-2xl bg-white/95 px-3 py-3 text-center shadow-sm">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Miles</p>
+              <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{trip.totalMiles}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Days</p>
+              <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{mobileTripDays}</p>
+            </div>
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Stops</p>
+              <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{editableStops.length}</p>
+            </div>
           </div>
         </section>
 
@@ -1051,13 +1080,13 @@ function TripContent() {
                         )}
 
                         <a
-                          href={`https://www.booking.com/searchresults.html?${bookingParams}`}
+                          href={getBookingDetailsUrl(h, bookingParams)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center w-full py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90"
                           style={{ backgroundColor: '#003580' }}
                         >
-                          Book on Booking.com →
+                          View details
                         </a>
 
                         {/* Select as map destination */}

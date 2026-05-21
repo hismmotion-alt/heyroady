@@ -1024,7 +1024,17 @@ function estimateTripDaysLabel(
 }
 
 function getBookingSearchUrl(hotel: HotelSuggestion) {
-  if (hotel.bookingUrl) return hotel.bookingUrl;
+  const directUrl = hotel.bookingUrl || (hotel.fsqWebsite?.includes('booking.com') ? hotel.fsqWebsite : '');
+  if (directUrl) {
+    try {
+      const url = new URL(directUrl);
+      url.searchParams.set('aid', '2858827');
+      return url.toString();
+    } catch {
+      return directUrl;
+    }
+  }
+
   return `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(
     `${normalizeHotelQueryText(hotel.name)} ${hotel.city}`
   )}&dest_type=hotel&is_hotel=1&lang=en-us`;
@@ -3972,10 +3982,13 @@ function HomeContent() {
                         <button
                           type="button"
                           onClick={closePlanner}
-                          className="h-10 rounded-full bg-white/95 px-3 shadow-sm"
+                          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
                           aria-label="Close planner"
                         >
-                          <img src="/roady-logo.png" alt="Roady" className="h-7 w-auto" />
+                          <svg className="h-5 w-5" fill="none" stroke="#1B2D45" strokeWidth="2.5" viewBox="0 0 24 24">
+                            <path d="M18 6 6 18" strokeLinecap="round" />
+                            <path d="m6 6 12 12" strokeLinecap="round" />
+                          </svg>
                         </button>
                         <div className="flex items-center gap-2">
                           <button
@@ -4003,14 +4016,19 @@ function HomeContent() {
                         </div>
                       </div>
 
-                      <div className="absolute bottom-3 left-3 right-3 z-10 rounded-2xl bg-white/95 px-4 py-3 shadow-sm">
-                        <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#993C1D' }}>Your trip</p>
-                        <h1 className="mt-0.5 truncate text-lg font-extrabold" style={{ color: '#1B2D45' }}>
-                          {startInput} to {tripDestinationDisplay}
-                        </h1>
-                        <p className="mt-0.5 line-clamp-1 text-xs font-semibold" style={{ color: '#6B7280' }}>
-                          {routeTagline}
-                        </p>
+                      <div className="absolute bottom-3 left-3 right-3 z-10 grid grid-cols-3 gap-2 rounded-2xl bg-white/95 px-3 py-3 text-center shadow-sm">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Miles</p>
+                          <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{formatMiles(tripMiles)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Days</p>
+                          <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{tripDaysLabel}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Stops</p>
+                          <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{routeWaypointStops.length}</p>
+                        </div>
                       </div>
                     </section>
 
