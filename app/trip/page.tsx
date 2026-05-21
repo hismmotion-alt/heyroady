@@ -11,7 +11,7 @@ import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
 import { createRoadyShareUrl, shareOrCopy } from '@/lib/share';
-import { decodeTripFromUrl, encodeTripForUrl } from '@/lib/trip-share';
+import { decodeTripFromUrl } from '@/lib/trip-share';
 import { getTravelImageUrl } from '@/lib/trip-images';
 import type { User } from '@supabase/supabase-js';
 import {
@@ -455,21 +455,20 @@ function TripContent() {
 
   const handleShare = async () => {
     setShareFailed(false);
-    const shareUrl = trip && typeof window !== 'undefined'
-      ? `${window.location.origin}/trip?${new URLSearchParams({
-          start,
-          end,
-          data: encodeTripForUrl(trip),
-        }).toString()}`
-      : window.location.href;
     const url = trip
       ? await createRoadyShareUrl({
           start: start || endLabel || 'Roady trip',
           end: endLabel || end || 'Destination',
           trip,
-          fallbackUrl: shareUrl,
         })
-      : shareUrl;
+      : null;
+
+    if (!url) {
+      setShareFailed(true);
+      setTimeout(() => setShareFailed(false), 2000);
+      return;
+    }
+
     const result = await shareOrCopy({
       url,
     });

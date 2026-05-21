@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         });
 
       if (!error) {
-        const params = new URLSearchParams({ start, end, s: slug });
+        const params = new URLSearchParams({ s: slug });
         return Response.json({ slug, url: `${getOrigin(req)}/trip?${params.toString()}` });
       }
 

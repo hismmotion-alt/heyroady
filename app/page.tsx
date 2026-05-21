@@ -10,7 +10,6 @@ import Navbar from '@/components/Navbar';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
 import { createRoadyShareUrl, shareOrCopy } from '@/lib/share';
-import { encodeTripForUrl } from '@/lib/trip-share';
 import { getTravelImageUrl } from '@/lib/trip-images';
 import type { HotelSuggestion, Stop, TripData } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
@@ -1955,14 +1954,6 @@ function HomeContent() {
     : tripDestinationLabel;
   const googleMapsUrl = routeStartPoint ? buildGoogleMapsUrl(routeStartPoint, routeWaypointStops, routeEndPoint) : '#';
   const appleMapsUrl = routeStartPoint ? buildAppleMapsUrl(routeStartPoint, routeWaypointStops, routeEndPoint) : '#';
-  const shareTripUrl =
-    hasGeneratedTrip && typeof window !== 'undefined'
-      ? `${window.location.origin}/trip?${new URLSearchParams({
-          start: startInput,
-          end: routeDestination,
-          data: encodeTripForUrl(buildTripData()),
-        }).toString()}`
-      : googleMapsUrl;
   const filteredHomeDestinations =
     homeDestinationFilter === 'all'
       ? WHERE_TO_GO_DESTINATIONS
@@ -3044,8 +3035,14 @@ function HomeContent() {
       start: startInput,
       end: routeDestination,
       trip: buildTripData(),
-      fallbackUrl: shareTripUrl,
     });
+
+    if (!url) {
+      setShareMessage('Unable to create a shareable trip link right now.');
+      setShareCopied(false);
+      return;
+    }
+
     const result = await shareOrCopy({
       url,
     });

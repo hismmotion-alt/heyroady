@@ -50,12 +50,10 @@ export async function createRoadyShareUrl({
   start,
   end,
   trip,
-  fallbackUrl,
 }: {
   start: string;
   end: string;
   trip: unknown;
-  fallbackUrl: string;
 }) {
   try {
     const response = await fetch('/api/share-trip', {
@@ -64,11 +62,11 @@ export async function createRoadyShareUrl({
       body: JSON.stringify({ start, end, trip }),
     });
 
-    if (!response.ok) return fallbackUrl;
+    if (!response.ok) return null;
 
     const data = (await response.json()) as { url?: string };
-    return data.url || fallbackUrl;
+    return data.url || null;
   } catch {
-    return fallbackUrl;
+    return null;
   }
 }
