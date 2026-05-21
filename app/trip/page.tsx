@@ -10,8 +10,8 @@ import type { HotelSuggestion, TripData } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
-import { shareOrCopy } from '@/lib/share';
-import { decodeTripFromUrl } from '@/lib/trip-share';
+import { shareOrCopy, shortenShareUrl } from '@/lib/share';
+import { decodeTripFromUrl, encodeTripForUrl } from '@/lib/trip-share';
 import { getTravelImageUrl } from '@/lib/trip-images';
 import type { User } from '@supabase/supabase-js';
 import {
@@ -432,10 +432,18 @@ function TripContent() {
 
   const handleShare = async () => {
     setShareFailed(false);
+    const shareUrl = trip && typeof window !== 'undefined'
+      ? `${window.location.origin}/trip?${new URLSearchParams({
+          start,
+          end,
+          data: encodeTripForUrl(trip),
+        }).toString()}`
+      : window.location.href;
+    const url = await shortenShareUrl(shareUrl);
     const result = await shareOrCopy({
       title: trip?.routeName || 'Roady trip',
       text: trip?.tagline || `${start} to ${end}`,
-      url: window.location.href,
+      url,
     });
 
     if (result !== 'failed') {

@@ -47,3 +47,20 @@ export async function shareOrCopy({
   const copied = await copyTextToClipboard(url);
   return copied ? ('copied' as const) : ('failed' as const);
 }
+
+export async function shortenShareUrl(url: string) {
+  try {
+    const response = await fetch('/api/shorten-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+    });
+
+    if (!response.ok) return url;
+
+    const data = (await response.json()) as { shortUrl?: string };
+    return data.shortUrl || url;
+  } catch {
+    return url;
+  }
+}
