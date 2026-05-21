@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Stop } from '@/lib/types';
+import { getTravelImageUrl } from '@/lib/trip-images';
 
 const CATEGORIES: { key: string; label: string; emoji: string; bg: string; text: string }[] = [
   { key: 'nature',    label: 'Nature',    emoji: '🌿', bg: 'bg-green-50',  text: 'text-[#1D9E75]' },
@@ -10,10 +11,6 @@ const CATEGORIES: { key: string; label: string; emoji: string; bg: string; text:
   { key: 'adventure', label: 'Adventure', emoji: '🏕️', bg: 'bg-red-50',    text: 'text-[#D85A30]' },
   { key: 'scenic',    label: 'Scenic',    emoji: '🌄', bg: 'bg-blue-50',   text: 'text-[#378ADD]' },
 ];
-
-function getOpenSourceImageUrl(name: string, city: string) {
-  return `https://source.unsplash.com/640x420/?${encodeURIComponent(`${name} ${city} landmark travel`)}`;
-}
 
 interface StopCardProps {
   stop: Stop;
@@ -41,7 +38,13 @@ export default function StopCard({
   const accentColor = isEnRoute ? '#D85A30' : '#378ADD';
   const [open, setOpen] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
-  const stopImage = stop.fsqPhoto || getOpenSourceImageUrl(stop.name, stop.city);
+  const fallbackImage = getTravelImageUrl({
+    name: stop.name,
+    city: stop.city,
+    category: stop.category,
+    width: 640,
+  });
+  const stopImage = stop.fsqPhoto || fallbackImage;
 
   useEffect(() => {
     if (isActive) setOpen(true);
@@ -83,6 +86,9 @@ export default function StopCard({
           alt={stop.name}
           className="h-14 w-16 flex-shrink-0 rounded-xl object-cover"
           loading="lazy"
+          onError={(event) => {
+            event.currentTarget.src = fallbackImage;
+          }}
         />
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-gray-900 text-sm leading-tight">{stop.name}</h3>
@@ -156,6 +162,9 @@ export default function StopCard({
             alt={stop.name}
             className="w-full h-36 object-cover rounded-xl mb-3"
             loading="lazy"
+            onError={(event) => {
+              event.currentTarget.src = fallbackImage;
+            }}
           />
 
           {/* Foursquare quick stats */}

@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
+import { getTravelImageUrl } from '@/lib/trip-images';
 import type { HotelSuggestion, Stop, TripData } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
 import {
@@ -1059,10 +1060,6 @@ function getDestinationCityLabel(destination: string) {
 
 function getHotelLocationSummary(hotel: HotelSuggestion) {
   return hotel.city || 'Destination stay';
-}
-
-function getOpenSourceImageUrl(query: string) {
-  return `https://source.unsplash.com/900x540/?${encodeURIComponent(query)}`;
 }
 
 function getStopTags(stop: PlannerStop) {
@@ -3979,17 +3976,27 @@ function HomeContent() {
                       )}
 
                       <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 pt-4">
-                        <button
-                          type="button"
-                          onClick={closePlanner}
-                          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
-                          aria-label="Close planner"
-                        >
-                          <svg className="h-5 w-5" fill="none" stroke="#1B2D45" strokeWidth="2.5" viewBox="0 0 24 24">
-                            <path d="M18 6 6 18" strokeLinecap="round" />
-                            <path d="m6 6 12 12" strokeLinecap="round" />
-                          </svg>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={closePlanner}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
+                            aria-label="Close planner"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="#1B2D45" strokeWidth="2.5" viewBox="0 0 24 24">
+                              <path d="M18 6 6 18" strokeLinecap="round" />
+                              <path d="m6 6 12 12" strokeLinecap="round" />
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleSuggestNewRoute()}
+                            className="h-10 rounded-full bg-white/95 px-3 text-xs font-extrabold shadow-sm"
+                            style={{ color: '#1B2D45' }}
+                          >
+                            Suggest new trip
+                          </button>
+                        </div>
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
@@ -4059,10 +4066,21 @@ function HomeContent() {
                           <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
-                              src={getOpenSourceImageUrl(`${finalDestinationSpot?.name || routeDestination} ${destinationCityLabel} landmark travel`)}
+                              src={finalDestinationSpot?.fsqPhoto || getTravelImageUrl({
+                                name: finalDestinationSpot?.name || routeDestination,
+                                city: destinationCityLabel,
+                                category: 'destination',
+                              })}
                               alt={finalDestinationSpot?.name || routeDestination}
                               className="h-44 w-full object-cover"
                               loading="lazy"
+                              onError={(event) => {
+                                event.currentTarget.src = getTravelImageUrl({
+                                  name: finalDestinationSpot?.name || routeDestination,
+                                  city: destinationCityLabel,
+                                  category: 'destination',
+                                });
+                              }}
                             />
                             <div className="p-5">
                               <div className="mb-2 flex items-center gap-2">
@@ -4130,10 +4148,21 @@ function HomeContent() {
                                     <div key={stop.id} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
-                                        src={stop.fsqPhoto || getOpenSourceImageUrl(`${stop.name} ${stop.city} travel stop`)}
+                                        src={stop.fsqPhoto || getTravelImageUrl({
+                                          name: stop.name,
+                                          city: stop.city,
+                                          category: stop.category,
+                                        })}
                                         alt={stop.name}
                                         className="mb-3 h-36 w-full rounded-xl object-cover"
                                         loading="lazy"
+                                        onError={(event) => {
+                                          event.currentTarget.src = getTravelImageUrl({
+                                            name: stop.name,
+                                            city: stop.city,
+                                            category: stop.category,
+                                          });
+                                        }}
                                       />
                                       <div className="flex items-start gap-3">
                                         <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white" style={{ backgroundColor: '#D85A30' }}>

@@ -10,6 +10,7 @@ import type { HotelSuggestion, TripData } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
+import { getTravelImageUrl } from '@/lib/trip-images';
 import type { User } from '@supabase/supabase-js';
 import {
   DndContext,
@@ -78,10 +79,6 @@ const CHECKLIST_ITEMS = [
   'Download offline maps',
   'Pack layers — CA temps vary',
 ];
-
-function getOpenSourceImageUrl(query: string) {
-  return `https://source.unsplash.com/900x540/?${encodeURIComponent(query)}`;
-}
 
 function getBookingDetailsUrl(hotel: HotelSuggestion, fallbackParams: URLSearchParams) {
   const directUrl = hotel.bookingUrl || (hotel.fsqWebsite?.includes('booking.com') ? hotel.fsqWebsite : '');
@@ -548,16 +545,25 @@ function TripContent() {
             onStopClick={setActiveStop}
           />
           <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 pt-4">
-            <button
-              onClick={() => router.push('/')}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
-              aria-label="Close result"
-            >
-              <svg className="h-5 w-5" fill="none" stroke="#1B2D45" strokeWidth="2.5" viewBox="0 0 24 24">
-                <path d="M18 6 6 18" strokeLinecap="round" />
-                <path d="m6 6 12 12" strokeLinecap="round" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => router.push('/')}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
+                aria-label="Close result"
+              >
+                <svg className="h-5 w-5" fill="none" stroke="#1B2D45" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <path d="M18 6 6 18" strokeLinecap="round" />
+                  <path d="m6 6 12 12" strokeLinecap="round" />
+                </svg>
+              </button>
+              <button
+                onClick={() => router.push('/?plan=1')}
+                className="h-10 rounded-full bg-white/95 px-3 text-xs font-extrabold shadow-sm"
+                style={{ color: '#1B2D45' }}
+              >
+                Suggest new trip
+              </button>
+            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSaveTrip}
@@ -628,10 +634,21 @@ function TripContent() {
               <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={finalDestination.fsqPhoto || getOpenSourceImageUrl(`${finalDestination.name} ${finalDestination.city} landmark travel`)}
+                  src={finalDestination.fsqPhoto || getTravelImageUrl({
+                    name: finalDestination.name,
+                    city: finalDestination.city,
+                    category: 'destination',
+                  })}
                   alt={finalDestination.name}
                   className="h-44 w-full object-cover"
                   loading="lazy"
+                  onError={(event) => {
+                    event.currentTarget.src = getTravelImageUrl({
+                      name: finalDestination.name,
+                      city: finalDestination.city,
+                      category: 'destination',
+                    });
+                  }}
                 />
                 <div className="p-5">
                   <div className="mb-2 flex items-center gap-2">
