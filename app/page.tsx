@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
-import { shareOrCopy, shortenShareUrl } from '@/lib/share';
+import { createRoadyShareUrl, shareOrCopy } from '@/lib/share';
 import { encodeTripForUrl } from '@/lib/trip-share';
 import { getTravelImageUrl } from '@/lib/trip-images';
 import type { HotelSuggestion, Stop, TripData } from '@/lib/types';
@@ -3040,10 +3040,13 @@ function HomeContent() {
   async function handleCopyLink() {
     if (!startInput.trim()) return;
 
-    const url = await shortenShareUrl(shareTripUrl);
+    const url = await createRoadyShareUrl({
+      start: startInput,
+      end: routeDestination,
+      trip: buildTripData(),
+      fallbackUrl: shareTripUrl,
+    });
     const result = await shareOrCopy({
-      title: routeName || 'Roady trip',
-      text: routeTagline || `${startInput} to ${tripDestinationDisplay}`,
       url,
     });
 

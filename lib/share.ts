@@ -25,15 +25,13 @@ export async function copyTextToClipboard(text: string) {
 }
 
 export async function shareOrCopy({
-  title,
-  text,
   url,
 }: {
-  title: string;
-  text: string;
+  title?: string;
+  text?: string;
   url: string;
 }) {
-  const shareData = { title, text, url };
+  const shareData = { url };
 
   if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
     try {
@@ -48,19 +46,29 @@ export async function shareOrCopy({
   return copied ? ('copied' as const) : ('failed' as const);
 }
 
-export async function shortenShareUrl(url: string) {
+export async function createRoadyShareUrl({
+  start,
+  end,
+  trip,
+  fallbackUrl,
+}: {
+  start: string;
+  end: string;
+  trip: unknown;
+  fallbackUrl: string;
+}) {
   try {
-    const response = await fetch('/api/shorten-url', {
+    const response = await fetch('/api/share-trip', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ start, end, trip }),
     });
 
-    if (!response.ok) return url;
+    if (!response.ok) return fallbackUrl;
 
-    const data = (await response.json()) as { shortUrl?: string };
-    return data.shortUrl || url;
+    const data = (await response.json()) as { url?: string };
+    return data.url || fallbackUrl;
   } catch {
-    return url;
+    return fallbackUrl;
   }
 }

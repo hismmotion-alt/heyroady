@@ -10,7 +10,7 @@ import type { HotelSuggestion, TripData } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
-import { shareOrCopy, shortenShareUrl } from '@/lib/share';
+import { createRoadyShareUrl, shareOrCopy } from '@/lib/share';
 import { decodeTripFromUrl, encodeTripForUrl } from '@/lib/trip-share';
 import { getTravelImageUrl } from '@/lib/trip-images';
 import type { User } from '@supabase/supabase-js';
@@ -181,6 +181,7 @@ function TripContent() {
   const vibe = searchParams.get('vibe') || '';
   const distance = searchParams.get('distance') || '';
   const interests = searchParams.get('interests') || '';
+  const sharedTripSlug = searchParams.get('s') || '';
   const sharedTripParam = searchParams.get('data') || '';
   const sharedTrip = useMemo(
     () => (sharedTripParam ? decodeTripFromUrl(sharedTripParam) : null),
@@ -249,12 +250,12 @@ function TripContent() {
   useEffect(() => {
     if (!authReady) return;
 
-    if (!start || !end) {
+    if ((!start || !end) && !sharedTripSlug) {
       router.push('/');
       return;
     }
 
-    if (!userId && !isDevPreview && !sharedTrip) {
+    if (!userId && !isDevPreview && !sharedTrip && !sharedTripSlug) {
       const query = searchParams.toString();
       router.push(`/login?next=${encodeURIComponent(`/trip${query ? `?${query}` : ''}`)}`);
       return;
@@ -270,6 +271,28 @@ function TripContent() {
           setEndLabel(end);
           setEndInputValue(end);
           setTrip(PREVIEW_TRIP);
+          return;
+        }
+
+        if (sharedTripSlug) {
+          const response = await fetch(`/api/share-trip?s=${encodeURIComponent(sharedTripSlug)}`);
+          if (!response.ok) throw new Error('Trip link not found');
+
+          const data = (await response.json()) as { start: string; end: string; trip: TripData };
+          const finalStop = [...data.trip.stops].reverse().find((stop) => stop.stopType === 'destination')
+            ?? data.trip.stops[data.trip.stops.length - 1];
+          const fallbackEndCoord: [number, number] = finalStop
+            ? [finalStop.lng, finalStop.lat]
+            : [-119.4179, 36.7783];
+          const [startCoord, endCoord] = await Promise.all([
+            geocode(data.start).catch(() => fallbackEndCoord),
+            geocode(data.end).catch(() => fallbackEndCoord),
+          ]);
+          setStartCoords(startCoord);
+          setEndCoords(endCoord);
+          setEndLabel(data.end);
+          setEndInputValue(data.end);
+          setTrip(data.trip);
           return;
         }
 
@@ -316,7 +339,7 @@ function TripContent() {
     }
 
     fetchTrip();
-  }, [authReady, userId, start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests, isDevPreview, sharedTrip, router, searchParams]);
+  }, [authReady, userId, start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests, isDevPreview, sharedTrip, sharedTripSlug, router, searchParams]);
 
   if (loading) {
     return (
@@ -439,10 +462,15 @@ function TripContent() {
           data: encodeTripForUrl(trip),
         }).toString()}`
       : window.location.href;
-    const url = await shortenShareUrl(shareUrl);
+    const url = trip
+      ? await createRoadyShareUrl({
+          start: start || endLabel || 'Roady trip',
+          end: endLabel || end || 'Destination',
+          trip,
+          fallbackUrl: shareUrl,
+        })
+      : shareUrl;
     const result = await shareOrCopy({
-      title: trip?.routeName || 'Roady trip',
-      text: trip?.tagline || `${start} to ${end}`,
       url,
     });
 
