@@ -11,6 +11,10 @@ const CATEGORIES: { key: string; label: string; emoji: string; bg: string; text:
   { key: 'scenic',    label: 'Scenic',    emoji: '🌄', bg: 'bg-blue-50',   text: 'text-[#378ADD]' },
 ];
 
+function getOpenSourceImageUrl(name: string, city: string) {
+  return `https://source.unsplash.com/640x420/?${encodeURIComponent(`${name} ${city} landmark travel`)}`;
+}
+
 interface StopCardProps {
   stop: Stop;
   number: number;
@@ -37,6 +41,7 @@ export default function StopCard({
   const accentColor = isEnRoute ? '#D85A30' : '#378ADD';
   const [open, setOpen] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const stopImage = stop.fsqPhoto || getOpenSourceImageUrl(stop.name, stop.city);
 
   useEffect(() => {
     if (isActive) setOpen(true);
@@ -72,6 +77,13 @@ export default function StopCard({
         >
           {number}
         </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={stopImage}
+          alt={stop.name}
+          className="h-14 w-16 flex-shrink-0 rounded-xl object-cover"
+          loading="lazy"
+        />
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-gray-900 text-sm leading-tight">{stop.name}</h3>
           <div className="flex items-center gap-1.5 mt-0.5">
@@ -138,15 +150,13 @@ export default function StopCard({
       {/* Collapsible details */}
       {open && (
         <div className="px-4 pb-4">
-          {/* Foursquare photo */}
-          {stop.fsqPhoto && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={stop.fsqPhoto}
-              alt={stop.name}
-              className="w-full h-36 object-cover rounded-xl mb-3"
-            />
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={stopImage}
+            alt={stop.name}
+            className="w-full h-36 object-cover rounded-xl mb-3"
+            loading="lazy"
+          />
 
           {/* Foursquare quick stats */}
           {(stop.fsqRating != null || stop.fsqHours || stop.fsqPrice != null) && (

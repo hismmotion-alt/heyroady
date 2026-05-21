@@ -79,6 +79,10 @@ const CHECKLIST_ITEMS = [
   'Pack layers — CA temps vary',
 ];
 
+function getOpenSourceImageUrl(query: string) {
+  return `https://source.unsplash.com/900x540/?${encodeURIComponent(query)}`;
+}
+
 const PREVIEW_TRIP: TripData = {
   routeName: 'Santa Barbara Coast Preview',
   tagline: 'A quick coastal route with one final destination, two easy stops, and hotel options.',
@@ -574,7 +578,7 @@ function TripContent() {
             {([
               ['destination', 'Destination'],
               ['stops', 'Stops'],
-              ['hotels', 'Hotels'],
+              ['hotels', 'Hotel'],
             ] as const).map(([tab, label]) => (
               <button
                 key={tab}
@@ -593,14 +597,13 @@ function TripContent() {
           <div className="flex-1 overflow-y-auto px-4 py-4">
             {mobileTab === 'destination' && finalDestination && (
               <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
-                {finalDestination.fsqPhoto ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={finalDestination.fsqPhoto} alt={finalDestination.name} className="h-44 w-full object-cover" />
-                ) : (
-                  <div className="flex h-44 items-center justify-center text-5xl" style={{ background: CATEGORY_STYLES[finalDestination.category]?.gradient || CATEGORY_STYLES.scenic.gradient }}>
-                    {CATEGORY_STYLES[finalDestination.category]?.emoji || CATEGORY_STYLES.scenic.emoji}
-                  </div>
-                )}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={finalDestination.fsqPhoto || getOpenSourceImageUrl(`${finalDestination.name} ${finalDestination.city} landmark travel`)}
+                  alt={finalDestination.name}
+                  className="h-44 w-full object-cover"
+                  loading="lazy"
+                />
                 <div className="p-5">
                   <div className="mb-2 flex items-center gap-2">
                     <span className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase" style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}>
@@ -679,7 +682,7 @@ function TripContent() {
 
             {mobileTab === 'hotels' && (
               <div>
-                <h2 className="mb-4 text-lg font-extrabold" style={{ color: '#1B2D45' }}>Suggested hotels</h2>
+                <h2 className="mb-4 text-lg font-extrabold" style={{ color: '#1B2D45' }}>Suggested hotel</h2>
                 {trip.hotels && trip.hotels.length > 0 ? (
                   <div className="space-y-3">
                     {trip.hotels.map((hotel, idx) => (

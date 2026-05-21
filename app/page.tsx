@@ -1051,6 +1051,10 @@ function getHotelLocationSummary(hotel: HotelSuggestion) {
   return hotel.city || 'Destination stay';
 }
 
+function getOpenSourceImageUrl(query: string) {
+  return `https://source.unsplash.com/900x540/?${encodeURIComponent(query)}`;
+}
+
 function getStopTags(stop: PlannerStop) {
   const haystack = `${stop.name} ${stop.description} ${stop.tip}`.toLowerCase();
   const tags = new Set<string>();
@@ -1126,8 +1130,17 @@ function ActionGlyph({
   if (kind === 'copy') {
     return (
       <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="9" y="9" width="10" height="10" rx="2" />
-        <path d="M5 15V7a2 2 0 0 1 2-2h8" />
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+        <path d="m16 6-4-4-4 4" />
+        <path d="M12 2v13" />
+      </svg>
+    );
+  }
+
+  if (kind === 'save') {
+    return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill={active ? 'currentColor' : 'none'} stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z" />
       </svg>
     );
   }
@@ -1900,7 +1913,7 @@ function HomeContent() {
   const shouldShowStayPicker = prefs.hotelPreference !== 'none';
   const visibleHotels = shouldShowStayPicker ? tripData?.hotels?.slice(0, 4) ?? [] : [];
   const selectedHotel = visibleHotels[selectedHotelIndex] ?? visibleHotels[0] ?? null;
-  const finalDestinationSpot = selectedHotel ? null : getFinalDestinationSpot(stops);
+  const finalDestinationSpot = getFinalDestinationSpot(stops);
   const finalDestinationSpotId = finalDestinationSpot?.id ?? null;
   const routeWaypointStops = useMemo(
     () => (finalDestinationSpotId ? stops.filter((stop) => stop.id !== finalDestinationSpotId) : stops),
@@ -4006,7 +4019,7 @@ function HomeContent() {
                         {([
                           ['destination', 'Destination'],
                           ['stops', 'Stops'],
-                          ['hotels', 'Hotels'],
+                          ['hotels', 'Hotel'],
                         ] as const).map(([tab, label]) => (
                           <button
                             key={tab}
@@ -4026,9 +4039,13 @@ function HomeContent() {
                       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
                         {mobileResultTab === 'destination' && (
                           <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
-                            <div className="flex h-44 items-center justify-center text-5xl" style={{ background: 'linear-gradient(135deg,#F8C471,#5DADE2)' }}>
-                              {finalDestinationSpot ? getCategoryIcon(finalDestinationSpot.category) : selectedHotel ? '🏨' : '📍'}
-                            </div>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={getOpenSourceImageUrl(`${finalDestinationSpot?.name || routeDestination} ${destinationCityLabel} landmark travel`)}
+                              alt={finalDestinationSpot?.name || routeDestination}
+                              className="h-44 w-full object-cover"
+                              loading="lazy"
+                            />
                             <div className="p-5">
                               <div className="mb-2 flex items-center gap-2">
                                 <span className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase" style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}>
@@ -4037,7 +4054,7 @@ function HomeContent() {
                                 <span className="text-xs font-semibold text-gray-400">{destinationCityLabel}</span>
                               </div>
                               <h2 className="text-xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
-                                {finalDestinationSpot?.name || selectedHotel?.name || tripDestinationDisplay}
+                                {finalDestinationSpot?.name || routeDestination}
                               </h2>
                               <p className="mt-3 text-sm leading-relaxed" style={{ color: '#4B5563' }}>
                                 {finalDestinationSpot?.description || tripData?.destinationDescription || routeSummary}
@@ -4093,6 +4110,13 @@ function HomeContent() {
                                   const realIndex = stops.findIndex((candidate) => candidate.id === stop.id);
                                   return (
                                     <div key={stop.id} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={stop.fsqPhoto || getOpenSourceImageUrl(`${stop.name} ${stop.city} travel stop`)}
+                                        alt={stop.name}
+                                        className="mb-3 h-36 w-full rounded-xl object-cover"
+                                        loading="lazy"
+                                      />
                                       <div className="flex items-start gap-3">
                                         <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white" style={{ backgroundColor: '#D85A30' }}>
                                           {visibleIndex + 1}
@@ -4133,7 +4157,7 @@ function HomeContent() {
 
                         {mobileResultTab === 'hotels' && (
                           <div>
-                            <h2 className="mb-4 text-lg font-extrabold" style={{ color: '#1B2D45' }}>Suggested hotels</h2>
+                            <h2 className="mb-4 text-lg font-extrabold" style={{ color: '#1B2D45' }}>Suggested hotel</h2>
                             {visibleHotels.length > 0 ? (
                               <div className="space-y-3">
                                 {visibleHotels.map((hotel, index) => (
