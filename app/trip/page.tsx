@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import StopCard from '@/components/StopCard';
@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
 import { shareOrCopy } from '@/lib/share';
+import { decodeTripFromUrl } from '@/lib/trip-share';
 import { getTravelImageUrl } from '@/lib/trip-images';
 import type { User } from '@supabase/supabase-js';
 import {
@@ -180,6 +181,11 @@ function TripContent() {
   const vibe = searchParams.get('vibe') || '';
   const distance = searchParams.get('distance') || '';
   const interests = searchParams.get('interests') || '';
+  const sharedTripParam = searchParams.get('data') || '';
+  const sharedTrip = useMemo(
+    () => (sharedTripParam ? decodeTripFromUrl(sharedTripParam) : null),
+    [sharedTripParam]
+  );
   const isDevPreview = searchParams.get('preview') === '1' && process.env.NODE_ENV === 'development';
 
   const [trip, setTrip] = useState<TripData | null>(null);
@@ -248,7 +254,7 @@ function TripContent() {
       return;
     }
 
-    if (!userId && !isDevPreview) {
+    if (!userId && !isDevPreview && !sharedTrip) {
       const query = searchParams.toString();
       router.push(`/login?next=${encodeURIComponent(`/trip${query ? `?${query}` : ''}`)}`);
       return;
@@ -264,6 +270,24 @@ function TripContent() {
           setEndLabel(end);
           setEndInputValue(end);
           setTrip(PREVIEW_TRIP);
+          return;
+        }
+
+        if (sharedTrip) {
+          const finalStop = [...sharedTrip.stops].reverse().find((stop) => stop.stopType === 'destination')
+            ?? sharedTrip.stops[sharedTrip.stops.length - 1];
+          const fallbackEndCoord: [number, number] = finalStop
+            ? [finalStop.lng, finalStop.lat]
+            : [-119.4179, 36.7783];
+          const [startCoord, endCoord] = await Promise.all([
+            geocode(start).catch(() => fallbackEndCoord),
+            geocode(end).catch(() => fallbackEndCoord),
+          ]);
+          setStartCoords(startCoord);
+          setEndCoords(endCoord);
+          setEndLabel(end);
+          setEndInputValue(end);
+          setTrip(sharedTrip);
           return;
         }
 
@@ -292,7 +316,7 @@ function TripContent() {
     }
 
     fetchTrip();
-  }, [authReady, userId, start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests, isDevPreview, router, searchParams]);
+  }, [authReady, userId, start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests, isDevPreview, sharedTrip, router, searchParams]);
 
   if (loading) {
     return (
