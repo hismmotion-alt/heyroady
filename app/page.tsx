@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
+import { shareOrCopy } from '@/lib/share';
 import { getTravelImageUrl } from '@/lib/trip-images';
 import type { HotelSuggestion, Stop, TripData } from '@/lib/types';
 import type { User } from '@supabase/supabase-js';
@@ -1857,6 +1858,7 @@ function HomeContent() {
   const [saving, setSaving] = useState(false);
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState('');
+  const [shareCopied, setShareCopied] = useState(false);
   const [mapsMenuOpen, setMapsMenuOpen] = useState(false);
   const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
   const [mobileResultTab, setMobileResultTab] = useState<'destination' | 'stops' | 'hotels'>('destination');
@@ -3029,12 +3031,21 @@ function HomeContent() {
   async function handleCopyLink() {
     if (!startInput.trim()) return;
 
-    try {
-      await navigator.clipboard.writeText(googleMapsUrl);
-      setShareMessage('Trip link copied.');
-    } catch {
-      setShareMessage('Unable to copy the trip link right now.');
+    const result = await shareOrCopy({
+      title: routeName || 'Roady trip',
+      text: routeTagline || `${startInput} to ${tripDestinationDisplay}`,
+      url: googleMapsUrl,
+    });
+
+    if (result === 'failed') {
+      setShareMessage('Unable to share the trip link right now.');
+      setShareCopied(false);
+      return;
     }
+
+    setShareCopied(true);
+    setShareMessage(result === 'shared' ? 'Trip shared.' : 'Trip link copied.');
+    window.setTimeout(() => setShareCopied(false), 2000);
   }
 
   async function suggestPlannerStop(position: number, mode: 'replace' | 'insert', preferredCategory?: string) {
@@ -4018,7 +4029,13 @@ function HomeContent() {
                             className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-[#1B2D45] shadow-sm"
                             aria-label="Share trip"
                           >
-                            <ActionGlyph kind="copy" />
+                            {shareCopied ? (
+                              <svg className="h-5 w-5" fill="none" stroke="#D85A30" strokeWidth="2.5" viewBox="0 0 24 24">
+                                <path d="M20 6 9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            ) : (
+                              <ActionGlyph kind="copy" />
+                            )}
                           </button>
                         </div>
                       </div>

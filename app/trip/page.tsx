@@ -10,6 +10,7 @@ import type { HotelSuggestion, TripData } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
+import { shareOrCopy } from '@/lib/share';
 import { getTravelImageUrl } from '@/lib/trip-images';
 import type { User } from '@supabase/supabase-js';
 import {
@@ -192,6 +193,7 @@ function TripContent() {
   const [savedTripId, setSavedTripId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareFailed, setShareFailed] = useState(false);
   const [selectedHotelIdx, setSelectedHotelIdx] = useState<number | null>(null);
   const [replacingStop, setReplacingStop] = useState<number | null>(null);
   const [endLabel, setEndLabel] = useState(end);
@@ -405,19 +407,19 @@ function TripContent() {
   };
 
   const handleShare = async () => {
-    const shareData = {
+    setShareFailed(false);
+    const result = await shareOrCopy({
       title: trip?.routeName || 'Roady trip',
       text: trip?.tagline || `${start} to ${end}`,
       url: window.location.href,
-    };
+    });
 
-    try {
-      if (navigator.share) await navigator.share(shareData);
-      else await navigator.clipboard.writeText(window.location.href);
+    if (result !== 'failed') {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // User cancelled the share sheet or clipboard failed.
+    } else {
+      setShareFailed(true);
+      setTimeout(() => setShareFailed(false), 2000);
     }
   };
 
@@ -581,11 +583,13 @@ function TripContent() {
               <button
                 onClick={handleShare}
                 className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
-                style={{ color: copied ? '#D85A30' : '#1B2D45' }}
+                style={{ color: copied ? '#D85A30' : shareFailed ? '#ef4444' : '#1B2D45' }}
                 aria-label="Share trip"
               >
                 {copied ? (
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                ) : shareFailed ? (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>
                 ) : (
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
                 )}
