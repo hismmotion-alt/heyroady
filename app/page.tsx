@@ -1839,6 +1839,8 @@ function HomeContent() {
   const [shareMessage, setShareMessage] = useState('');
   const [mapsMenuOpen, setMapsMenuOpen] = useState(false);
   const [mobileProfileMenuOpen, setMobileProfileMenuOpen] = useState(false);
+  const [mobileResultTab, setMobileResultTab] = useState<'destination' | 'stops' | 'hotels'>('destination');
+  const [plannerReplacingStop, setPlannerReplacingStop] = useState<number | null>(null);
   const [homeDestinationFilter, setHomeDestinationFilter] = useState<HomeDestinationFilter>('all');
   const [homeDestinationSlide, setHomeDestinationSlide] = useState(0);
 
@@ -2519,6 +2521,8 @@ function HomeContent() {
     setShareMessage('');
     setSavedTripId(null);
     setMapsMenuOpen(false);
+    setMobileResultTab('destination');
+    setPlannerReplacingStop(null);
     requestAnimationFrame(() => setPlannerVisible(true));
   }
 
@@ -2559,6 +2563,8 @@ function HomeContent() {
     setShareMessage('');
     setSavedTripId(null);
     setMapsMenuOpen(false);
+    setMobileResultTab('destination');
+    setPlannerReplacingStop(null);
     requestAnimationFrame(() => setPlannerVisible(true));
   }
 
@@ -3009,6 +3015,57 @@ function HomeContent() {
     } catch {
       setShareMessage('Unable to copy the trip link right now.');
     }
+  }
+
+  async function suggestPlannerStop(position: number, mode: 'replace' | 'insert', preferredCategory?: string) {
+    if (plannerReplacingStop !== null) return;
+    setPlannerReplacingStop(mode === 'insert' ? -1 : position);
+    setPlannerError('');
+
+    try {
+      const response = await fetch('/api/suggest-stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start: startInput,
+          end: tripDestinationLabel,
+          currentStops: stops.map(stripPlannerStop),
+          position,
+          preferredCategory,
+          mode,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Unable to suggest a stop.');
+
+      const newStop = (await response.json()) as Stop;
+      const plannerStop: PlannerStop = {
+        ...newStop,
+        stopType: newStop.stopType ?? 'en-route',
+        id:
+          typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${newStop.name}-${Date.now()}`,
+        recommended: false,
+      };
+
+      setStops((currentStops) => {
+        const nextStops = [...currentStops];
+        if (mode === 'insert') nextStops.splice(position, 0, plannerStop);
+        else nextStops[position] = plannerStop;
+        return nextStops;
+      });
+      setActiveStop(position);
+    } catch {
+      setPlannerError(mode === 'insert' ? 'Unable to add a stop right now.' : 'Unable to replace that stop right now.');
+    } finally {
+      setPlannerReplacingStop(null);
+    }
+  }
+
+  function removePlannerStop(index: number) {
+    setStops((currentStops) => currentStops.filter((_, stopIndex) => stopIndex !== index));
+    setActiveStop((currentActive) => (currentActive >= index ? Math.max(-1, currentActive - 1) : currentActive));
   }
 
   function toggleKidsAge(ageId: string) {
@@ -3882,7 +3939,236 @@ function HomeContent() {
               }`}
             >
               {plannerStep === 'results' ? (
-                <div className="flex h-full min-h-0 flex-col bg-white">
+                <div className="h-full min-h-0 bg-white">
+                  <div className="flex h-full min-h-0 flex-col bg-white sm:hidden">
+                    <section className="relative h-[35vh] min-h-[230px] flex-shrink-0 overflow-hidden bg-[#EEF2F7]">
+                      {HAS_MAPBOX && startCoords && mapStops.length > 0 ? (
+                        <RouteMap
+                          stops={mapStops}
+                          start={startCoords}
+                          end={endCoords}
+                          endLabel={tripDestinationLabel}
+                          activeStop={activeStop}
+                          onStopClick={setActiveStop}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(55,138,221,0.16),transparent_28%),radial-gradient(circle_at_72%_72%,rgba(88,204,2,0.16),transparent_26%),linear-gradient(180deg,#ecf6ff_0%,#f8fbfe_100%)]" />
+                      )}
+
+                      <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 pt-4">
+                        <button
+                          type="button"
+                          onClick={closePlanner}
+                          className="h-10 rounded-full bg-white/95 px-3 shadow-sm"
+                          aria-label="Close planner"
+                        >
+                          <img src="/roady-logo.png" alt="Roady" className="h-7 w-auto" />
+                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => void handleToggleSaveTrip()}
+                            disabled={saving || !canProceed('results')}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm disabled:opacity-60"
+                            style={{ color: tripSaved ? '#D85A30' : '#1B2D45' }}
+                            aria-label={tripSaved ? 'Trip saved' : 'Save trip'}
+                          >
+                            {saving ? (
+                              <div className="h-4 w-4 animate-spin rounded-full border-2" style={{ borderColor: '#6B7280', borderTopColor: 'transparent' }} />
+                            ) : (
+                              <ActionGlyph kind="save" active={tripSaved} />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleCopyLink()}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-[#1B2D45] shadow-sm"
+                            aria-label="Share trip"
+                          >
+                            <ActionGlyph kind="copy" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="absolute bottom-3 left-3 right-3 z-10 rounded-2xl bg-white/95 px-4 py-3 shadow-sm">
+                        <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#993C1D' }}>Your trip</p>
+                        <h1 className="mt-0.5 truncate text-lg font-extrabold" style={{ color: '#1B2D45' }}>
+                          {startInput} to {tripDestinationDisplay}
+                        </h1>
+                        <p className="mt-0.5 line-clamp-1 text-xs font-semibold" style={{ color: '#6B7280' }}>
+                          {routeTagline}
+                        </p>
+                      </div>
+                    </section>
+
+                    <section className="flex h-[65vh] min-h-0 flex-col bg-[#FDF6EE]">
+                      <div className="flex flex-shrink-0 gap-1 overflow-x-auto border-b border-orange-100 bg-white px-3 pt-3">
+                        {([
+                          ['destination', 'Destination'],
+                          ['stops', 'Stops'],
+                          ['hotels', 'Hotels'],
+                        ] as const).map(([tab, label]) => (
+                          <button
+                            key={tab}
+                            type="button"
+                            onClick={() => setMobileResultTab(tab)}
+                            className="flex-1 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-bold transition-all"
+                            style={{
+                              borderColor: mobileResultTab === tab ? '#D85A30' : 'transparent',
+                              color: mobileResultTab === tab ? '#D85A30' : '#6B7280',
+                            }}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                        {mobileResultTab === 'destination' && (
+                          <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
+                            <div className="flex h-44 items-center justify-center text-5xl" style={{ background: 'linear-gradient(135deg,#F8C471,#5DADE2)' }}>
+                              {finalDestinationSpot ? getCategoryIcon(finalDestinationSpot.category) : selectedHotel ? '🏨' : '📍'}
+                            </div>
+                            <div className="p-5">
+                              <div className="mb-2 flex items-center gap-2">
+                                <span className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase" style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}>
+                                  Final destination
+                                </span>
+                                <span className="text-xs font-semibold text-gray-400">{destinationCityLabel}</span>
+                              </div>
+                              <h2 className="text-xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>
+                                {finalDestinationSpot?.name || selectedHotel?.name || tripDestinationDisplay}
+                              </h2>
+                              <p className="mt-3 text-sm leading-relaxed" style={{ color: '#4B5563' }}>
+                                {finalDestinationSpot?.description || tripData?.destinationDescription || routeSummary}
+                              </p>
+                              <div className="mt-4 rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
+                                <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
+                                  <strong>Roady says:</strong> {finalDestinationSpot?.tip || routeTagline}
+                                </p>
+                              </div>
+                              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                                <div className="rounded-xl bg-gray-50 px-2 py-3">
+                                  <p className="text-[11px] font-semibold text-gray-400">Drive</p>
+                                  <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{formatMiles(tripMiles)}</p>
+                                </div>
+                                <div className="rounded-xl bg-gray-50 px-2 py-3">
+                                  <p className="text-[11px] font-semibold text-gray-400">Days</p>
+                                  <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{tripDaysLabel}</p>
+                                </div>
+                                <div className="rounded-xl bg-gray-50 px-2 py-3">
+                                  <p className="text-[11px] font-semibold text-gray-400">Stops</p>
+                                  <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{routeWaypointStops.length}</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {mobileResultTab === 'stops' && (
+                          <div>
+                            <div className="mb-3 flex items-center justify-between gap-3">
+                              <div>
+                                <h2 className="text-lg font-extrabold" style={{ color: '#1B2D45' }}>Editable stops</h2>
+                                <p className="text-xs text-gray-400">Remove, replace, or add an en-route stop.</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => void suggestPlannerStop(routeWaypointStops.length, 'insert')}
+                                disabled={plannerReplacingStop !== null}
+                                className="flex-shrink-0 rounded-full px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
+                                style={{ backgroundColor: '#58CC02' }}
+                              >
+                                {plannerReplacingStop === -1 ? 'Adding...' : '+ Add'}
+                              </button>
+                            </div>
+                            {routeWaypointStops.length === 0 ? (
+                              <div className="rounded-2xl border border-dashed border-orange-200 bg-white p-6 text-center">
+                                <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>No stops selected</p>
+                                <p className="mt-1 text-xs text-gray-400">Add one if you want a break on the way.</p>
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                {routeWaypointStops.map((stop, visibleIndex) => {
+                                  const realIndex = stops.findIndex((candidate) => candidate.id === stop.id);
+                                  return (
+                                    <div key={stop.id} className="rounded-2xl border border-orange-100 bg-white p-4 shadow-sm">
+                                      <div className="flex items-start gap-3">
+                                        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-extrabold text-white" style={{ backgroundColor: '#D85A30' }}>
+                                          {visibleIndex + 1}
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-sm font-extrabold leading-tight" style={{ color: '#1B2D45' }}>{stop.name}</p>
+                                          <p className="mt-1 text-xs font-semibold text-gray-400">{stop.city} · {stop.duration}</p>
+                                          <p className="mt-3 text-sm leading-relaxed text-gray-600">{stop.description}</p>
+                                        </div>
+                                      </div>
+                                      <div className="mt-3 flex gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => void suggestPlannerStop(realIndex, 'replace')}
+                                          disabled={plannerReplacingStop !== null || realIndex < 0}
+                                          className="flex-1 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-60"
+                                          style={{ backgroundColor: 'rgba(88,204,2,0.1)', color: '#46a302' }}
+                                        >
+                                          {plannerReplacingStop === realIndex ? 'Finding...' : 'Suggest new'}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => realIndex >= 0 && removePlannerStop(realIndex)}
+                                          disabled={plannerReplacingStop !== null || realIndex < 0}
+                                          className="rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-60"
+                                          style={{ backgroundColor: 'rgba(239,68,68,0.08)', color: '#ef4444' }}
+                                        >
+                                          Remove
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {mobileResultTab === 'hotels' && (
+                          <div>
+                            <h2 className="mb-4 text-lg font-extrabold" style={{ color: '#1B2D45' }}>Suggested hotels</h2>
+                            {visibleHotels.length > 0 ? (
+                              <div className="space-y-3">
+                                {visibleHotels.map((hotel, index) => (
+                                  <ResultStayCard
+                                    key={`${hotel.name}-${hotel.city}-${index}`}
+                                    hotel={hotel}
+                                    selected={selectedHotelIndex === index}
+                                    preferenceLabels={[previewHotel, ...previewInterests].filter(Boolean)}
+                                    onSelect={() => {
+                                      setSelectedHotelIndex(index);
+                                      setHotelCarouselIndex(index);
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="rounded-2xl bg-white p-8 text-center">
+                                <p className="text-3xl">🏨</p>
+                                <p className="mt-2 text-sm font-bold" style={{ color: '#1B2D45' }}>No hotel suggestions</p>
+                                <p className="mt-1 text-xs text-gray-400">Choose hotel preferences when planning to see options here.</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {(plannerError || saveMessage || shareMessage) && (
+                          <div className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm font-semibold" style={{ color: '#46a302' }}>
+                            {plannerError || saveMessage || shareMessage}
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  </div>
+
+                  <div className="hidden h-full min-h-0 flex-col bg-white sm:flex">
                   <header className="flex-shrink-0 border-b border-gray-100 bg-white px-4 py-4 sm:px-6">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-3">
@@ -4219,6 +4505,7 @@ function HomeContent() {
                         </p>
                       </aside>
                       )}
+                    </div>
                     </div>
                   </div>
                 </div>
