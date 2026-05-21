@@ -5,20 +5,22 @@ export async function POST(req: Request) {
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const body = await req.json();
-    const { start, end, currentStops, position, preferredCategory } = body as {
+    const { start, end, currentStops, position, preferredCategory, mode } = body as {
       start: string;
       end: string;
       currentStops: { name: string; city: string; lat: number; lng: number; category: string }[];
       position: number;
       preferredCategory?: string;
+      mode?: 'insert' | 'replace';
     };
 
     if (!start || !end) {
       return Response.json({ error: 'Start and end are required' }, { status: 400 });
     }
 
-    const before = currentStops.slice(0, position).map((s) => s.name).join(', ') || start;
-    const after = currentStops.slice(position + 1).map((s) => s.name).join(', ') || end;
+    const isInsert = mode === 'insert';
+    const before = currentStops.slice(0, isInsert ? position : position).map((s) => s.name).join(', ') || start;
+    const after = currentStops.slice(isInsert ? position : position + 1).map((s) => s.name).join(', ') || end;
     const excluded = currentStops.map((s) => s.name).join(', ');
 
     const message = await client.messages.create({
@@ -32,7 +34,9 @@ export async function POST(req: Request) {
 
 The current stops on the route are: ${excluded || 'none yet'}.
 
-I want to replace stop #${position + 1} (currently "${currentStops[position]?.name}") with a different stop.
+${isInsert
+  ? `I want to add a new en-route stop at position #${position + 1}.`
+  : `I want to replace stop #${position + 1} (currently "${currentStops[position]?.name}") with a different stop.`}
 The new stop should fit naturally between: ${before} and ${after}.
 Do NOT suggest any of these existing stops: ${excluded}.${preferredCategory ? `\nThe stop MUST be of category "${preferredCategory}" — for example ${preferredCategory === 'food' ? 'a restaurant, winery, or local eatery' : preferredCategory === 'nature' ? 'a park, trail, or natural landmark' : preferredCategory === 'culture' ? 'a museum, gallery, or historical site' : preferredCategory === 'adventure' ? 'an outdoor activity, hike, or thrill experience' : 'a scenic viewpoint, overlook, or beautiful vista'}.` : ''}
 

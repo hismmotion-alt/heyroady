@@ -328,15 +328,6 @@ function buildPreferenceContext(body: Record<string, string>): string {
     parts.push(`They want ${n} stop${n === '1' ? '' : 's'} along the drive en-route to the destination.`);
   }
 
-  // Number of spots at destination
-  if (body.numberOfStops) {
-    if (body.numberOfStops === 'auto') {
-      parts.push('Choose the best number of spots to explore (between 3 and 6).');
-    } else {
-      parts.push(`They want exactly ${body.numberOfStops} spot${body.numberOfStops === '1' ? '' : 's'} to explore at the destination.`);
-    }
-  }
-
   // Hotel budget + details
   if (body.hotelPreference) {
     const hotelLabels: Record<string, string> = {
@@ -423,24 +414,6 @@ export async function POST(req: Request) {
     );
     const curatedStopsContext = buildCuratedStopsContext(uniqueCuratedPlaces);
 
-    // Determine how many spots to suggest
-    let spotsInstruction: string;
-    if (body.numberOfStops && body.numberOfStops !== 'auto' && body.numberOfStops !== '') {
-      spotsInstruction = body.numberOfStops;
-    } else {
-      // Derive a smart default from vibe and distance
-      let base = 4;
-      if (body.vibe === 'relaxed') base = 3;
-      else if (body.vibe === 'adventurous') base = 6;
-
-      if (body.distance === 'under-150') base = Math.min(base, 3);
-      else if (body.distance === '50-100' || body.distance === '50-100 miles') base = Math.min(base, 3);
-      else if (body.distance === '150-plus' || body.distance === '100-150 miles') base = Math.min(base, 4);
-      else if (body.distance === '200+ miles') base = Math.max(base, 4);
-
-      spotsInstruction = String(base);
-    }
-
     const waypointsContext = body.waypoints
       ? `\n\nThe traveler specifically wants to include these stops: ${body.waypoints}. Build the itinerary around them — use them as stops or find nearby alternatives if exact matches don't work well on this route.`
       : '';
@@ -468,10 +441,10 @@ export async function POST(req: Request) {
 ${body.numberOfEnrouteStops && body.numberOfEnrouteStops !== '0'
   ? `STRICT COORDINATE BOUNDS: En-route stops must fall within the geographic corridor between "${start}" and "${end}". Destination spots must be within 40km of "${end}"${endCoords ? ` (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)})` : ''}.
 
-Suggest ${body.numberOfEnrouteStops} stop${body.numberOfEnrouteStops === '1' ? '' : 's'} along the drive from "${start}" to "${end}" (en-route, ordered geographically from start to end), then ${spotsInstruction} spot${spotsInstruction === '1' ? '' : 's'} to explore in "${end}" (things to do and see at the destination). The requested destination spot count INCLUDES the final destination point: the last destination spot must be a specific real place in or near "${end}", not just the city/town itself. Return all of them in a single stops array: en-route stops first, destination spots last.`
+Suggest ${body.numberOfEnrouteStops} stop${body.numberOfEnrouteStops === '1' ? '' : 's'} along the drive from "${start}" to "${end}" (en-route, ordered geographically from start to end), then one main final destination in "${end}". The final destination must be a specific real place in or near "${end}", not just the city/town itself. Do not add extra destination spots. Return all of them in a single stops array: en-route stops first, final destination last.`
   : `${endCoords ? `STRICT COORDINATE BOUNDS: Every spot must be within 40km of "${end}" (lat ${endCoords[0].toFixed(4)}, lng ${endCoords[1].toFixed(4)}). Spots outside this radius will be discarded.` : ''}
 
-Suggest exactly ${spotsInstruction} interesting spots to explore in "${end}". These are things to do and see at the destination — not stops along the drive. The requested spot count INCLUDES the final destination point: the last spot must be a specific real place in or near "${end}", not just the city/town itself. Order them in a logical exploration sequence.`
+Suggest one main final destination in "${end}". This must be a specific real place in or near "${end}", not just the city/town itself. Do not add extra destination spots.`
 }
 
 Return this exact JSON structure:
@@ -515,8 +488,12 @@ ${hotelJsonField}  "stops": [
           data.stops = data.stops.filter((s: { lat: number; lng: number; stopType?: string }) =>
             s.stopType === 'en-route' || haversineKm(endCoords[0], endCoords[1], s.lat, s.lng) <= 40
           );
+          const enrouteStops = data.stops.filter((s: { stopType?: string }) => s.stopType === 'en-route');
+          const destinationStop = data.stops.find((s: { stopType?: string }) => s.stopType !== 'en-route');
+          data.stops = destinationStop ? [...enrouteStops, { ...destinationStop, stopType: 'destination' }] : enrouteStops;
         } else {
           data.stops = filterSpotsAtDestination(data.stops, endCoords[0], endCoords[1]);
+          data.stops = data.stops.slice(0, 1).map((s: { stopType?: string }) => ({ ...s, stopType: 'destination' }));
         }
       }
 

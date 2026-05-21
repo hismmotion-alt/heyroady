@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 import StopCard from '@/components/StopCard';
 import HotelCard from '@/components/HotelCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import type { TripData, HotelSuggestion } from '@/lib/types';
+import type { TripData } from '@/lib/types';
 import { createClient } from '@/lib/supabase';
 import { geocode } from '@/lib/geocode';
 import { getHotelImageUrl } from '@/lib/hotel-images';
@@ -79,6 +79,70 @@ const CHECKLIST_ITEMS = [
   'Pack layers — CA temps vary',
 ];
 
+const PREVIEW_TRIP: TripData = {
+  routeName: 'Santa Barbara Coast Preview',
+  tagline: 'A quick coastal route with one final destination, two easy stops, and hotel options.',
+  totalMiles: 95,
+  destinationDescription: 'Santa Barbara blends oceanfront paths, Spanish-style architecture, and compact neighborhoods that are easy to explore without overplanning.',
+  funFacts: [
+    'Santa Barbara County has more than 200 wineries.',
+    'The courthouse clock tower has one of the best public views in town.',
+    'The Funk Zone grew out of former industrial warehouses near the waterfront.',
+  ],
+  tripChecklist: CHECKLIST_ITEMS,
+  stops: [
+    {
+      name: 'Point Dume Overlook',
+      city: 'Malibu',
+      description: 'A short bluff walk with wide ocean views and a strong sense of the coastline before the longer drive begins.',
+      tip: 'Go early for easier parking and clearer air over the water.',
+      duration: '30-45 min',
+      lat: 34.0029,
+      lng: -118.8066,
+      category: 'scenic',
+      stopType: 'en-route',
+    },
+    {
+      name: 'Ventura Harbor Village',
+      city: 'Ventura',
+      description: 'A practical food and stretch stop with boats, casual seafood, and a low-effort waterfront walk.',
+      tip: 'Use it for lunch before the final push into Santa Barbara.',
+      duration: '45-75 min',
+      lat: 34.2440,
+      lng: -119.2658,
+      category: 'food',
+      stopType: 'en-route',
+    },
+    {
+      name: 'Santa Barbara County Courthouse',
+      city: 'Santa Barbara',
+      description: 'The courthouse is a strong final anchor because it combines architecture, gardens, city views, and an easy walk toward downtown.',
+      tip: 'Take the elevator up the clock tower before walking toward State Street.',
+      duration: '1-2 hours',
+      lat: 34.4240,
+      lng: -119.7024,
+      category: 'culture',
+      stopType: 'destination',
+    },
+  ],
+  hotels: [
+    {
+      name: 'Hotel Californian',
+      city: 'Santa Barbara',
+      priceRange: '$$$',
+      fsqRating: 8.8,
+      fsqPhoto: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&auto=format&fit=crop',
+    },
+    {
+      name: 'The Leta Santa Barbara Goleta',
+      city: 'Santa Barbara',
+      priceRange: '$$',
+      fsqRating: 8.1,
+      fsqPhoto: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&auto=format&fit=crop',
+    },
+  ],
+};
+
 function TripContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -99,6 +163,7 @@ function TripContent() {
   const vibe = searchParams.get('vibe') || '';
   const distance = searchParams.get('distance') || '';
   const interests = searchParams.get('interests') || '';
+  const isDevPreview = searchParams.get('preview') === '1' && process.env.NODE_ENV === 'development';
 
   const [trip, setTrip] = useState<TripData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,6 +183,7 @@ function TripContent() {
   const [isEditingEnd, setIsEditingEnd] = useState(false);
   const [geocodingEnd, setGeocodingEnd] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'itinerary' | 'stays' | 'map' | 'tips'>('overview');
+  const [mobileTab, setMobileTab] = useState<'destination' | 'stops' | 'hotels'>('destination');
   const [stopFilter, setStopFilter] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set<string>());
   const [overviewHotelIdx, setOverviewHotelIdx] = useState(0);
@@ -139,6 +205,11 @@ function TripContent() {
   };
 
   useEffect(() => {
+    if (isDevPreview) {
+      setAuthReady(true);
+      return;
+    }
+
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
@@ -149,7 +220,7 @@ function TripContent() {
       setAuthReady(true);
     });
     return () => subscription.unsubscribe();
-  }, []);
+  }, [isDevPreview]);
 
   useEffect(() => {
     if (!authReady) return;
@@ -159,7 +230,7 @@ function TripContent() {
       return;
     }
 
-    if (!userId) {
+    if (!userId && !isDevPreview) {
       const query = searchParams.toString();
       router.push(`/login?next=${encodeURIComponent(`/trip${query ? `?${query}` : ''}`)}`);
       return;
@@ -169,6 +240,15 @@ function TripContent() {
       setLoading(true);
       setError('');
       try {
+        if (isDevPreview) {
+          setStartCoords([-118.2437, 34.0522]);
+          setEndCoords([-119.6982, 34.4208]);
+          setEndLabel(end);
+          setEndInputValue(end);
+          setTrip(PREVIEW_TRIP);
+          return;
+        }
+
         const [startCoord, endCoord, tripRes] = await Promise.all([
           geocode(start),
           geocode(end),
@@ -194,7 +274,7 @@ function TripContent() {
     }
 
     fetchTrip();
-  }, [authReady, userId, start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests, router, searchParams]);
+  }, [authReady, userId, start, end, travelGroup, stopTypes, numberOfEnrouteStops, numberOfStops, stopDuration, kidsAges, waypoints, hotelPreference, hotelGuests, hotelCheckin, hotelNights, vibe, distance, interests, isDevPreview, router, searchParams]);
 
   if (loading) {
     return (
@@ -308,6 +388,23 @@ function TripContent() {
     if (activeStop >= i && activeStop > 0) setActiveStop(activeStop - 1);
   };
 
+  const handleShare = async () => {
+    const shareData = {
+      title: trip?.routeName || 'Roady trip',
+      text: trip?.tagline || `${start} to ${end}`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) await navigator.share(shareData);
+      else await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // User cancelled the share sheet or clipboard failed.
+    }
+  };
+
   const suggestNewStop = async (i: number, preferredCategory?: string) => {
     if (!trip || replacingStop !== null) return;
     setReplacingStop(i);
@@ -322,10 +419,35 @@ function TripContent() {
       setTrip((prev) => {
         if (!prev) return prev;
         const stops = [...prev.stops];
-        stops[i] = newStop;
+        stops[i] = { ...newStop, stopType: stops[i]?.stopType || 'en-route' };
         return { ...prev, stops };
       });
       setActiveStop(i);
+    } catch {
+      // silent fail
+    } finally {
+      setReplacingStop(null);
+    }
+  };
+
+  const addStop = async (position: number) => {
+    if (!trip || replacingStop !== null) return;
+    setReplacingStop(-1);
+    try {
+      const res = await fetch('/api/suggest-stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ start, end, currentStops: trip.stops, position, mode: 'insert' }),
+      });
+      if (!res.ok) throw new Error('Failed to get suggestion');
+      const newStop = await res.json();
+      setTrip((prev) => {
+        if (!prev) return prev;
+        const stops = [...prev.stops];
+        stops.splice(position, 0, { ...newStop, stopType: 'en-route' });
+        return { ...prev, stops };
+      });
+      setActiveStop(position);
     } catch {
       // silent fail
     } finally {
@@ -381,9 +503,212 @@ function TripContent() {
   );
 
   const { googleUrl, appleUrl } = buildMapsUrls();
+  const finalDestinationIndex = (() => {
+    const idx = trip.stops.findIndex((stop) => stop.stopType === 'destination');
+    return idx >= 0 ? idx : Math.max(0, trip.stops.length - 1);
+  })();
+  const finalDestination = trip.stops[finalDestinationIndex];
+  const editableStops = trip.stops
+    .map((stop, index) => ({ stop, index }))
+    .filter((item) => item.index !== finalDestinationIndex);
 
   return (
     <div style={{ backgroundColor: '#FDF6EE', fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif", minHeight: '100vh' }}>
+      {/* ── MOBILE RESULT VIEW ── */}
+      <div className="lg:hidden h-screen overflow-hidden bg-white">
+        <section className="relative h-[35vh] min-h-[230px] bg-gray-100">
+          <RouteMap
+            stops={trip.stops}
+            start={startCoords}
+            end={endCoords}
+            endLabel={endLabel}
+            activeStop={activeStop}
+            onStopClick={setActiveStop}
+          />
+          <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-4 pt-4">
+            <button
+              onClick={() => router.push('/')}
+              className="h-10 rounded-full bg-white/95 px-3 shadow-sm"
+              aria-label="Go home"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/roady-logo.png" alt="Roady" className="h-7 w-auto" />
+            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveTrip}
+                disabled={!!savedTripId || saving}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm disabled:opacity-60"
+                style={{ color: savedTripId ? '#D85A30' : '#1B2D45' }}
+                aria-label={savedTripId ? 'Trip saved' : 'Save trip'}
+              >
+                {saving ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2" style={{ borderColor: '#6B7280', borderTopColor: 'transparent' }} />
+                ) : (
+                  <svg className="h-5 w-5" fill={savedTripId ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                )}
+              </button>
+              <button
+                onClick={handleShare}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-sm"
+                style={{ color: copied ? '#D85A30' : '#1B2D45' }}
+                aria-label="Share trip"
+              >
+                {copied ? (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
+                ) : (
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                )}
+              </button>
+            </div>
+          </div>
+          <div className="absolute bottom-3 left-3 right-3 z-10 rounded-2xl bg-white/95 px-4 py-3 shadow-sm">
+            <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: '#993C1D' }}>Your trip</p>
+            <h1 className="mt-0.5 truncate text-lg font-extrabold" style={{ color: '#1B2D45' }}>{start} to {end}</h1>
+            <p className="mt-0.5 line-clamp-1 text-xs font-semibold" style={{ color: '#6B7280' }}>{trip.tagline}</p>
+          </div>
+        </section>
+
+        <section className="flex h-[65vh] flex-col rounded-t-[24px] bg-[#FDF6EE]">
+          <div className="flex flex-shrink-0 gap-1 overflow-x-auto border-b border-orange-100 bg-white px-3 pt-3">
+            {([
+              ['destination', 'Destination'],
+              ['stops', 'Stops'],
+              ['hotels', 'Hotels'],
+            ] as const).map(([tab, label]) => (
+              <button
+                key={tab}
+                onClick={() => setMobileTab(tab)}
+                className="flex-1 whitespace-nowrap border-b-2 px-3 py-3 text-sm font-bold transition-all"
+                style={{
+                  borderColor: mobileTab === tab ? '#D85A30' : 'transparent',
+                  color: mobileTab === tab ? '#D85A30' : '#6B7280',
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {mobileTab === 'destination' && finalDestination && (
+              <div className="overflow-hidden rounded-2xl border border-orange-100 bg-white shadow-sm">
+                {finalDestination.fsqPhoto ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={finalDestination.fsqPhoto} alt={finalDestination.name} className="h-44 w-full object-cover" />
+                ) : (
+                  <div className="flex h-44 items-center justify-center text-5xl" style={{ background: CATEGORY_STYLES[finalDestination.category]?.gradient || CATEGORY_STYLES.scenic.gradient }}>
+                    {CATEGORY_STYLES[finalDestination.category]?.emoji || CATEGORY_STYLES.scenic.emoji}
+                  </div>
+                )}
+                <div className="p-5">
+                  <div className="mb-2 flex items-center gap-2">
+                    <span className="rounded-full px-2.5 py-1 text-[11px] font-bold uppercase" style={{ backgroundColor: 'rgba(55,138,221,0.1)', color: '#378ADD' }}>
+                      Final destination
+                    </span>
+                    <span className="text-xs font-semibold text-gray-400">{finalDestination.city}</span>
+                  </div>
+                  <h2 className="text-xl font-extrabold leading-tight" style={{ color: '#1B2D45' }}>{finalDestination.name}</h2>
+                  <p className="mt-3 text-sm leading-relaxed" style={{ color: '#4B5563' }}>{finalDestination.description}</p>
+                  <div className="mt-4 rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
+                    <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
+                      <strong>Roady says:</strong> {finalDestination.tip}
+                    </p>
+                  </div>
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-gray-50 px-2 py-3">
+                      <p className="text-[11px] font-semibold text-gray-400">Drive</p>
+                      <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{trip.totalMiles} mi</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 px-2 py-3">
+                      <p className="text-[11px] font-semibold text-gray-400">Time</p>
+                      <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{formatDuration(trip.totalMiles)}</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 px-2 py-3">
+                      <p className="text-[11px] font-semibold text-gray-400">Stops</p>
+                      <p className="text-sm font-extrabold" style={{ color: '#1B2D45' }}>{editableStops.length}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {mobileTab === 'stops' && (
+              <div>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-extrabold" style={{ color: '#1B2D45' }}>Editable stops</h2>
+                    <p className="text-xs text-gray-400">Remove, replace, drag, or add an en-route stop.</p>
+                  </div>
+                  <button
+                    onClick={() => addStop(finalDestinationIndex)}
+                    disabled={replacingStop !== null}
+                    className="flex-shrink-0 rounded-full px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
+                    style={{ backgroundColor: '#58CC02' }}
+                  >
+                    {replacingStop === -1 ? 'Adding...' : '+ Add'}
+                  </button>
+                </div>
+                {editableStops.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-orange-200 bg-white p-6 text-center">
+                    <p className="text-sm font-bold" style={{ color: '#1B2D45' }}>No stops selected</p>
+                    <p className="mt-1 text-xs text-gray-400">Add one if you want a break on the way to {end}.</p>
+                  </div>
+                ) : (
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={trip.stops.map((_, i) => `stop-${i}`)} strategy={verticalListSortingStrategy}>
+                      {editableStops.map(({ stop, index }) => (
+                        <SortableStopCard
+                          key={`mobile-stop-${index}`}
+                          id={`stop-${index}`}
+                          stop={stop}
+                          number={index + 1}
+                          isActive={activeStop === index}
+                          onClick={() => setActiveStop(index)}
+                          onDelete={() => deleteStop(index)}
+                          onSuggestNew={() => suggestNewStop(index)}
+                          onSuggestByCategory={(cat) => suggestNewStop(index, cat)}
+                          isSuggesting={replacingStop === index}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                )}
+              </div>
+            )}
+
+            {mobileTab === 'hotels' && (
+              <div>
+                <h2 className="mb-4 text-lg font-extrabold" style={{ color: '#1B2D45' }}>Suggested hotels</h2>
+                {trip.hotels && trip.hotels.length > 0 ? (
+                  <div className="space-y-3">
+                    {trip.hotels.map((hotel, idx) => (
+                      <HotelCard
+                        key={idx}
+                        hotel={hotel}
+                        stopCity={end}
+                        checkin={hotelCheckin || undefined}
+                        nights={hotelNights || undefined}
+                        guests={hotelGuests || undefined}
+                        isSelected={selectedHotelIdx === idx}
+                        onSelect={() => handleSelectHotel(idx)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-white p-8 text-center">
+                    <p className="text-3xl">🏨</p>
+                    <p className="mt-2 text-sm font-bold" style={{ color: '#1B2D45' }}>No hotel suggestions</p>
+                    <p className="mt-1 text-xs text-gray-400">Choose hotel preferences when planning to see options here.</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      <div className="hidden lg:block">
 
       {/* ── TOP NAV ── */}
       <nav className="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm" style={{ height: 64 }}>
@@ -418,11 +743,7 @@ function TripContent() {
                 )}
               </button>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(window.location.href);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 2000);
-                }}
+                onClick={handleShare}
                 title="Share"
                 className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:bg-gray-50"
                 style={{ color: copied ? '#D85A30' : '#6B7280' }}
@@ -1113,6 +1434,8 @@ function TripContent() {
           🗺 Full map
         </button>
       )}
+
+      </div>
 
     </div>
   );

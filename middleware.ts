@@ -29,8 +29,12 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute =
     request.nextUrl.pathname.startsWith('/my-trips') ||
     request.nextUrl.pathname === '/trip';
+  const isDevTripPreview =
+    process.env.NODE_ENV === 'development' &&
+    request.nextUrl.pathname === '/trip' &&
+    request.nextUrl.searchParams.get('preview') === '1';
 
-  if (!user && isProtectedRoute) {
+  if (!user && isProtectedRoute && !isDevTripPreview) {
     const url = request.nextUrl.clone();
     const next = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     url.pathname = '/login';

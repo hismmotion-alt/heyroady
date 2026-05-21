@@ -77,15 +77,6 @@ const ENROUTE_COUNTS = [
   { id: '3', label: '3 stops', desc: 'A few along the way',     emoji: '3️⃣' },
 ];
 
-const STOP_COUNTS = [
-  { id: '1',    label: '1 spot',        desc: 'Quick and focused',                emoji: '1️⃣' },
-  { id: '2',    label: '2 spots',       desc: 'A couple of highlights',           emoji: '2️⃣' },
-  { id: '3',    label: '3 spots',       desc: 'A nice balance',                   emoji: '3️⃣' },
-  { id: '4',    label: '4 spots',       desc: 'Plenty to explore',                emoji: '4️⃣' },
-  { id: '5',    label: '5 spots',       desc: 'The full experience',              emoji: '5️⃣' },
-  { id: 'auto', label: 'Choose for me', desc: 'Let Roady decide the best number', emoji: '✨' },
-];
-
 const HOTEL_BUDGETS = [
   { id: '$',    label: 'Budget',     desc: 'Motels, hostels, affordable stays', emoji: '🏨' },
   { id: '$$',   label: 'Mid-range',  desc: 'Comfortable hotels',               emoji: '🏩' },
@@ -100,7 +91,6 @@ const STEP_LABELS: Record<string, string> = {
   hotelBudget:         'HOTEL',
   hotelDetails:        'HOTEL DETAILS',
   numberOfEnrouteStops:'EN ROUTE',
-  numberOfStops:       'DESTINATION',
 };
 
 const STEP_TITLES: Record<string, string> = {
@@ -110,7 +100,6 @@ const STEP_TITLES: Record<string, string> = {
   hotelBudget:         "What's your hotel budget?",
   hotelDetails:        'Hotel details',
   numberOfEnrouteStops:'Stops on the drive?',
-  numberOfStops:       'Spots at your destination?',
 };
 
 const STEP_DESCRIPTIONS: Record<string, string> = {
@@ -120,12 +109,10 @@ const STEP_DESCRIPTIONS: Record<string, string> = {
   hotelBudget:         "Roady will suggest a hotel at your destination to match.",
   hotelDetails:        "Roady will pre-fill your search on Booking.com so you see real availability.",
   numberOfEnrouteStops:"How many times do you want to pull over on the way there?",
-  numberOfStops:       "How many places do you want to explore once you arrive?",
 };
 
 const STEP_TIPS: Record<string, string> = {
   stopTypes:    "3–5 picks works best. Too few → thin results. Too many → generic ones.",
-  numberOfStops:"3 spots is a relaxed pace — plenty of room to linger. 5 is action-packed.",
 };
 
 export default function TripPreferencesForm({ onComplete, prefilledGroup, prefilledStopTypes }: Props) {
@@ -135,7 +122,6 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   const [kidsAges, setKidsAges]           = useState<string[]>([]);
   const [stopTypes, setStopTypes]                     = useState<string[]>(prefilledStopTypes || []);
   const [numberOfEnrouteStops, setNumberOfEnrouteStops] = useState('');
-  const [numberOfStops, setNumberOfStops]               = useState('');
   const [hotelPreference, setHotelPreference] = useState('');
   const [hotelGuests, setHotelGuests]     = useState('');
   const [hotelCheckin, setHotelCheckin]   = useState('');
@@ -154,7 +140,6 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
   steps.push('hotelBudget');
   if (hotelPreference !== 'none') steps.push('hotelDetails');
   steps.push('numberOfEnrouteStops');
-  steps.push('numberOfStops');
 
   const totalSteps   = steps.length;
   const currentStepId = steps[step];
@@ -167,7 +152,6 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
       case 'hotelBudget':  return !!hotelPreference;
       case 'hotelDetails':        return !!hotelGuests && !!hotelCheckin && !!hotelNights;
       case 'numberOfEnrouteStops':return !!numberOfEnrouteStops;
-      case 'numberOfStops':       return !!numberOfStops;
       default: return false;
     }
   }
@@ -182,7 +166,7 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
         ...(effectiveGroup === 'family-kids' && kidsAges.length > 0 && { kidsAges }),
         stopTypes: effectiveStopTypes,
         numberOfEnrouteStops,
-        numberOfStops,
+        numberOfStops: '1',
         stopDuration: '',
         ...(hotelPreference && { hotelPreference }),
         ...(hotelGuests && { hotelGuests }),
@@ -329,20 +313,6 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
             <div className="rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
               <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
                 <strong className="font-bold">Roady tip:</strong> {tip}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* numberOfStops inline tip (conditional on selection) */}
-        {currentStepId === 'numberOfStops' && (numberOfStops === '3' || numberOfStops === '5') && !tip && (
-          <div className="order-4 px-4 pt-3 pb-1 sm:px-8 sm:pt-4 sm:pb-2">
-            <div className="rounded-xl px-4 py-3" style={{ backgroundColor: '#FDF6EE', borderLeft: '3px solid #EF9F27' }}>
-              <p className="text-sm leading-snug" style={{ color: '#993C1D' }}>
-                <strong className="font-bold">Roady tip:</strong>{' '}
-                {numberOfStops === '3'
-                  ? '3 spots is a relaxed pace — plenty of room to linger at each.'
-                  : '5 spots is action-packed — great if you love variety and don\'t want to miss anything.'}
               </p>
             </div>
           </div>
@@ -518,20 +488,6 @@ export default function TripPreferencesForm({ onComplete, prefilledGroup, prefil
                 item={c}
                 selected={numberOfEnrouteStops === c.id}
                 onClick={() => setNumberOfEnrouteStops(c.id)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* ── Number of Destination Spots ── */}
-        {currentStepId === 'numberOfStops' && (
-          <div className="max-w-lg flex flex-col gap-3">
-            {STOP_COUNTS.map((c) => (
-              <OptionCard
-                key={c.id}
-                item={c}
-                selected={numberOfStops === c.id}
-                onClick={() => setNumberOfStops(c.id)}
               />
             ))}
           </div>
